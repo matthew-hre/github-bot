@@ -36,9 +36,7 @@ class DismissCode(discord.ui.View):
 async def check_for_zig_code(message: discord.Message) -> None:
     attachments = [
         discord.File(
-            BytesIO(
-                highlight_zig_code((await att.read()).decode()[:MAX_CONTENT]).encode()
-            ),
+            BytesIO(highlight_zig_code((await att.read())[:MAX_CONTENT]).encode()),
             att.filename + ".ansi",
         )
         for att in message.attachments
