@@ -40,7 +40,9 @@ class DismissCode(discord.ui.View):
         )
 
 
-async def check_for_zig_code(message: discord.Message) -> None:
+async def _prepare_reply(
+    message: discord.Message,
+) -> tuple[str, list[discord.File]]:
     attachments: list[discord.File] = []
     for att in message.attachments:
         if not att.filename.endswith(".zig") or att.size > MAX_ZIG_FILE_SIZE:
@@ -60,16 +62,19 @@ async def check_for_zig_code(message: discord.Message) -> None:
     if codeblocks and any(block.lang == "zig" for block in codeblocks):
         zig_code = process_markdown(message.content, THEME, only_code=True)
         if len(zig_code) <= 2000:
-            await message.reply(
-                zig_code,
-                view=DismissCode(message),
-                files=attachments,
-                mention_author=False,
-            )
+            return zig_code, attachments
     elif attachments:
-        await message.reply(
-            'Click "View whole file" to see the highlighting.',
-            view=DismissCode(message),
-            files=attachments,
-            mention_author=False,
-        )
+        return 'Click "View whole file" to see the highlighting.', attachments
+    return "", []
+
+
+async def check_for_zig_code(message: discord.Message) -> None:
+    content, files = await _prepare_reply(message)
+    if not (content or files):
+        return
+    await message.reply(
+        content,
+        view=DismissCode(message),
+        files=files,
+        mention_author=False,
+    )
