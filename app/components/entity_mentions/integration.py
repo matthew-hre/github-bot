@@ -1,11 +1,9 @@
-import asyncio
 import datetime as dt
-from contextlib import suppress
 
 import discord
 
 from app.setup import bot
-from app.utils import is_dm, is_mod, try_dm
+from app.utils import is_dm, is_mod, remove_view_after_timeout, try_dm
 
 from .fmt import entity_message
 
@@ -55,12 +53,6 @@ def _unlink_original_message(message: discord.Message) -> None:
         del message_to_mentions[original_message]
 
 
-async def remove_button_after_timeout(message: discord.Message) -> None:
-    await asyncio.sleep(30)
-    with suppress(discord.NotFound, discord.HTTPException):
-        await message.edit(view=None)
-
-
 async def reply_with_entities(message: discord.Message) -> None:
     if message.author.bot or message.type in IGNORED_MESSAGE_TYPES:
         return
@@ -80,7 +72,7 @@ async def reply_with_entities(message: discord.Message) -> None:
         msg_content, mention_author=False, view=DeleteMention(message, entity_count)
     )
     message_to_mentions[message] = sent_message
-    await remove_button_after_timeout(sent_message)
+    await remove_view_after_timeout(sent_message)
 
 
 @bot.event
@@ -128,4 +120,4 @@ async def entity_mention_edit_handler(
         view=DeleteMention(after, count),
         allowed_mentions=discord.AllowedMentions.none(),
     )
-    await remove_button_after_timeout(reply)
+    await remove_view_after_timeout(reply)
