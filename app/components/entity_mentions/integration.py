@@ -2,7 +2,6 @@ import datetime as dt
 
 import discord
 
-from app.setup import bot
 from app.utils import is_dm, is_mod, remove_view_after_timeout, try_dm
 
 from .fmt import entity_message
@@ -75,8 +74,7 @@ async def reply_with_entities(message: discord.Message) -> None:
     await remove_view_after_timeout(sent_message)
 
 
-@bot.event
-async def on_message_delete(message: discord.Message) -> None:
+async def entity_mention_delete_handler(message: discord.Message) -> None:
     if message.author.bot:
         _unlink_original_message(message)
     elif (reply := message_to_mentions.get(message)) is not None:
