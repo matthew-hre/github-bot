@@ -41,16 +41,21 @@ class DismissCode(discord.ui.View):
 
 
 async def check_for_zig_code(message: discord.Message) -> None:
-    attachments = [
-        discord.File(
-            BytesIO(
-                highlight_zig_code((await att.read())[:MAX_CONTENT], THEME).encode()
-            ),
-            att.filename + ".ansi",
+    attachments: list[discord.File] = []
+    for att in message.attachments:
+        if not att.filename.endswith(".zig") or att.size > MAX_ZIG_FILE_SIZE:
+            continue
+        content = (await att.read())[:MAX_CONTENT]
+        if content.count(b"\n") <= 5 and len(content) <= 1900:
+            message.content = f"```zig\n{content.decode()}```\n{message.content}"
+            continue
+        attachments.append(
+            discord.File(
+                BytesIO(highlight_zig_code(content, THEME).encode()),
+                att.filename + ".ansi",
+            )
         )
-        for att in message.attachments
-        if att.filename.endswith(".zig") and att.size <= MAX_ZIG_FILE_SIZE
-    ]
+
     codeblocks = list(extract_codeblocks(message.content))
     if codeblocks and any(block.lang == "zig" for block in codeblocks):
         zig_code = process_markdown(message.content, THEME, only_code=True)
