@@ -15,7 +15,7 @@ from app.components.entity_mentions import (
     reply_with_entities,
 )
 from app.components.message_filter import check_message_filters
-from app.components.zig_codeblocks import check_for_zig_code
+from app.components.zig_codeblocks import check_for_zig_code, zig_codeblock_edit_handler
 from app.setup import bot, config
 from app.utils import is_dm, is_mod, try_dm
 
@@ -74,6 +74,7 @@ async def on_message(message: discord.Message) -> None:
 @bot.event
 async def on_message_edit(before: discord.Message, after: discord.Message) -> None:
     await entity_mention_edit_handler(before, after)
+    await zig_codeblock_edit_handler(before, after)
 
 
 async def sync(bot: commands.Bot, message: discord.Message) -> None:
