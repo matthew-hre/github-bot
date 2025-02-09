@@ -91,8 +91,9 @@ async def on_message_delete(message: discord.Message) -> None:
         await reply.delete()
 
 
-@bot.event
-async def on_message_edit(before: discord.Message, after: discord.Message) -> None:
+async def entity_mention_edit_handler(
+    before: discord.Message, after: discord.Message
+) -> None:
     if before.content == after.content:
         return
     old_entites = await entity_message(before)

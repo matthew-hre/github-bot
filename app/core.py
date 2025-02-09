@@ -10,6 +10,7 @@ from app.components.autoclose import autoclose_solved_posts
 from app.components.docs import refresh_sitemap
 from app.components.entity_mentions import (
     ENTITY_REGEX,
+    entity_mention_edit_handler,
     load_emojis,
     reply_with_entities,
 )
@@ -68,6 +69,11 @@ async def on_message(message: discord.Message) -> None:
 
     # Check for Zig code blocks and format them
     await check_for_zig_code(message)
+
+
+@bot.event
+async def on_message_edit(before: discord.Message, after: discord.Message) -> None:
+    await entity_mention_edit_handler(before, after)
 
 
 async def sync(bot: commands.Bot, message: discord.Message) -> None:
