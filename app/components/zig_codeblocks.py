@@ -82,6 +82,7 @@ async def check_for_zig_code(message: discord.Message) -> None:
         mention_author=False,
     )
     message_to_codeblocks[message] = reply
+    await remove_view_after_timeout(reply)
 
 
 async def zig_codeblock_edit_handler(
@@ -123,3 +124,19 @@ async def zig_codeblock_edit_handler(
         allowed_mentions=discord.AllowedMentions.none(),
     )
     await remove_view_after_timeout(reply)
+
+
+def _unlink_original_message(message: discord.Message) -> None:
+    original_message = next(
+        (msg for msg, reply in message_to_codeblocks.items() if reply == message),
+        None,
+    )
+    if original_message is not None:
+        del message_to_codeblocks[original_message]
+
+
+async def zig_codeblock_delete_handler(message: discord.Message) -> None:
+    if message.author.bot:
+        _unlink_original_message(message)
+    if (reply := message_to_codeblocks.get(message)) is not None:
+        await reply.delete()
