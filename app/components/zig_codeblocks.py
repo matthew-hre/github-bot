@@ -12,7 +12,13 @@ from zig_codeblocks import (
     process_markdown,
 )
 
-from app.utils import is_dm, is_mod, remove_view_after_timeout
+from app.utils import (
+    get_or_create_webhook,
+    is_dm,
+    is_mod,
+    move_message_via_webhook,
+    remove_view_after_timeout,
+)
 
 MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
@@ -25,10 +31,25 @@ message_to_codeblocks = defaultdict[discord.Message, list[discord.Message]](list
 frozen_messages = set[discord.Message]()
 
 
+def custom_process_markdown(source: str | bytes, *, only_code: bool = False) -> str:
+    return (
+        process_markdown(source, THEME, only_code=only_code)
+        # Discord is cursed and disables ANSI highlighting entirely if there are
+        # more than 14 (or 30, seems to vary) slashes since last SGR sequence.
+        .replace("///", "\x1b[0m///")
+        .replace("// ", "\x1b[0m// ")
+    )
+
+
 class ZigCodeblockActions(discord.ui.View):
     def __init__(self, message: discord.Message) -> None:
         super().__init__()
         self._message = message
+        self._replaced_message_content = custom_process_markdown(message.content)
+        self.replace.disabled = (
+            len(message_to_codeblocks[message]) > 1
+            or len(self._replaced_message_content) > 2000
+        )
 
     @discord.ui.button(
         label="Dismiss",
@@ -71,6 +92,27 @@ class ZigCodeblockActions(discord.ui.View):
                 "You can't freeze this message.", ephemeral=True
             )
 
+    @discord.ui.button(
+        label="Replace my message",
+        emoji="🔄",
+        style=discord.ButtonStyle.gray,
+    )
+    async def replace(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        assert interaction.message
+        channel = interaction.message.channel
+        webhook_channel, thread = (
+            (channel.parent, channel)
+            if isinstance(channel, discord.Thread)
+            else (channel, discord.utils.MISSING)
+        )
+        assert isinstance(webhook_channel, discord.TextChannel | discord.ForumChannel)
+
+        webhook = await get_or_create_webhook("Ghostty Moderator", webhook_channel)
+        self._message.content = self._replaced_message_content
+        await move_message_via_webhook(webhook, self._message, thread=thread)
+
 
 async def _prepare_reply(
     message: discord.Message,
@@ -92,13 +134,7 @@ async def _prepare_reply(
 
     codeblocks = list(extract_codeblocks(message.content))
     if codeblocks and any(block.lang == "zig" for block in codeblocks):
-        zig_code = (
-            process_markdown(message.content, THEME, only_code=True)
-            # Discord is cursed and disables ANSI highlighting entirely if there are
-            # more than 14 (or 30, seems to vary) slashes since last SGR sequence.
-            .replace("///", "\x1b[0m///")
-            .replace("// ", "\x1b[0m// ")
-        )
+        zig_code = custom_process_markdown(message.content, only_code=True)
         return _split_codeblocks(zig_code), attachments
     elif attachments:
         return ['Click "View whole file" to see the highlighting.'], attachments
