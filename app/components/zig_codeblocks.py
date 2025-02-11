@@ -14,7 +14,7 @@ from app.utils import is_dm, is_mod, remove_view_after_timeout
 MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
 THEME = DEFAULT_THEME.copy()
-THEME.comments = None
+del THEME["comments"]
 
 message_to_codeblocks: dict[discord.Message, discord.Message] = {}
 frozen_messages = set[discord.Message]()
