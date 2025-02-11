@@ -1,5 +1,8 @@
 import datetime as dt
+import re
+from collections import defaultdict
 from io import BytesIO
+from itertools import zip_longest
 
 import discord
 from zig_codeblocks import (
@@ -13,10 +16,12 @@ from app.utils import is_dm, is_mod, remove_view_after_timeout
 
 MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
+
+SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
 THEME = DEFAULT_THEME.copy()
 del THEME["comments"]
 
-message_to_codeblocks: dict[discord.Message, discord.Message] = {}
+message_to_codeblocks = defaultdict[discord.Message, list[discord.Message]](list)
 frozen_messages = set[discord.Message]()
 
 
@@ -35,8 +40,8 @@ class ZigCodeblockActions(discord.ui.View):
     ) -> None:
         assert not is_dm(interaction.user)
         if interaction.user.id == self._message.author.id or is_mod(interaction.user):
-            assert interaction.message
-            await interaction.message.delete()
+            for reply in message_to_codeblocks[self._message]:
+                await reply.delete()
             return
 
         await interaction.response.send_message(
@@ -69,7 +74,7 @@ class ZigCodeblockActions(discord.ui.View):
 
 async def _prepare_reply(
     message: discord.Message,
-) -> tuple[str, list[discord.File]]:
+) -> tuple[list[str], list[discord.File]]:
     attachments: list[discord.File] = []
     for att in message.attachments:
         if not att.filename.endswith(".zig") or att.size > MAX_ZIG_FILE_SIZE:
@@ -87,26 +92,47 @@ async def _prepare_reply(
 
     codeblocks = list(extract_codeblocks(message.content))
     if codeblocks and any(block.lang == "zig" for block in codeblocks):
-        zig_code = process_markdown(message.content, THEME, only_code=True)
-        if len(zig_code) <= 2000:
-            return zig_code, attachments
+        zig_code = (
+            process_markdown(message.content, THEME, only_code=True)
+            # Discord is cursed and disables ANSI highlighting entirely if there are
+            # more than 14 (or 30, seems to vary) slashes since last SGR sequence.
+            .replace("///", "\x1b[0m///")
+            .replace("// ", "\x1b[0m// ")
+        )
+        return _split_codeblocks(zig_code), attachments
     elif attachments:
-        return 'Click "View whole file" to see the highlighting.', attachments
-    return "", []
+        return ['Click "View whole file" to see the highlighting.'], attachments
+    return [], []
 
 
 async def check_for_zig_code(message: discord.Message) -> None:
-    content, files = await _prepare_reply(message)
-    if not (content or files):
+    msg_contents, files = await _prepare_reply(message)
+    if not (msg_contents or files):
         return
-    reply = await message.reply(
-        content,
-        view=ZigCodeblockActions(message),
-        files=files,
-        mention_author=False,
+
+    if len(msg_contents) == 1:
+        reply = await message.reply(
+            msg_contents[0],
+            view=ZigCodeblockActions(message),
+            files=files,
+            mention_author=False,
+        )
+        message_to_codeblocks[message].append(reply)
+        await remove_view_after_timeout(reply)
+        return
+
+    first_msg = await message.reply(msg_contents[0], mention_author=False)
+    message_to_codeblocks[message].append(first_msg)
+
+    for msg_content in msg_contents[1:-1]:
+        msg = await message.channel.send(msg_content)
+        message_to_codeblocks[message].append(msg)
+
+    final_msg = await message.channel.send(
+        msg_contents[-1], view=ZigCodeblockActions(message), files=files
     )
-    message_to_codeblocks[message] = reply
-    await remove_view_after_timeout(reply)
+    message_to_codeblocks[message].append(final_msg)
+    await remove_view_after_timeout(final_msg)
 
 
 async def zig_codeblock_edit_handler(
@@ -115,28 +141,31 @@ async def zig_codeblock_edit_handler(
     if before.content == after.content and before.attachments == after.attachments:
         return
 
-    old_content, old_files = await _prepare_reply(before)
-    new_content, new_files = await _prepare_reply(after)
-    if old_content == new_content and old_files == new_files:
+    old_contents, old_files = await _prepare_reply(before)
+    new_contents, new_files = await _prepare_reply(after)
+    if old_contents == new_contents and old_files == new_files:
         return
 
-    if (reply := message_to_codeblocks.get(before)) is None:
-        if not (old_content or before in frozen_messages):
+    if (replies := message_to_codeblocks.get(before)) is None:
+        if not (old_contents or before in frozen_messages):
             # There was no code before, so treat this as a new message.
             # Note: No new attachments can appear, their count can only decrease.
             await check_for_zig_code(after)
         # The message was removed from the M2C map at some point
         return
 
-    if not (new_content or new_files or before in frozen_messages):
+    if not (new_contents or new_files or before in frozen_messages):
         # All code was edited out
         del message_to_codeblocks[before]
-        await reply.delete()
+        for reply in replies:
+            await reply.delete()
         return
 
     # If the message was edited (or created, if never edited) more than 24 hours ago,
     # stop reacting to it and remove its M2C entry.
-    last_updated = dt.datetime.now(tz=dt.UTC) - (reply.edited_at or reply.created_at)
+    last_updated = dt.datetime.now(tz=dt.UTC) - (
+        replies[0].edited_at or replies[0].created_at
+    )
     if last_updated > dt.timedelta(hours=24):
         frozen_messages.discard(before)
         del message_to_codeblocks[before]
@@ -145,13 +174,42 @@ async def zig_codeblock_edit_handler(
     if before in frozen_messages:
         return
 
-    await reply.edit(
-        content=new_content,
-        view=ZigCodeblockActions(after),
-        attachments=new_files,
-        allowed_mentions=discord.AllowedMentions.none(),
-    )
-    await remove_view_after_timeout(reply)
+    for reply, new_content in zip_longest(replies, new_contents, fillvalue=None):
+        if not (reply is None or new_content is None):
+            view = (
+                ZigCodeblockActions(after)
+                if reply is replies[-1] and len(replies) == len(new_contents)
+                else None
+            )
+            await reply.edit(
+                content=new_content,
+                view=view,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            if view is not None:
+                await remove_view_after_timeout(reply)
+            continue
+        if reply is None:
+            # Out of replies, codeblocks still left -> Create new replies
+            if new_content is new_contents[-1]:
+                # Last new reply
+                view = ZigCodeblockActions(after)
+                msg = await after.channel.send(
+                    new_content,
+                    view=view,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+                message_to_codeblocks[after].append(msg)
+                await remove_view_after_timeout(msg)
+            else:
+                # Not the last new reply
+                msg = await after.channel.send(
+                    new_content, allowed_mentions=discord.AllowedMentions.none()
+                )
+                message_to_codeblocks[after].append(msg)
+        else:
+            # Out of codeblocks, replies still left -> Delete remaining replies
+            await reply.delete()
 
 
 def _unlink_original_message(message: discord.Message) -> None:
@@ -168,7 +226,48 @@ async def zig_codeblock_delete_handler(message: discord.Message) -> None:
     if message.author.bot:
         _unlink_original_message(message)
     if not (
-        (reply := message_to_codeblocks.get(message)) is None
+        (replies := message_to_codeblocks.get(message)) is None
         or message in frozen_messages
     ):
-        await reply.delete()
+        for reply in replies:
+            await reply.delete()
+
+
+def _split_codeblocks(code: str) -> list[str]:
+    if len(code) <= 2000:
+        return [code]
+
+    def copy_last_style_to_new_part() -> None:
+        if SGR_PATTERN.fullmatch(part[1]):
+            part[2] = f"{part.pop(1)}{part[2]}"
+
+    lines = code.splitlines()
+    parts: list[str] = []
+    part: list[str] = []
+
+    while lines:
+        # Keep throwing in lines until under the limit
+        if len("\n".join(part)) + len(lines[0]) + 4 < 2000:  # 4 = len("\n```")
+            part.append(lines.pop(0))
+            continue
+
+        # Making sure we're not ending a part in a code block boundary
+        if part[-1].startswith("```"):
+            lines.insert(0, part.pop())
+            if part[-1] == "```ansi":
+                lines.insert(0, part.pop())
+
+        copy_last_style_to_new_part()
+        parts.append(joined := "\n".join((*part, "```")))
+        part = ["```ansi"]
+
+        # Apply last style from previous part to new part
+        if styles := SGR_PATTERN.findall(joined):
+            part.append(styles.pop())
+
+    # Add unfinished part
+    if part:
+        copy_last_style_to_new_part()
+        parts.append("\n".join(part))
+
+    return parts
