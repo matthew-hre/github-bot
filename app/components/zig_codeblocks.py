@@ -215,14 +215,16 @@ async def zig_codeblock_edit_handler(
 
     for reply, new_content in zip_longest(replies, new_contents, fillvalue=None):
         if not (reply is None or new_content is None):
-            view = (
-                ZigCodeblockActions(after)
-                if reply is replies[-1] and len(replies) == len(new_contents)
-                else None
-            )
+            if reply is replies[-1] and len(replies) == len(new_contents):
+                view = ZigCodeblockActions(after)
+                files = new_files
+            else:
+                view = None
+                files = discord.utils.MISSING
             await reply.edit(
                 content=new_content,
                 view=view,
+                attachments=files,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
             if view is not None:
