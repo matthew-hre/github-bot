@@ -134,11 +134,13 @@ async def _prepare_reply(
         )
 
     codeblocks = list(extract_codeblocks(message.content))
+    file_highlight_note = 'Click "View whole file" to see the highlighting.'
     if codeblocks and any(block.lang == "zig" for block in codeblocks):
         zig_code = custom_process_markdown(message.content, only_code=True)
+        zig_code += f"\n{file_highlight_note}" if attachments else ""
         return _split_codeblocks(zig_code), attachments
     elif attachments:
-        return ['Click "View whole file" to see the highlighting.'], attachments
+        return [file_highlight_note], attachments
     return [], []
 
 
