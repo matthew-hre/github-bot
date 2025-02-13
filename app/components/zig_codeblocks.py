@@ -215,7 +215,7 @@ async def zig_codeblock_edit_handler(
 
     for reply, new_content in zip_longest(replies, new_contents, fillvalue=None):
         if not (reply is None or new_content is None):
-            if reply is replies[-1] and len(replies) == len(new_contents):
+            if new_content is new_contents[-1] and len(replies) >= len(new_contents):
                 view = ZigCodeblockActions(after)
                 files = new_files
             else:
