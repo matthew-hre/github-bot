@@ -49,6 +49,7 @@ class ZigCodeblockActions(discord.ui.View):
         self.replace.disabled = (
             len(message_to_codeblocks[message]) > 1
             or len(self._replaced_message_content) > 2000
+            or len(message.attachments) > 0
         )
 
     @discord.ui.button(
