@@ -213,6 +213,7 @@ async def zig_codeblock_edit_handler(
     if before in frozen_messages:
         return
 
+    saved_msg: discord.Message | None = None
     for reply, new_content in zip_longest(replies, new_contents, fillvalue=None):
         if not (reply is None or new_content is None):
             if new_content is new_contents[-1] and len(replies) >= len(new_contents):
@@ -228,7 +229,7 @@ async def zig_codeblock_edit_handler(
                 allowed_mentions=discord.AllowedMentions.none(),
             )
             if view is not None:
-                await remove_view_after_timeout(reply, 60.0)
+                saved_msg = reply
             continue
         if reply is None:
             # Out of replies, codeblocks still left -> Create new replies
@@ -241,7 +242,7 @@ async def zig_codeblock_edit_handler(
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
                 message_to_codeblocks[after].append(msg)
-                await remove_view_after_timeout(msg, 60.0)
+                saved_msg = msg
             else:
                 # Not the last new reply
                 msg = await after.channel.send(
@@ -251,6 +252,8 @@ async def zig_codeblock_edit_handler(
         else:
             # Out of codeblocks, replies still left -> Delete remaining replies
             await reply.delete()
+    if saved_msg is not None:
+        await remove_view_after_timeout(saved_msg, 60.0)
 
 
 def _unlink_original_message(message: discord.Message) -> None:
