@@ -58,7 +58,7 @@ class ZigCodeblockActions(discord.ui.View):
         style=discord.ButtonStyle.gray,
     )
     async def dismiss(
-        self, interaction: discord.Interaction, _button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
         assert not is_dm(interaction.user)
         if interaction.user.id == self._message.author.id or is_mod(interaction.user):
@@ -99,7 +99,7 @@ class ZigCodeblockActions(discord.ui.View):
         style=discord.ButtonStyle.gray,
     )
     async def replace(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
         assert interaction.message
         channel = interaction.message.channel

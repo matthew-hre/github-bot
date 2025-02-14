@@ -23,7 +23,7 @@ class DeleteMention(discord.ui.View):
         style=discord.ButtonStyle.gray,
     )
     async def delete(
-        self, interaction: discord.Interaction, _button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
         assert not is_dm(interaction.user)
         if interaction.user.id == self.message.author.id or is_mod(interaction.user):
