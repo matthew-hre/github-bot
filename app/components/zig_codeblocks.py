@@ -31,7 +31,7 @@ codeblock_linker = MessageLinker()
 frozen_messages = set[discord.Message]()
 
 
-def custom_process_markdown(source: str | bytes, *, only_code: bool = False) -> str:
+def process_discord_markdown(source: str | bytes, *, only_code: bool = False) -> str:
     return (
         process_markdown(source, THEME, only_code=only_code)
         # From Qwerasd:
@@ -54,7 +54,7 @@ class ZigCodeblockActions(discord.ui.View):
     def __init__(self, message: discord.Message) -> None:
         super().__init__()
         self._message = message
-        self._replaced_message_content = custom_process_markdown(message.content)
+        self._replaced_message_content = process_discord_markdown(message.content)
         self.replace.disabled = (
             len(codeblock_linker.get(message)) > 1
             or len(self._replaced_message_content) > 2000
@@ -145,7 +145,7 @@ async def _prepare_reply(
     codeblocks = list(extract_codeblocks(message.content))
     file_highlight_note = 'Click "View whole file" to see the highlighting.'
     if codeblocks and any(block.lang == "zig" for block in codeblocks):
-        zig_code = custom_process_markdown(message.content, only_code=True)
+        zig_code = process_discord_markdown(message.content, only_code=True)
         zig_code += f"\n{file_highlight_note}" if attachments else ""
         return _split_codeblocks(zig_code), attachments
     if attachments:
