@@ -86,14 +86,14 @@ async def entity_mention_edit_handler(
 ) -> None:
     if before.content == after.content:
         return
-    old_entites = await entity_message(before)
+    old_entities = await entity_message(before)
     new_entities = await entity_message(after)
-    if old_entites == new_entities:
+    if old_entities == new_entities:
         # Message changed but mentions are the same
         return
 
     if (reply := message_to_mentions.get(before)) is None:
-        if not old_entites[1]:
+        if not old_entities[1]:
             # There were no mentions before, so treat this as a new message
             await reply_with_entities(after)
         # The message was removed from the M2M map at some point
