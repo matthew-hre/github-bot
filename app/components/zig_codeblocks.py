@@ -13,6 +13,7 @@ from zig_codeblocks import (
 )
 
 from app.utils import (
+    MessageLinker,
     get_or_create_webhook,
     is_dm,
     is_mod,
@@ -28,7 +29,7 @@ SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
 THEME = DEFAULT_THEME.copy()
 del THEME["comments"]
 
-message_to_codeblocks = defaultdict[discord.Message, list[discord.Message]](list)
+codeblock_linker = MessageLinker()
 frozen_messages = set[discord.Message]()
 
 
@@ -57,7 +58,7 @@ class ZigCodeblockActions(discord.ui.View):
         self._message = message
         self._replaced_message_content = custom_process_markdown(message.content)
         self.replace.disabled = (
-            len(message_to_codeblocks[message]) > 1
+            len(codeblock_linker.get(message)) > 1
             or len(self._replaced_message_content) > 2000
             or len(message.attachments) > 0
         )
@@ -72,7 +73,7 @@ class ZigCodeblockActions(discord.ui.View):
     ) -> None:
         assert not is_dm(interaction.user)
         if interaction.user.id == self._message.author.id or is_mod(interaction.user):
-            for reply in message_to_codeblocks[self._message]:
+            for reply in codeblock_linker.get(self._message):
                 await reply.delete()
             return
 
@@ -166,21 +167,21 @@ async def check_for_zig_code(message: discord.Message) -> None:
             files=files,
             mention_author=False,
         )
-        message_to_codeblocks[message].append(reply)
+        codeblock_linker.link(message, reply)
         await remove_view_after_timeout(reply, VIEW_TIMEOUT)
         return
 
     first_msg = await message.reply(msg_contents[0], mention_author=False)
-    message_to_codeblocks[message].append(first_msg)
+    codeblock_linker.link(message, first_msg)
 
     for msg_content in msg_contents[1:-1]:
         msg = await message.channel.send(msg_content)
-        message_to_codeblocks[message].append(msg)
+        codeblock_linker.link(message, msg)
 
     final_msg = await message.channel.send(
         msg_contents[-1], view=ZigCodeblockActions(message), files=files
     )
-    message_to_codeblocks[message].append(final_msg)
+    codeblock_linker.link(message, final_msg)
     await remove_view_after_timeout(final_msg, VIEW_TIMEOUT)
 
 
@@ -195,7 +196,7 @@ async def zig_codeblock_edit_handler(
     if old_contents == new_contents and old_files == new_files:
         return
 
-    if (replies := message_to_codeblocks.get(before)) is None:
+    if not (replies := codeblock_linker.get(before)):
         if not (old_contents or before in frozen_messages):
             # There was no code before, so treat this as a new message.
             # Note: No new attachments can appear, their count can only decrease.
@@ -205,19 +206,13 @@ async def zig_codeblock_edit_handler(
 
     if not (new_contents or new_files or before in frozen_messages):
         # All code was edited out
-        del message_to_codeblocks[before]
+        codeblock_linker.unlink(before)
         for reply in replies:
             await reply.delete()
         return
 
-    # If the message was edited (or created, if never edited) more than 24 hours ago,
-    # stop reacting to it and remove its M2C entry.
-    last_updated = dt.datetime.now(tz=dt.UTC) - (
-        replies[0].edited_at or replies[0].created_at
-    )
-    if last_updated > dt.timedelta(hours=24):
+    if codeblock_linker.unlink_if_expired(replies[0]):
         frozen_messages.discard(before)
-        del message_to_codeblocks[before]
         return
 
     if before in frozen_messages:
@@ -245,20 +240,18 @@ async def zig_codeblock_edit_handler(
             # Out of replies, codeblocks still left -> Create new replies
             if new_content is new_contents[-1]:
                 # Last new reply
-                view = ZigCodeblockActions(after)
                 msg = await after.channel.send(
                     new_content,
-                    view=view,
+                    view=ZigCodeblockActions(after),
                     allowed_mentions=discord.AllowedMentions.none(),
                 )
-                message_to_codeblocks[after].append(msg)
                 saved_msg = msg
             else:
                 # Not the last new reply
                 msg = await after.channel.send(
                     new_content, allowed_mentions=discord.AllowedMentions.none()
                 )
-                message_to_codeblocks[after].append(msg)
+            codeblock_linker.link(after, msg)
         else:
             # Out of codeblocks, replies still left -> Delete remaining replies
             await reply.delete()
@@ -266,23 +259,13 @@ async def zig_codeblock_edit_handler(
         await remove_view_after_timeout(saved_msg, VIEW_TIMEOUT)
 
 
-def _unlink_original_message(message: discord.Message) -> None:
-    original_message = next(
-        (msg for msg, reply in message_to_codeblocks.items() if reply == message),
-        None,
-    )
-    if original_message is not None:
-        frozen_messages.discard(original_message)
-        del message_to_codeblocks[original_message]
-
-
 async def zig_codeblock_delete_handler(message: discord.Message) -> None:
-    if message.author.bot:
-        _unlink_original_message(message)
-    if not (
-        (replies := message_to_codeblocks.get(message)) is None
-        or message in frozen_messages
+    if message.author.bot and (
+        original := codeblock_linker.get_original_message(message)
     ):
+        frozen_messages.discard(original)
+        codeblock_linker.unlink(original)
+    if not ((replies := codeblock_linker.get(message)) or message in frozen_messages):
         for reply in replies:
             await reply.delete()
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
+from collections import defaultdict
 from contextlib import suppress
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any
@@ -21,6 +23,7 @@ __all__ = (
     "Account",
     "GuildTextChannel",
     "MessageData",
+    "MessageLinker",
     "format_or_file",
     "get_or_create_webhook",
     "is_dm",
@@ -37,6 +40,37 @@ if TYPE_CHECKING:
 
 
 type Account = discord.User | discord.Member
+
+
+class MessageLinker:
+    def __init__(self) -> None:
+        self._refs = defaultdict[discord.Message, list[discord.Message]](list)
+
+    def get(self, original: discord.Message) -> list[discord.Message]:
+        return self._refs[original]
+
+    def link(self, original: discord.Message, *replies: discord.Message) -> None:
+        self._refs[original].extend(replies)
+
+    def unlink(self, original: discord.Message) -> None:
+        del self._refs[original]
+
+    def get_original_message(self, reply: discord.Message) -> discord.Message | None:
+        return next(
+            (msg for msg, replies in self._refs.items() if reply in replies), None
+        )
+
+    def unlink_from_reply(self, reply: discord.Message) -> None:
+        if (original_message := self.get_original_message(reply)) is not None:
+            self.unlink(original_message)
+
+    def unlink_if_expired(self, reply: discord.Message) -> bool:
+        # Stop reacting to message updates after 24 hours
+        last_updated = reply.edited_at or reply.created_at
+        if dt.datetime.now(tz=dt.UTC) - last_updated > dt.timedelta(hours=24):
+            self.unlink_from_reply(reply)
+            return True
+        return False
 
 
 def is_dm(account: Account) -> TypeIs[discord.User]:
