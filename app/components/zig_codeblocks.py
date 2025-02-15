@@ -22,6 +22,7 @@ from app.utils import (
 
 MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
+VIEW_TIMEOUT = 60.0
 
 SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
 THEME = DEFAULT_THEME.copy()
@@ -157,7 +158,7 @@ async def check_for_zig_code(message: discord.Message) -> None:
             mention_author=False,
         )
         message_to_codeblocks[message].append(reply)
-        await remove_view_after_timeout(reply, 60.0)
+        await remove_view_after_timeout(reply, VIEW_TIMEOUT)
         return
 
     first_msg = await message.reply(msg_contents[0], mention_author=False)
@@ -171,7 +172,7 @@ async def check_for_zig_code(message: discord.Message) -> None:
         msg_contents[-1], view=ZigCodeblockActions(message), files=files
     )
     message_to_codeblocks[message].append(final_msg)
-    await remove_view_after_timeout(final_msg, 60.0)
+    await remove_view_after_timeout(final_msg, VIEW_TIMEOUT)
 
 
 async def zig_codeblock_edit_handler(
@@ -253,7 +254,7 @@ async def zig_codeblock_edit_handler(
             # Out of codeblocks, replies still left -> Delete remaining replies
             await reply.delete()
     if saved_msg is not None:
-        await remove_view_after_timeout(saved_msg, 60.0)
+        await remove_view_after_timeout(saved_msg, VIEW_TIMEOUT)
 
 
 def _unlink_original_message(message: discord.Message) -> None:
