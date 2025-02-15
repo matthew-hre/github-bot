@@ -35,8 +35,15 @@ frozen_messages = set[discord.Message]()
 def custom_process_markdown(source: str | bytes, *, only_code: bool = False) -> str:
     return (
         process_markdown(source, THEME, only_code=only_code)
-        # Discord is cursed and disables ANSI highlighting entirely if there are
-        # more than 14 (or 30, seems to vary) slashes since last SGR sequence.
+        # From Qwerasd:
+        #   I got distracted and checked the Discord source and this is the logic,
+        #   highlighting is disabled under these circumstances:
+        #   * The src contains 15 or more consecutive slashes
+        #   * The src contains a line with 1000 or more characters
+        #   * The src contains more than 30 slashes with anything in between as long as
+        #     it's not a line that isn't in the form ^\s*\/\/.* and contains a character
+        #     other than /
+        # These replace calls are an attempt to work around these limitations.
         .replace("///", "\x1b[0m///")
         .replace("// ", "\x1b[0m// ")
     )
