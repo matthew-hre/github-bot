@@ -36,6 +36,8 @@ def custom_process_markdown(source: str | bytes, *, only_code: bool = False) -> 
     return (
         process_markdown(source, THEME, only_code=only_code)
         # From Qwerasd:
+        #   Oh is it a safeguard against catastrophic backtracking?
+        #   [...]
         #   I got distracted and checked the Discord source and this is the logic,
         #   highlighting is disabled under these circumstances:
         #   * The src contains 15 or more consecutive slashes
