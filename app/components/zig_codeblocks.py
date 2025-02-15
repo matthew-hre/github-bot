@@ -262,10 +262,15 @@ async def zig_codeblock_delete_handler(message: discord.Message) -> None:
         original := codeblock_linker.get_original_message(message)
     ):
         frozen_messages.discard(original)
-        codeblock_linker.unlink(original)
-    if not ((replies := codeblock_linker.get(message)) or message in frozen_messages):
+        replies = codeblock_linker.get(original)
+        replies.remove(message)
+        if not replies:
+            codeblock_linker.unlink(original)
+    elif (replies := codeblock_linker.get(message)) and message not in frozen_messages:
         for reply in replies:
             await reply.delete()
+        codeblock_linker.unlink(message)
+    frozen_messages.discard(message)
 
 
 def _split_codeblocks(code: str) -> list[str]:
