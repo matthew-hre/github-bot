@@ -61,6 +61,15 @@ class ZigCodeblockActions(discord.ui.View):
             or len(message.attachments) > 0
         )
 
+    async def _reject_early(
+        self, interaction: discord.Interaction, message: str
+    ) -> bool:
+        assert not is_dm(interaction.user)
+        if interaction.user.id == self._message.author.id or is_mod(interaction.user):
+            return False
+        await interaction.response.send_message(message, ephemeral=True)
+        return True
+
     @discord.ui.button(
         label="Dismiss",
         emoji="❌",
@@ -69,15 +78,10 @@ class ZigCodeblockActions(discord.ui.View):
     async def dismiss(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
-        assert not is_dm(interaction.user)
-        if interaction.user.id == self._message.author.id or is_mod(interaction.user):
-            for reply in codeblock_linker.get(self._message):
-                await reply.delete()
+        if await self._reject_early(interaction, "You can't dismiss this message."):
             return
-
-        await interaction.response.send_message(
-            "You can't dismiss this message.", ephemeral=True
-        )
+        for reply in codeblock_linker.get(self._message):
+            await reply.delete()
 
     @discord.ui.button(
         label="Freeze",
@@ -87,20 +91,17 @@ class ZigCodeblockActions(discord.ui.View):
     async def freeze(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
-        assert not is_dm(interaction.user)
-        if interaction.user.id == self._message.author.id or is_mod(interaction.user):
-            frozen_messages.add(self._message)
-            button.disabled = True
-            await interaction.response.edit_message(view=self)
-            await interaction.followup.send(
-                "Message frozen. I will no longer react to"
-                " what happens to your original message.",
-                ephemeral=True,
-            )
-        else:
-            await interaction.response.send_message(
-                "You can't freeze this message.", ephemeral=True
-            )
+        if await self._reject_early(interaction, "You can't freeze this message."):
+            return
+
+        frozen_messages.add(self._message)
+        button.disabled = True
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(
+            "Message frozen. I will no longer react to"
+            " what happens to your original message.",
+            ephemeral=True,
+        )
 
     @discord.ui.button(
         label="Replace my message",
