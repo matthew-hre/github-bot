@@ -111,6 +111,9 @@ class ZigCodeblockActions(discord.ui.View):
     async def replace(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ) -> None:
+        if await self._reject_early(interaction, "You can't use this action."):
+            return
+
         assert interaction.message
         channel = interaction.message.channel
         webhook_channel, thread = (
