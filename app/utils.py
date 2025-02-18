@@ -190,7 +190,8 @@ async def check_message(
 
 
 async def remove_view_after_timeout(
-    message: discord.Message, timeout: float = 30.0
+    message: discord.Message,
+    timeout: float = 30.0,  # noqa: ASYNC109
 ) -> None:
     await asyncio.sleep(timeout)
     with suppress(discord.NotFound, discord.HTTPException):

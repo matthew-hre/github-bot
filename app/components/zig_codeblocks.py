@@ -149,7 +149,7 @@ async def _prepare_reply(
         zig_code = custom_process_markdown(message.content, only_code=True)
         zig_code += f"\n{file_highlight_note}" if attachments else ""
         return _split_codeblocks(zig_code), attachments
-    elif attachments:
+    if attachments:
         return [file_highlight_note], attachments
     return [], []
 
