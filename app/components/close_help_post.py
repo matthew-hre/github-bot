@@ -9,6 +9,11 @@ from app.components.entity_mentions import entity_message
 from app.setup import bot, config
 from app.utils import is_dm, is_helper, is_mod
 
+# https://discord.com/developers/docs/topics/opcodes-and-status-codes#http-http-response-codes
+INVALID_REQUEST_DATA = 400
+# https://discord.com/developers/docs/topics/opcodes-and-status-codes#json
+INVALID_FORM_BODY = 50035
+
 
 async def mention_entity(entity_id: int, owner_id: int) -> str:
     msg, _ = await entity_message(
@@ -129,9 +134,42 @@ async def close_post(
 
     if title_prefix is None:
         title_prefix = f"[{tag.upper()}]"
-    await post.edit(name=f"{title_prefix} {post.name}")
+
+    try:
+        await post.edit(name=f"{title_prefix} {post.name}")
+        followup = "Post closed."
+    except discord.HTTPException as e:
+        # Re-raise if it's not because the new post title was invalid.
+        if e.status != INVALID_REQUEST_DATA or e.code != INVALID_FORM_BODY:
+            raise
+
+        # HACK: there does not appear to be any way to get the actual error
+        # without parsing the returned string or using a private field. This is
+        # likely a limitation of discord.py, as the Discord API documentation
+        # mentions:
+        #     Some of these errors may include additional details in the form
+        #     of Error Messages provided by an errors object.
+        # in https://discord.com/developers/docs/topics/opcodes-and-status-codes#json
+        # Both approaches are going to be tried... here be dragons.
+        try:
+            returned_error = e._errors["name"]["_errors"][0]["message"]  # noqa: SLF001
+        except (AttributeError, LookupError, TypeError):
+            returned_error = str(e)
+
+        if "or fewer in length" not in returned_error.casefold():
+            raise  # The error wasn't that the post title was too long.
+
+        followup = (
+            "I couldn't change the post title as it was over 100 characters"
+            " after modification."
+        )
+
+        delim = ";" if ":" in title_prefix else ":"
+        title_prefix = title_prefix.strip("[]").lower()
+        additional_reply = f"\n{additional_reply}" if additional_reply else ""
+        additional_reply = f"**Closed{delim} {title_prefix}**.{additional_reply}"
 
     if additional_reply:
         await post.send(additional_reply)
 
-    await interaction.followup.send("Post closed.", ephemeral=True)
+    await interaction.followup.send(followup, ephemeral=True)
