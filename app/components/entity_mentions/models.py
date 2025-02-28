@@ -4,16 +4,15 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, BeforeValidator, Field
 
 
-def state_validator(v: object) -> bool:
-    if isinstance(v, bool):
-        return v
-    if not isinstance(v, str):
-        msg = "`closed` must be a string or a bool"
-        raise TypeError(msg)
-    if v not in {"open", "closed"}:
-        msg = "`closed` must be 'open' or 'closed'"
-        raise ValueError(msg)
-    return v == "closed"
+def state_validator(value: object) -> bool:
+    match value:
+        case bool():
+            return value
+        case "open" | "closed":
+            return value == "closed"
+        case _:
+            msg = "`closed` must be a bool or a string of 'open' or 'closed'"
+            raise ValueError(msg)
 
 
 class GitHubUser(BaseModel):
