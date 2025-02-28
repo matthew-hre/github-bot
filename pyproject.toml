@@ -39,3 +39,4 @@ ignore = [
 mccabe.max-complexity = 20
 pylint.max-branches = 20
 pylint.max-returns = 15
+isort.known-local-folder = ["app"]

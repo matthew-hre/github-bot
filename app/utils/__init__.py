@@ -9,8 +9,6 @@ from typing import TYPE_CHECKING, Any
 
 import discord
 
-from app.setup import config
-
 from .message_data import MessageData, scrape_message_data
 from .webhooks import (
     GuildTextChannel,
@@ -18,6 +16,7 @@ from .webhooks import (
     get_or_create_webhook,
     move_message_via_webhook,
 )
+from app.setup import config
 
 __all__ = (
     "Account",

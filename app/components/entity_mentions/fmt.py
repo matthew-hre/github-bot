@@ -7,11 +7,10 @@ from typing import cast
 import discord
 from githubkit.versions.latest.models import Issue, PullRequest
 
+from .cache import Entity, EntityKind, entity_cache
 from app.components.entity_mentions.resolution import resolve_repo_signatures
 from app.setup import bot, config
 from app.utils import dynamic_timestamp
-
-from .cache import Entity, EntityKind, entity_cache
 
 ENTITY_TEMPLATE = "**{kind} [#{entity.number}](<{entity.html_url}>):** {entity.title}"
 EMOJI_NAMES = frozenset(

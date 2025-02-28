@@ -4,9 +4,8 @@ from typing import Literal, Protocol, cast
 
 from githubkit.exception import RequestFailed
 
-from app.setup import gh
-
 from .discussions import get_discussion
+from app.setup import gh
 
 type CacheKey = tuple[str, str, int]
 type EntityKind = Literal["Pull Request", "Issue", "Discussion"]

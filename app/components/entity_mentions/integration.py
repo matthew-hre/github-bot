@@ -1,8 +1,7 @@
 import discord
 
-from app.utils import MessageLinker, is_dm, is_mod, remove_view_after_timeout, try_dm
-
 from .fmt import entity_message
+from app.utils import MessageLinker, is_dm, is_mod, remove_view_after_timeout, try_dm
 
 IGNORED_MESSAGE_TYPES = frozenset(
     (discord.MessageType.thread_created, discord.MessageType.channel_name_change)
