@@ -5,9 +5,9 @@ from functools import partial
 from typing import cast
 
 import discord
-from githubkit.versions.latest.models import Issue, PullRequest
 
-from .cache import Entity, EntityKind, entity_cache
+from .cache import Entity, Issue, PullRequest, entity_cache
+from app.components.entity_mentions.models import Discussion
 from app.components.entity_mentions.resolution import resolve_repo_signatures
 from app.setup import bot, config
 from app.utils import dynamic_timestamp
@@ -43,8 +43,9 @@ async def load_emojis() -> None:
         )
 
 
-def _format_mention(entity: Entity, kind: EntityKind) -> str:
-    headline = ENTITY_TEMPLATE.format(kind=kind, entity=entity)
+def _format_mention(entity: Entity) -> str:
+    entity_kind = type(entity).__name__
+    headline = ENTITY_TEMPLATE.format(kind=entity_kind, entity=entity)
 
     # https://github.com/owner/repo/issues/12
     # -> https://github.com  owner  repo  issues  12
@@ -59,19 +60,25 @@ def _format_mention(entity: Entity, kind: EntityKind) -> str:
     )
 
     if isinstance(entity, Issue):
-        state = "open" if entity.state == "open" else "closed_"
-        if entity.state == "closed":
+        state = "closed_" if entity.closed else "open"
+        if entity.closed:
             state += "completed" if entity.state_reason == "completed" else "unplanned"
-        emoji = entity_emojis.get(f"issue_{state}")
+        emoji_name = f"issue_{state}"
     elif isinstance(entity, PullRequest):
-        state = "draft" if entity.draft else "merged" if entity.merged else entity.state
-        emoji = entity_emojis.get(f"pull_{state}")
+        emoji_name = "pull_" + (
+            "draft" if entity.draft
+            else "merged" if entity.merged
+            else "closed" if entity.closed
+            else "open"
+        )  # fmt: skip
+    elif isinstance(entity, Discussion):
+        emoji_name = "discussion_answered" if entity.answered else "issue_draft"
     else:
-        # Discussion
-        answered = getattr(entity, "answered", False)
-        emoji = entity_emojis.get("discussion_answered" if answered else "issue_draft")
+        msg = f"Unknown entity type: {entity_kind}"
+        raise TypeError(msg)
 
-    return f"{emoji or ':question:'} {headline}\n{subtext}"
+    emoji = entity_emojis.get(emoji_name, ":question:")
+    return f"{emoji} {headline}\n{subtext}"
 
 
 async def entity_message(message: discord.Message) -> tuple[str, int]:
@@ -80,11 +87,11 @@ async def entity_message(message: discord.Message) -> tuple[str, int]:
     )
 
     entities = [
-        _format_mention(outcome[1], outcome[0])
-        for outcome in await asyncio.gather(
+        _format_mention(entity)
+        for entity in await asyncio.gather(
             *(entity_cache.get(m) for m in matches), return_exceptions=True
         )
-        if not isinstance(outcome, BaseException)
+        if not isinstance(entity, BaseException)
     ]
 
     if len("\n".join(entities)) > 2000:
