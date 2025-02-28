@@ -1,7 +1,7 @@
 import datetime as dt
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 
 def state_validator(v: object) -> bool:
@@ -21,8 +21,6 @@ class GitHubUser(BaseModel):
 
 
 class Entity(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
     number: int
     title: str
     html_url: str
