@@ -1,10 +1,44 @@
+from __future__ import annotations
+
+import re
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 import discord
 
+from app.setup import bot
 from app.utils.message_data import MessageData, scrape_message_data
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 GuildTextChannel = discord.TextChannel | discord.Thread
+
+_EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
+
+
+def get_ghostty_guild() -> discord.Guild:
+    return next(g for g in bot.guilds if "ghostty" in g.name.casefold())
+
+
+def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
+    """
+    Converts a custom emoji to a concealed hyperlink.  Set `force` to True
+    to convert emojis in the current guild too.
+    """
+    guild = get_ghostty_guild()
+
+    def replace_nitro_emoji(match: re.Match[str]) -> str:
+        animated, name, id_ = match.groups()
+        emoji = bot.get_emoji(int(id_))
+        if not force and not animated and emoji and emoji.guild_id == guild.id:
+            return match[0]
+
+        ext = "gif" if animated else "webp"
+        tag = animated and "&animated=true"
+        return f"[{name}](https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name})"
+
+    return _EMOJI_REGEX.sub(replace_nitro_emoji, content)
 
 
 def _format_subtext(executor: discord.Member | None, msg_data: MessageData) -> str:
@@ -44,7 +78,11 @@ async def move_message_via_webhook(
     msg_data = await scrape_message_data(message)
 
     subtext = _format_subtext(executor, msg_data)
-    content, file = format_or_file(msg_data.content, template=f"{{}}{subtext}")
+    content, file = format_or_file(
+        msg_data.content,
+        template=f"{{}}{subtext}",
+        transform=_convert_nitro_emojis,
+    )
     if file:
         msg_data.attachments.append(file)
         content += "\n-# (content attached)"
@@ -65,12 +103,19 @@ async def move_message_via_webhook(
 
 
 def format_or_file(
-    message: str, *, template: str | None = None
+    message: str,
+    *,
+    template: str | None = None,
+    transform: Callable[[str], str] | None = None,
 ) -> tuple[str, discord.File | None]:
     if template is None:
         template = "{}"
 
-    if len(full_message := template.format(message)) > 2000:
+    full_message = template.format(message)
+    if transform is not None:
+        full_message = transform(full_message)
+
+    if len(full_message) > 2000:
         return template.format(""), discord.File(
             BytesIO(message.encode()), filename="content.md"
         )

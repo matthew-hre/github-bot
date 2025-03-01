@@ -15,6 +15,7 @@ from .message_data import MessageData, scrape_message_data
 from .webhooks import (
     GuildTextChannel,
     format_or_file,
+    get_ghostty_guild,
     get_or_create_webhook,
     move_message_via_webhook,
 )
@@ -25,6 +26,7 @@ __all__ = (
     "MessageData",
     "MessageLinker",
     "format_or_file",
+    "get_ghostty_guild",
     "get_or_create_webhook",
     "is_dm",
     "is_helper",

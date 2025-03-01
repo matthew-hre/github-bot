@@ -9,7 +9,7 @@ from githubkit.versions.latest.models import Issue, PullRequest
 
 from app.components.entity_mentions.resolution import resolve_repo_signatures
 from app.setup import bot, config
-from app.utils import dynamic_timestamp
+from app.utils import dynamic_timestamp, get_ghostty_guild
 
 from .cache import Entity, EntityKind, entity_cache
 
@@ -32,7 +32,7 @@ entity_emojis: dict[str, discord.Emoji] = {}
 
 
 async def load_emojis() -> None:
-    guild = next(g for g in bot.guilds if "ghostty" in g.name.casefold())
+    guild = get_ghostty_guild()
     for emoji in guild.emojis:
         if emoji.name in EMOJI_NAMES:
             entity_emojis[emoji.name] = emoji
