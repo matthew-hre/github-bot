@@ -1,5 +1,6 @@
 from . import (
     accept_invite,
+    activity_status,
     autoclose,
     close_help_post,
     docs,
@@ -12,6 +13,7 @@ from . import (
 
 __all__ = (
     "accept_invite",
+    "activity_status",
     "autoclose",
     "close_help_post",
     "docs",
