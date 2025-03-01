@@ -24,19 +24,17 @@ def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     """
     guild = next(g for g in bot.guilds if "ghostty" in g.name.casefold())
 
-    def r(match: re.Match) -> str:
-        animated = bool(match.group(1))
-        id_ = int(match.group(3))
-        emoji = bot.get_emoji(id_)
+    def replace_nitro_emoji(match: re.Match[str]) -> str:
+        animated, name, id_ = match.groups()
+        emoji = bot.get_emoji(int(id_))
         if not force and not animated and emoji and emoji.guild_id == guild.id:
-            return match.group(0)
+            return match[0]
 
         ext = "gif" if animated else "webp"
-        tag = "&animated=true" * animated
-        name = match.group(2)
+        tag = animated and "&animated=true"
         return f"[{name}](https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name})"
 
-    return _EMOJI_REGEX.sub(r, content)
+    return _EMOJI_REGEX.sub(replace_nitro_emoji, content)
 
 
 def _format_subtext(executor: discord.Member | None, msg_data: MessageData) -> str:
