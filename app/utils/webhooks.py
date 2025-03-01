@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from io import BytesIO
 from typing import TYPE_CHECKING
 
 import discord
+import httpx
 
 from app.setup import bot
 from app.utils.message_data import MessageData, scrape_message_data
@@ -39,6 +41,33 @@ def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
         return f"[{name}](https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name})"
 
     return _EMOJI_REGEX.sub(replace_nitro_emoji, content)
+
+
+async def _get_sticker_embed(sticker: discord.StickerItem) -> discord.Embed:
+    # Lottie images can't be used in embeds, unfortunately.
+    if sticker.format == discord.StickerFormatType.lottie:
+        return discord.Embed(color=discord.Color.brand_red()).set_footer(
+            text="Unable to attach sticker."
+        )
+
+    async with httpx.AsyncClient() as client:
+        for u in (
+            sticker.url,
+            # Discord sometimes returns the wrong CDN link.
+            sticker.url.replace("cdn.discordapp.com", "media.discordapp.net"),
+            # Same as above but backward, just in case.
+            sticker.url.replace("media.discordapp.net", "cdn.discordapp.com"),
+        ):
+            if (await client.head(u)).is_success:
+                embed = discord.Embed().set_image(url=u)
+                if sticker.format == discord.StickerFormatType.apng:
+                    embed.set_footer(text="Unable to animate sticker.")
+                    embed.color = discord.Color.orange()
+                return embed
+
+    return discord.Embed(color=discord.Color.brand_red()).set_footer(
+        text="Unable to attach sticker."
+    )
 
 
 def _format_subtext(executor: discord.Member | None, msg_data: MessageData) -> str:
@@ -94,6 +123,10 @@ async def move_message_via_webhook(
         avatar_url=message.author.display_avatar.url,
         allowed_mentions=discord.AllowedMentions.none(),
         files=msg_data.attachments,
+        embeds=[
+            *message.embeds,
+            *await asyncio.gather(*map(_get_sticker_embed, message.stickers)),
+        ],
         thread=thread,
         thread_name=thread_name,
         wait=True,
