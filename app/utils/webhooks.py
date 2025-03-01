@@ -17,12 +17,16 @@ GuildTextChannel = discord.TextChannel | discord.Thread
 _EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 
 
+def get_ghostty_guild() -> discord.Guild:
+    return next(g for g in bot.guilds if "ghostty" in g.name.casefold())
+
+
 def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     """
     Converts a custom emoji to a concealed hyperlink.  Set `force` to True
     to convert emojis in the current guild too.
     """
-    guild = next(g for g in bot.guilds if "ghostty" in g.name.casefold())
+    guild = get_ghostty_guild()
 
     def replace_nitro_emoji(match: re.Match[str]) -> str:
         animated, name, id_ = match.groups()
