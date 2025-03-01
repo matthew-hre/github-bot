@@ -4,7 +4,7 @@ from contextlib import suppress
 
 from githubkit.exception import RequestFailed
 
-from app.components.entity_mentions.cache import TTRCache
+from .cache import TTRCache
 from app.setup import config, gh
 
 ENTITY_REGEX = re.compile(

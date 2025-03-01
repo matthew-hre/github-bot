@@ -1,27 +1,13 @@
 import datetime as dt
 from abc import ABC, abstractmethod
-from typing import Literal, Protocol, cast
 
 from githubkit.exception import RequestFailed
 
+from .discussions import get_discussion
+from .models import Entity, Issue, PullRequest
 from app.setup import gh
 
-from .discussions import get_discussion
-
 type CacheKey = tuple[str, str, int]
-type EntityKind = Literal["Pull Request", "Issue", "Discussion"]
-
-
-class GitHubUser(Protocol):
-    login: str
-
-
-class Entity(Protocol):
-    number: int
-    title: str
-    html_url: str
-    user: GitHubUser
-    created_at: dt.datetime
 
 
 class TTRCache[KT, VT](ABC):
@@ -56,18 +42,17 @@ class TTRCache[KT, VT](ABC):
         return value
 
 
-class EntityCache(TTRCache[CacheKey, tuple[EntityKind, Entity]]):
+class EntityCache(TTRCache[CacheKey, Entity]):
     async def fetch(self, key: CacheKey) -> None:
         try:
             entity = (await gh.rest.issues.async_get(*key)).parsed_data
-            kind = "Issue"
+            model = Issue
             if entity.pull_request:
                 entity = (await gh.rest.pulls.async_get(*key)).parsed_data
-                kind = "Pull Request"
+                model = PullRequest
+            self[key] = model.model_validate(entity, from_attributes=True)
         except RequestFailed:
-            entity = await get_discussion(*key)
-            kind = "Discussion"
-        self[key] = (kind, cast(Entity, entity))
+            self[key] = await get_discussion(*key)
 
 
 entity_cache = EntityCache(1800)  # 30 minutes

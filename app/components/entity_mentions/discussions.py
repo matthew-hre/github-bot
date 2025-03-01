@@ -1,6 +1,4 @@
-import datetime as dt
-from types import SimpleNamespace
-
+from .models import Discussion
 from app.setup import gh
 
 DISCUSSION_QUERY = """
@@ -19,13 +17,9 @@ query getDiscussion($number: Int!, $org: String!, $repo: String!) {
 """
 
 
-async def get_discussion(org: str, name: str, number: int) -> SimpleNamespace:
+async def get_discussion(org: str, name: str, number: int) -> Discussion:
     resp = await gh.graphql.arequest(
         DISCUSSION_QUERY, variables={"number": number, "org": org, "repo": name}
     )
     data = resp["repository"]["discussion"]
-    return SimpleNamespace(
-        user=SimpleNamespace(login=data.pop("user")["login"]),
-        created_at=dt.datetime.fromisoformat(data.pop("created_at")),
-        **data,
-    )
+    return Discussion(**data)
