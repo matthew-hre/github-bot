@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from functools import partial
 from typing import cast
 
@@ -26,6 +27,7 @@ EMOJI_NAMES = frozenset(
         "pull_open",
     }
 )
+PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
 entity_emojis: dict[str, discord.Emoji] = {}
 
@@ -44,7 +46,7 @@ async def load_emojis() -> None:
 
 
 def _format_mention(entity: Entity) -> str:
-    entity_kind = type(entity).__name__
+    entity_kind = PASCAL_CASE_WORD_BOUNDARY.sub(r"\1 \2", type(entity).__name__)
     headline = ENTITY_TEMPLATE.format(kind=entity_kind, entity=entity)
 
     # https://github.com/owner/repo/issues/12
