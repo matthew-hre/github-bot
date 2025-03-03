@@ -19,10 +19,10 @@ COMMENT_PATTERN = re.compile(
 
 async def get_comments(content: str) -> AsyncIterator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
-        owner, repo, _kind, number, frag, frag_no = map(str, match.groups())
+        owner, repo, _kind, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
-        if frag.startswith("discussion"):
-            yield await get_discussion_comment(int(frag_no), entity_gist)
+        if event.startswith("discussion"):
+            yield await get_discussion_comment(int(event_no), entity_gist)
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
