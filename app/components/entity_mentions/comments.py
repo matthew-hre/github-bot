@@ -20,9 +20,30 @@ if TYPE_CHECKING:
 COMMENT_PATTERN = re.compile(
     r"https?://github\.com/([^/]+)/([^/]+)/(issues|discussions|pull)/(\d+)#(\w+?-?)(\d+)"
 )
+FALLBACK_AUTHOR = CommentAuthor(
+    name="GitHub",
+    url="https://github.com",
+    icon_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+)
 STATE_TO_COLOR = {
-    "APPROVED": 0x2ECC71,
-    "CHANGES_REQUESTED": 0xE74C3C,
+    "APPROVED": 0x2ECC71,  # green
+    "CHANGES_REQUESTED": 0xE74C3C,  # red
+}
+EVENT_COLOR = 0x3498DB  # blue
+ENTITY_UPDATE_EVENTS = {
+    "closed": "Closed the {entity.kind}",
+    "locked": "Locked the {entity.kind}",
+    "merged": "Merged the {entity.kind}",
+    "reopened": "Reopened the {entity.kind}",
+    "unlocked": "Unlocked the {entity.kind}",
+}
+SUPPORTED_EVENTS = ENTITY_UPDATE_EVENTS | {
+    "assigned": "Assigned `{event.assignee}`",
+    "labeled": "Added the `{event.label.name}` label",
+    "milestoned": "Added the `{event.milestone.title}` milestone",
+    "review_requested": "Requested review from `{event.requested_reviewer}`",
+    "unassigned": "Unassigned `{event.assignee}`",
+    "unlabeled": "Removed the `{event.label.name}` label",
 }
 
 
@@ -88,6 +109,39 @@ async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Co
     )
 
 
+async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
+    owner, repo, _ = entity_gist
+    event = (await gh.rest.issues.async_get_event(owner, repo, comment_id)).parsed_data
+    if event.event not in SUPPORTED_EVENTS:
+        body = f":ghost: Unsupported event: `{event.event}`"
+    else:
+        template = SUPPORTED_EVENTS[event.event]
+        body = (
+            template.format(entity=await entity_cache.get(entity_gist))
+            if event.event in ENTITY_UPDATE_EVENTS
+            else template.format(event=event)
+        )
+    author = (
+        CommentAuthor(
+            name=event.actor.login,
+            url=event.actor.html_url,
+            icon_url=event.actor.avatar_url,
+        )
+        if event.actor
+        else FALLBACK_AUTHOR
+    )
+    return Comment(
+        author=author,
+        body=f"**{body}**",
+        entity=await entity_cache.get(entity_gist),
+        entity_gist=entity_gist,
+        created_at=event.created_at,
+        html_url=event.url,
+        kind="Event",
+        color=EVENT_COLOR,
+    )
+
+
 async def get_comments(content: str) -> AsyncIterator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _kind, number, event, event_no = map(str, match.groups())
@@ -100,6 +154,11 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
             yield await _get_pr_review(entity_gist, int(event_no))
         elif event.startswith("discussion_r"):
             yield await _get_pr_review_comment(entity_gist, int(event_no))
+        elif event.startswith("event"):
+            yield await _get_event(entity_gist, int(event_no))
+        else:
+            # Unsupported event
+            continue
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
