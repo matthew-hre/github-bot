@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Annotated, Literal
+from typing import Annotated, Literal, NamedTuple
 
 from pydantic import BaseModel, BeforeValidator, Field
 
@@ -40,3 +40,26 @@ class PullRequest(Entity):
 
 class Discussion(Entity):
     answered: bool
+
+
+class EntityGist(NamedTuple):
+    owner: str
+    repo: str
+    number: int
+
+    def __str__(self) -> str:
+        return f"{self.owner}/{self.repo}#{self.number}"
+
+
+class CommentAuthor(BaseModel):
+    name: str
+    url: str
+    icon_url: str
+
+
+class Comment(BaseModel):
+    author: CommentAuthor
+    body: str
+    entity_gist: EntityGist
+    created_at: dt.datetime
+    html_url: str
