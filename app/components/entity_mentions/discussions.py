@@ -1,7 +1,4 @@
 from base64 import urlsafe_b64encode
-from typing import cast
-
-import msgpack
 
 from .models import Comment, Discussion, EntityGist
 from app.setup import gh
@@ -47,10 +44,24 @@ async def get_discussion(org: str, name: str, number: int) -> Discussion:
     return Discussion(**data)
 
 
-async def get_discussion_comment(id_: int, entity_gist: EntityGist) -> Comment:
-    packed = cast(bytes, msgpack.packb([0, 0, id_]))
-    node_id = "DC_" + urlsafe_b64encode(packed).decode().rstrip("=")
+def _encode_discussion_comment_id(comment_id: int) -> str:
+    # Step one: encode it as a 32-bit integer in msgpack.
+    # Discussion comment ids seem to always be large enough to need 32 bits,
+    # but small enough to always fit in 32 bits.
+    packed = b"\x93\x00\x00\xce" + comment_id.to_bytes(4, "big")
+    #            ^   ^   ^    ^    ^
+    #            |   |   |    |    The integer itself, in big-endian.
+    #            |   |   |    `- Start 32-bit int.
+    #            | This is 0 (positive fixint).
+    # This is 0b10010011. fixarrays start with 0b1001XXXX, where XXXX is the
+    # length of the array as a four-bit unsigned integer.
 
+    # Step two: base-64 encode it, prefix it, and decode it to a `str`.
+    return (b"DC_" + urlsafe_b64encode(packed)).decode()
+
+
+async def get_discussion_comment(id_: int, entity_gist: EntityGist) -> Comment:
+    node_id = _encode_discussion_comment_id(id_)
     resp = await gh.graphql.arequest(
         DISCUSSION_COMMENT_QUERY, variables={"id": node_id}
     )
