@@ -73,7 +73,7 @@ def _format_mention(entity: Entity) -> str:
     # -> https://github.com  owner  repo  issues  12
     #    0                   1      2     3       4
     domain, owner, name, *_ = entity.html_url.rsplit("/", 4)
-    author = entity.user.login
+    author = entity.user.name
     fmt_ts = partial(dynamic_timestamp, entity.created_at)
     subtext = (
         f"-# by [`{author}`](<{domain}/{author}>)"

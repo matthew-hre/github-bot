@@ -2,7 +2,7 @@ import datetime as dt
 import re
 from typing import Annotated, Literal, NamedTuple
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import AliasChoices, BaseModel, BeforeValidator, Field
 
 PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
@@ -19,7 +19,9 @@ def state_validator(value: object) -> bool:
 
 
 class GitHubUser(BaseModel):
-    login: str
+    name: str = Field(alias="login")
+    url: str = Field(validation_alias=AliasChoices("url", "html_url"))
+    icon_url: str = Field(validation_alias=AliasChoices("icon_url", "avatar_url"))
 
 
 class Entity(BaseModel):
@@ -59,14 +61,8 @@ class EntityGist(NamedTuple):
         return f"{self.owner}/{self.repo}#{self.number}"
 
 
-class CommentAuthor(BaseModel):
-    name: str
-    url: str
-    icon_url: str
-
-
 class Comment(BaseModel):
-    author: CommentAuthor
+    author: GitHubUser
     body: str
     entity: Entity
     entity_gist: EntityGist

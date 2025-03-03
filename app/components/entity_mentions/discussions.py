@@ -10,7 +10,11 @@ query getDiscussion($number: Int!, $org: String!, $repo: String!) {
       body
       title
       number
-      user: author { login }
+      user: author {
+        login
+        html_url: url
+        avatar_url: avatarUrl
+      }
       created_at: createdAt
       html_url: url
       answered: isAnswered
@@ -28,7 +32,11 @@ query getDiscussionComment($id: ID!) {
         body
         title
         number
-        user: author { login }
+        user: author {
+          login
+          html_url: url
+          avatar_url: avatarUrl
+        }
         created_at: createdAt
         html_url: url
         answered: isAnswered

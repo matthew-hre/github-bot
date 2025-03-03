@@ -11,7 +11,7 @@ from .cache import entity_cache
 from .discussions import get_discussion_comment
 from .fmt import get_entity_emoji
 from .integration import DeleteMention
-from .models import Comment, CommentAuthor, EntityGist
+from .models import Comment, EntityGist, GitHubUser
 from app.setup import gh
 
 if TYPE_CHECKING:
@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 COMMENT_PATTERN = re.compile(
     r"https?://github\.com/([^/]+)/([^/]+)/(issues|discussions|pull)/(\d+)#(\w+?-?)(\d+)"
 )
-FALLBACK_AUTHOR = CommentAuthor(
-    name="GitHub",
+FALLBACK_AUTHOR = GitHubUser(
+    login="GitHub",
     url="https://github.com",
     icon_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
 )
@@ -56,9 +56,7 @@ async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Commen
     author = (comment := comment_resp.parsed_data).user
     assert author is not None
     return Comment(
-        author=CommentAuthor(
-            name=author.login, url=author.html_url, icon_url=author.avatar_url
-        ),
+        author=GitHubUser(**author.model_dump()),
         body=cast(str, comment.body),
         entity=entity,
         entity_gist=entity_gist,
@@ -73,11 +71,7 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
     ).parsed_data
     assert comment.user is not None
     return Comment(
-        author=CommentAuthor(
-            name=comment.user.login,
-            url=comment.user.html_url,
-            icon_url=comment.user.avatar_url,
-        ),
+        author=GitHubUser(**comment.user.model_dump()),
         body=comment.body,
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
@@ -95,11 +89,7 @@ async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Co
     ).parsed_data
     assert comment.user is not None
     return Comment(
-        author=CommentAuthor(
-            name=comment.user.login,
-            url=comment.user.html_url,
-            icon_url=comment.user.avatar_url,
-        ),
+        author=GitHubUser(**comment.user.model_dump()),
         body=comment.body,
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
@@ -121,15 +111,7 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
             if event.event in ENTITY_UPDATE_EVENTS
             else template.format(event=event)
         )
-    author = (
-        CommentAuthor(
-            name=event.actor.login,
-            url=event.actor.html_url,
-            icon_url=event.actor.avatar_url,
-        )
-        if event.actor
-        else FALLBACK_AUTHOR
-    )
+    author = GitHubUser(**event.actor.model_dump()) if event.actor else FALLBACK_AUTHOR
     return Comment(
         author=author,
         body=f"**{body}**",
