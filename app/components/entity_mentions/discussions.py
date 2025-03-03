@@ -42,7 +42,7 @@ query getDiscussionComment($id: ID!) {
         answered: isAnswered
       }
       author {
-        name: login
+        login
         url
         icon_url: avatarUrl
       }
