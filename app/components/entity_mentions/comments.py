@@ -19,6 +19,10 @@ if TYPE_CHECKING:
 COMMENT_PATTERN = re.compile(
     r"https?://github\.com/([^/]+)/([^/]+)/(issues|discussions|pull)/(\d+)#(\w+)-(\d+)"
 )
+STATE_TO_COLOR = {
+    "APPROVED": 0x2ECC71,
+    "CHANGES_REQUESTED": 0xE74C3C,
+}
 
 
 async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
@@ -41,6 +45,27 @@ async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Commen
     )
 
 
+async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
+    comment = (
+        await gh.rest.pulls.async_get_review(*entity_gist, comment_id)
+    ).parsed_data
+    assert comment.user is not None
+    return Comment(
+        author=CommentAuthor(
+            name=comment.user.login,
+            url=comment.user.html_url,
+            icon_url=comment.user.avatar_url,
+        ),
+        body=comment.body,
+        entity=await entity_cache.get(entity_gist),
+        entity_gist=entity_gist,
+        created_at=cast(dt.datetime, comment.submitted_at),
+        html_url=comment.html_url,
+        color=STATE_TO_COLOR.get(comment.state),
+        kind="Review",
+    )
+
+
 async def get_comments(content: str) -> AsyncIterator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _kind, number, event, event_no = map(str, match.groups())
@@ -49,6 +74,8 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
             yield await get_discussion_comment(entity_gist, int(event_no))
         elif event.startswith("issuecomment"):
             yield await _get_issue_comment(entity_gist, int(event_no))
+        elif event.startswith("pullrequestreview"):
+            yield await _get_pr_review(entity_gist, int(event_no))
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
