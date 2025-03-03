@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
 import re
 from typing import TYPE_CHECKING, cast
 
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
 COMMENT_PATTERN = re.compile(
-    r"https?://github\.com/([^/]+)/([^/]+)/(issues|discussions|pull)/(\d+)#(\w+)-(\d+)"
+    r"https?://github\.com/([^/]+)/([^/]+)/(issues|discussions|pull)/(\d+)#(\w+?-?)(\d+)"
 )
 STATE_TO_COLOR = {
     "APPROVED": 0x2ECC71,
@@ -91,11 +92,11 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _kind, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
-        if event.startswith("discussion"):
+        if event.startswith("discussion-"):
             yield await get_discussion_comment(entity_gist, int(event_no))
-        elif event.startswith("issuecomment"):
+        elif event.startswith("issuecomment-"):
             yield await _get_issue_comment(entity_gist, int(event_no))
-        elif event.startswith("pullrequestreview"):
+        elif event.startswith("pullrequestreview-"):
             yield await _get_pr_review(entity_gist, int(event_no))
         elif event.startswith("discussion_r"):
             yield await _get_pr_review_comment(entity_gist, int(event_no))
