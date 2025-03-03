@@ -68,7 +68,7 @@ def _encode_discussion_comment_id(comment_id: int) -> str:
     return (b"DC_" + urlsafe_b64encode(packed)).decode()
 
 
-async def get_discussion_comment(id_: int, entity_gist: EntityGist) -> Comment:
+async def get_discussion_comment(entity_gist: EntityGist, id_: int) -> Comment:
     node_id = _encode_discussion_comment_id(id_)
     resp = await gh.graphql.arequest(
         DISCUSSION_COMMENT_QUERY, variables={"id": node_id}

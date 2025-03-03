@@ -46,7 +46,7 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
         owner, repo, _kind, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
         if event.startswith("discussion"):
-            yield await get_discussion_comment(int(event_no), entity_gist)
+            yield await get_discussion_comment(entity_gist, int(event_no))
         elif event.startswith("issuecomment"):
             yield await _get_issue_comment(entity_gist, int(event_no))
 
