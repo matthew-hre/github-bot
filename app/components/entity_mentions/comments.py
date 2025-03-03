@@ -66,7 +66,7 @@ def comment_to_embed(comment: Comment) -> discord.Embed:
             color=comment.color,
         )
         .set_author(**comment.author.model_dump())
-        .set_footer(text=f"Comment on {comment.entity_gist}")
+        .set_footer(text=f"{comment.kind} on {comment.entity_gist}")
     )
 
 
