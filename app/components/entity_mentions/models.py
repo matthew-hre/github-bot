@@ -1,6 +1,5 @@
 import datetime as dt
 import re
-import textwrap
 from typing import Annotated, Literal, NamedTuple
 
 from pydantic import AliasChoices, BaseModel, BeforeValidator, Field, field_validator
@@ -75,4 +74,6 @@ class Comment(BaseModel):
     @field_validator("body")
     @classmethod
     def _truncate_body(cls, value: str) -> str:
-        return textwrap.shorten(value, 4096)
+        if len(value) <= 4096:
+            return value
+        return value[:4090] + " [...]"
