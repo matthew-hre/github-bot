@@ -66,6 +66,27 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
     )
 
 
+async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
+    owner, repo, _ = entity_gist
+    comment = (
+        await gh.rest.pulls.async_get_review_comment(owner, repo, comment_id)
+    ).parsed_data
+    assert comment.user is not None
+    return Comment(
+        author=CommentAuthor(
+            name=comment.user.login,
+            url=comment.user.html_url,
+            icon_url=comment.user.avatar_url,
+        ),
+        body=comment.body,
+        entity=await entity_cache.get(entity_gist),
+        entity_gist=entity_gist,
+        created_at=cast(dt.datetime, comment.created_at),
+        html_url=comment.html_url,
+        kind="Review comment",
+    )
+
+
 async def get_comments(content: str) -> AsyncIterator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _kind, number, event, event_no = map(str, match.groups())
@@ -76,6 +97,8 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
             yield await _get_issue_comment(entity_gist, int(event_no))
         elif event.startswith("pullrequestreview"):
             yield await _get_pr_review(entity_gist, int(event_no))
+        elif event.startswith("discussion_r"):
+            yield await _get_pr_review_comment(entity_gist, int(event_no))
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
