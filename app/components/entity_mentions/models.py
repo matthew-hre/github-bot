@@ -4,6 +4,8 @@ from typing import Annotated, Literal, NamedTuple
 
 from pydantic import AliasChoices, BaseModel, BeforeValidator, Field, field_validator
 
+from app.utils import truncate
+
 PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
 
@@ -74,6 +76,4 @@ class Comment(BaseModel):
     @field_validator("body")
     @classmethod
     def _truncate_body(cls, value: str) -> str:
-        if len(value) <= 4096:
-            return value
-        return value[:4090] + " [...]"
+        return truncate(value, 4096)
