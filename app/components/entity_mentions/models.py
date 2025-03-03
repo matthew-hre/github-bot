@@ -1,7 +1,10 @@
 import datetime as dt
+import re
 from typing import Annotated, Literal, NamedTuple
 
 from pydantic import BaseModel, BeforeValidator, Field
+
+PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
 
 def state_validator(value: object) -> bool:
@@ -25,6 +28,10 @@ class Entity(BaseModel):
     html_url: str
     user: GitHubUser
     created_at: dt.datetime
+
+    @property
+    def kind(self) -> str:
+        return PASCAL_CASE_WORD_BOUNDARY.sub(r"\1 \2", type(self).__name__)
 
 
 class Issue(Entity):

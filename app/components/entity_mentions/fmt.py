@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from functools import partial
 from typing import cast
 
@@ -13,7 +12,7 @@ from app.components.entity_mentions.resolution import resolve_repo_signatures
 from app.setup import bot, config
 from app.utils import dynamic_timestamp, escape_special, get_ghostty_guild
 
-ENTITY_TEMPLATE = "**{kind} [#{entity.number}](<{entity.html_url}>):** {title}"
+ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
 EMOJI_NAMES = frozenset(
     {
         "discussion_answered",
@@ -27,7 +26,6 @@ EMOJI_NAMES = frozenset(
         "pull_open",
     }
 )
-PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
 entity_emojis: dict[str, discord.Emoji] = {}
 
@@ -68,9 +66,8 @@ def get_entity_emoji(entity: Entity) -> discord.Emoji | None:
 
 
 def _format_mention(entity: Entity) -> str:
-    entity_kind = PASCAL_CASE_WORD_BOUNDARY.sub(r"\1 \2", type(entity).__name__)
     title = escape_special(entity.title)
-    headline = ENTITY_TEMPLATE.format(kind=entity_kind, entity=entity, title=title)
+    headline = ENTITY_TEMPLATE.format(entity=entity, title=title)
 
     # https://github.com/owner/repo/issues/12
     # -> https://github.com  owner  repo  issues  12
