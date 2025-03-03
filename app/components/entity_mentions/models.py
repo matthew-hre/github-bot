@@ -1,8 +1,9 @@
 import datetime as dt
 import re
+import textwrap
 from typing import Annotated, Literal, NamedTuple
 
-from pydantic import AliasChoices, BaseModel, BeforeValidator, Field
+from pydantic import AliasChoices, BaseModel, BeforeValidator, Field, field_validator
 
 PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
@@ -70,3 +71,8 @@ class Comment(BaseModel):
     html_url: str
     kind: str = "Comment"
     color: int | None = None
+
+    @field_validator("body")
+    @classmethod
+    def _truncate_body(cls, value: str) -> str:
+        return textwrap.shorten(value, 4096)
