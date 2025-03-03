@@ -33,7 +33,7 @@ async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Commen
             name=author.login, url=author.html_url, icon_url=author.avatar_url
         ),
         body=cast(str, comment.body),
-        entity_title=entity.title,
+        entity=entity,
         entity_gist=entity_gist,
         created_at=comment.created_at,
         html_url=comment.html_url,
@@ -54,7 +54,7 @@ def comment_to_embed(comment: Comment) -> discord.Embed:
     return (
         discord.Embed(
             description=comment.body,
-            title=comment.entity_title,
+            title=comment.entity.title,
             url=comment.html_url,
             timestamp=comment.created_at,
         )

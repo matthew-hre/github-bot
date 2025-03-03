@@ -25,7 +25,12 @@ query getDiscussionComment($id: ID!) {
       body
       discussion {
         title
-      }
+        number
+        user: author { login }
+        created_at: createdAt
+        html_url: url
+        answered: isAnswered
+    }
       author {
         name: login
         url
@@ -68,9 +73,9 @@ async def get_discussion_comment(id_: int, entity_gist: EntityGist) -> Comment:
     resp = await gh.graphql.arequest(
         DISCUSSION_COMMENT_QUERY, variables={"id": node_id}
     )
-    title = resp["node"].pop("discussion")["title"]
+    discussion = Discussion(**resp["node"].pop("discussion"))
     return Comment(
         **resp["node"],
         entity_gist=entity_gist,
-        entity_title=title,
+        entity=discussion,
     )
