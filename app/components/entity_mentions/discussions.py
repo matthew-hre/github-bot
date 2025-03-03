@@ -30,7 +30,7 @@ query getDiscussionComment($id: ID!) {
         created_at: createdAt
         html_url: url
         answered: isAnswered
-    }
+      }
       author {
         name: login
         url
