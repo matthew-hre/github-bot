@@ -8,6 +8,7 @@ import discord
 
 from .cache import entity_cache
 from .discussions import get_discussion_comment
+from .fmt import get_entity_emoji
 from .integration import DeleteMention
 from .models import Comment, CommentAuthor, EntityGist
 from app.setup import gh
@@ -51,10 +52,15 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
+    title = (
+        f"{emoji} {comment.entity.title}"
+        if (emoji := get_entity_emoji(comment.entity))
+        else comment.entity.title
+    )
     return (
         discord.Embed(
             description=comment.body,
-            title=comment.entity.title,
+            title=title,
             url=comment.html_url,
             timestamp=comment.created_at,
         )
