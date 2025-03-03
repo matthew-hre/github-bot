@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 import discord
 
-from .cache import entity_cache
+from .cache import TTRCache, entity_cache
 from .discussions import get_discussion_comment
 from .fmt import get_entity_emoji
 from .integration import DeleteMention
@@ -45,6 +45,26 @@ SUPPORTED_EVENTS = ENTITY_UPDATE_EVENTS | {
     "unassigned": "Unassigned `{event.assignee}`",
     "unlabeled": "Removed the `{event.label.name}` label",
 }
+
+
+class CommentCache(TTRCache[tuple[EntityGist, str, int], Comment]):
+    async def fetch(self, key: tuple[EntityGist, str, int]) -> None:
+        entity_gist, event_type, event_no = key
+        coro = {
+            "discussioncomment-": get_discussion_comment,
+            "issuecomment-": _get_issue_comment,
+            "pullrequestreview-": _get_pr_review,
+            "discussion_r": _get_pr_review_comment,
+            "event-": _get_event,
+            "discussion-": _get_entity_starter,
+            "issue-": _get_entity_starter,
+        }.get(event_type)
+        if coro is None:
+            return
+        self[key] = await coro(entity_gist, event_no)
+
+
+comment_cache = CommentCache(1800)  # 30 minutes
 
 
 async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
@@ -138,24 +158,9 @@ async def _get_entity_starter(entity_gist: EntityGist, _: int) -> Comment:
 
 async def get_comments(content: str) -> AsyncIterator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
-        owner, repo, _kind, number, event, event_no = map(str, match.groups())
+        owner, repo, _, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
-        if event.startswith("discussioncomment-"):
-            coro = get_discussion_comment
-        elif event.startswith(("discussion-", "issue-")):
-            coro = _get_entity_starter
-        elif event.startswith("issuecomment-"):
-            coro = _get_issue_comment
-        elif event.startswith("pullrequestreview-"):
-            coro = _get_pr_review
-        elif event.startswith("discussion_r"):
-            coro = _get_pr_review_comment
-        elif event.startswith("event"):
-            coro = _get_event
-        else:
-            # Unsupported event
-            continue
-        yield await coro(entity_gist, int(event_no))
+        yield await comment_cache.get((entity_gist, event, int(event_no)))
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
