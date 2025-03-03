@@ -65,6 +65,8 @@ def comment_to_embed(comment: Comment) -> discord.Embed:
 
 async def reply_with_comments(msg: discord.Message) -> None:
     embeds = [comment_to_embed(comment) async for comment in get_comments(msg.content)]
+    if not embeds:
+        return
     await msg.reply(
         embeds=embeds, mention_author=False, view=DeleteMention(msg, len(embeds))
     )
