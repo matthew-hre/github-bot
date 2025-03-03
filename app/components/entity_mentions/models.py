@@ -25,6 +25,7 @@ class GitHubUser(BaseModel):
 class Entity(BaseModel):
     number: int
     title: str
+    body: str
     html_url: str
     user: GitHubUser
     created_at: dt.datetime

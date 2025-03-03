@@ -7,6 +7,7 @@ DISCUSSION_QUERY = """
 query getDiscussion($number: Int!, $org: String!, $repo: String!) {
   repository(owner: $org, name: $repo) {
     discussion(number: $number) {
+      body
       title
       number
       user: author { login }
@@ -24,6 +25,7 @@ query getDiscussionComment($id: ID!) {
     ... on DiscussionComment {
       body
       discussion {
+        body
         title
         number
         user: author { login }
