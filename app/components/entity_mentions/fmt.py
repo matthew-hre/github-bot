@@ -45,6 +45,28 @@ async def load_emojis() -> None:
         )
 
 
+def get_entity_emoji(entity: Entity) -> discord.Emoji | None:
+    if isinstance(entity, Issue):
+        state = "closed_" if entity.closed else "open"
+        if entity.closed:
+            state += "completed" if entity.state_reason == "completed" else "unplanned"
+        emoji_name = f"issue_{state}"
+    elif isinstance(entity, PullRequest):
+        emoji_name = "pull_" + (
+            "draft" if entity.draft
+            else "merged" if entity.merged
+            else "closed" if entity.closed
+            else "open"
+        )  # fmt: skip
+    elif isinstance(entity, Discussion):
+        emoji_name = "discussion_answered" if entity.answered else "issue_draft"
+    else:
+        msg = f"Unknown entity type: {type(entity)}"
+        raise TypeError(msg)
+
+    return entity_emojis.get(emoji_name)
+
+
 def _format_mention(entity: Entity) -> str:
     entity_kind = PASCAL_CASE_WORD_BOUNDARY.sub(r"\1 \2", type(entity).__name__)
     title = escape_special(entity.title)
@@ -62,25 +84,7 @@ def _format_mention(entity: Entity) -> str:
         f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
     )
 
-    if isinstance(entity, Issue):
-        state = "closed_" if entity.closed else "open"
-        if entity.closed:
-            state += "completed" if entity.state_reason == "completed" else "unplanned"
-        emoji_name = f"issue_{state}"
-    elif isinstance(entity, PullRequest):
-        emoji_name = "pull_" + (
-            "draft" if entity.draft
-            else "merged" if entity.merged
-            else "closed" if entity.closed
-            else "open"
-        )  # fmt: skip
-    elif isinstance(entity, Discussion):
-        emoji_name = "discussion_answered" if entity.answered else "issue_draft"
-    else:
-        msg = f"Unknown entity type: {entity_kind}"
-        raise TypeError(msg)
-
-    emoji = entity_emojis.get(emoji_name, ":question:")
+    emoji = get_entity_emoji(entity) or ":question:"
     return f"{emoji} {headline}\n{subtext}"
 
 
