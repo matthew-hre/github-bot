@@ -124,7 +124,7 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
     )
 
 
-async def _get_entity_starter(entity_gist: EntityGist) -> Comment:
+async def _get_entity_starter(entity_gist: EntityGist, _: int) -> Comment:
     entity = await entity_cache.get(entity_gist)
     return Comment(
         author=entity.user,
@@ -143,7 +143,7 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
         if event.startswith("discussioncomment-"):
             yield await get_discussion_comment(entity_gist, int(event_no))
         if event.startswith(("discussion-", "issue-")):
-            yield await _get_entity_starter(entity_gist)
+            yield await _get_entity_starter(entity_gist, int(event_no))
         elif event.startswith("issuecomment-"):
             yield await _get_issue_comment(entity_gist, int(event_no))
         elif event.startswith("pullrequestreview-"):
