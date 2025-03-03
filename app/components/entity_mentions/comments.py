@@ -141,20 +141,21 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
         owner, repo, _kind, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
         if event.startswith("discussioncomment-"):
-            yield await get_discussion_comment(entity_gist, int(event_no))
-        if event.startswith(("discussion-", "issue-")):
-            yield await _get_entity_starter(entity_gist, int(event_no))
+            coro = get_discussion_comment
+        elif event.startswith(("discussion-", "issue-")):
+            coro = _get_entity_starter
         elif event.startswith("issuecomment-"):
-            yield await _get_issue_comment(entity_gist, int(event_no))
+            coro = _get_issue_comment
         elif event.startswith("pullrequestreview-"):
-            yield await _get_pr_review(entity_gist, int(event_no))
+            coro = _get_pr_review
         elif event.startswith("discussion_r"):
-            yield await _get_pr_review_comment(entity_gist, int(event_no))
+            coro = _get_pr_review_comment
         elif event.startswith("event"):
-            yield await _get_event(entity_gist, int(event_no))
+            coro = _get_event
         else:
             # Unsupported event
             continue
+        yield await coro(entity_gist, int(event_no))
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
