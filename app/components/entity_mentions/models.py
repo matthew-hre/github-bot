@@ -64,3 +64,4 @@ class Comment(BaseModel):
     entity_gist: EntityGist
     created_at: dt.datetime
     html_url: str
+    color: int | None = None

@@ -63,6 +63,7 @@ def comment_to_embed(comment: Comment) -> discord.Embed:
             title=title,
             url=comment.html_url,
             timestamp=comment.created_at,
+            color=comment.color,
         )
         .set_author(**comment.author.model_dump())
         .set_footer(text=f"Comment on {comment.entity_gist}")
