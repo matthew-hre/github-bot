@@ -14,6 +14,7 @@ from app.components.entity_mentions import (
     entity_mention_delete_handler,
     entity_mention_edit_handler,
     load_emojis,
+    reply_with_comments,
     reply_with_entities,
 )
 from app.components.message_filter import check_message_filters
@@ -81,6 +82,9 @@ async def on_message(message: discord.Message) -> None:
 
     # Check for Zig code blocks and format them
     await check_for_zig_code(message)
+
+    # Check for comments and reply with their embeds
+    await reply_with_comments(message)
 
 
 @bot.event

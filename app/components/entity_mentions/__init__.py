@@ -1,3 +1,4 @@
+from .comments import reply_with_comments
 from .fmt import entity_message, load_emojis
 from .integration import (
     entity_mention_delete_handler,
@@ -12,5 +13,6 @@ __all__ = (
     "entity_mention_edit_handler",
     "entity_message",
     "load_emojis",
+    "reply_with_comments",
     "reply_with_entities",
 )
