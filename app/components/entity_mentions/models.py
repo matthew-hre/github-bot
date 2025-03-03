@@ -60,6 +60,7 @@ class CommentAuthor(BaseModel):
 class Comment(BaseModel):
     author: CommentAuthor
     body: str
+    entity_title: str
     entity_gist: EntityGist
     created_at: dt.datetime
     html_url: str
