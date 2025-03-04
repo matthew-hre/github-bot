@@ -51,7 +51,7 @@ class PullRequest(Entity):
 
 
 class Discussion(Entity):
-    answered: bool
+    answered: bool | None
 
 
 class EntityGist(NamedTuple):
