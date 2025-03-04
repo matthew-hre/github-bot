@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff~=0.9.6"]
+dev = ["ruff~=0.9.6", "pyright~=1.1.396"]
 
 [tool.ruff]
 target-version = "py312"
@@ -42,3 +42,6 @@ mccabe.max-complexity = 20
 pylint.max-branches = 20
 pylint.max-returns = 15
 isort.known-local-folder = ["app"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
