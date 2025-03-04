@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 import discord
 from githubkit.exception import RequestFailed
+from zig_codeblocks import extract_codeblocks
 
 from .cache import TTRCache, entity_cache
 from .discussions import get_discussion_comment
@@ -18,6 +19,8 @@ from app.utils import MessageLinker, is_dm, is_mod, remove_view_after_timeout
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+    from githubkit.versions.latest.models import PullRequestReviewComment
 
 COMMENT_PATTERN = re.compile(
     r"https?://github\.com/([^/]+)/([^/]+)/(issues|discussions|pull)/(\d+)#(\w+?-?)(\d+)"
@@ -137,6 +140,39 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
     )
 
 
+def _prettify_suggestions(comment: PullRequestReviewComment) -> str:
+    suggestions = [
+        c for c in extract_codeblocks(comment.body) if c.lang == "suggestion"
+    ]
+    body = comment.body
+    if not suggestions:
+        return body
+
+    start = cast(int | None, comment.original_start_line)
+    end = cast(int, comment.original_line)
+    hunk_size = end - (end if start is None else start) + 1
+    hunk_as_deleted_diff = "\n".join(
+        ("-" + line[1:] if line[0] == "+" else line)
+        for line in comment.diff_hunk.splitlines()[-hunk_size:]
+    )
+
+    for sug in suggestions:
+        suggestion_as_added_diff = f"{hunk_as_deleted_diff}\n" + "\n".join(
+            f"+{line}" for line in sug.body.splitlines()
+        )
+        body = body.replace(
+            _make_crlf_codeblock("suggestion", sug.body.replace("\r\n", "\n")),
+            _make_crlf_codeblock("diff", suggestion_as_added_diff),
+            1,
+        )
+    return body
+
+
+def _make_crlf_codeblock(lang: str, body: str) -> str:
+    # GitHub seems to use CRLF for everything...
+    return f"```{lang}\n{body}\n```".replace("\n", "\r\n")
+
+
 async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
     owner, repo, _ = entity_gist
     comment = (
@@ -145,7 +181,7 @@ async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Co
     assert comment.user is not None
     return Comment(
         author=GitHubUser(**comment.user.model_dump()),
-        body=comment.body,
+        body=_prettify_suggestions(comment),
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
         created_at=cast(dt.datetime, comment.created_at),
