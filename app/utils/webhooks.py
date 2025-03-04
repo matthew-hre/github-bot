@@ -136,6 +136,26 @@ def _format_reply(reply: discord.Message) -> discord.Embed:
     )
 
 
+def _format_forward(forward: discord.Message) -> discord.Embed:
+    embed = (
+        discord.Embed(
+            description=forward.content,
+            timestamp=forward.created_at,
+            url=forward.jump_url,
+        )
+        .set_author(name="➜ Forwarded")
+        .add_field(name="", value=f"-# [**Jump**](<{forward.jump_url}>) 📎")
+    )
+    if hasattr(forward.channel, "name"):
+        # Some channel types don't have a `name` and Pyright can't figure out
+        # that we certainly have a `name` here.
+        assert not isinstance(
+            forward.channel, discord.DMChannel | discord.PartialMessageable
+        )
+        embed.set_footer(text=f"#{forward.channel.name}")
+    return embed
+
+
 def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
     fmt = f":{fmt}" if fmt is not None else ""
     return f"<t:{int(dt.timestamp())}{fmt}>"
@@ -199,7 +219,11 @@ async def move_message_via_webhook(
     ]
 
     if (ref := await _get_reference(message)) is not None:
-        embeds.append(_format_reply(ref))
+        assert message.reference is not None
+        if message.reference.type == discord.MessageReferenceType.forward:
+            embeds.insert(0, _format_forward(ref))
+        else:
+            embeds.append(_format_reply(ref))
 
     subtext = _format_subtext(executor, msg_data)
     content, file = format_or_file(
