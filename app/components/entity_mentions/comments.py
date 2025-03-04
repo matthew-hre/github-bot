@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import re
+from contextlib import suppress
 from typing import TYPE_CHECKING, cast
 
 import discord
+from githubkit.exception import RequestFailed
 
 from .cache import TTRCache, entity_cache
 from .discussions import get_discussion_comment
@@ -61,7 +63,8 @@ class CommentCache(TTRCache[tuple[EntityGist, str, int], Comment]):
         }.get(event_type)
         if coro is None:
             return
-        self[key] = await coro(entity_gist, event_no)
+        with suppress(RequestFailed):
+            self[key] = await coro(entity_gist, event_no)
 
 
 comment_cache = CommentCache(1800)  # 30 minutes
@@ -210,7 +213,8 @@ async def get_comments(content: str) -> AsyncIterator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
-        yield await comment_cache.get((entity_gist, event, int(event_no)))
+        with suppress(KeyError):
+            yield await comment_cache.get((entity_gist, event, int(event_no)))
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
