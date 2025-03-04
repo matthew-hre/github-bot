@@ -40,7 +40,7 @@ ENTITY_UPDATE_EVENTS = {
 SUPPORTED_EVENTS = ENTITY_UPDATE_EVENTS | {
     "assigned": "Assigned `{event.assignee.login}`",
     "labeled": "Added the `{event.label.name}` label",
-    "milestoned": "Added the `{event.milestone.title}` milestone",
+    "milestoned": "Added this to the `{event.milestone.title}` milestone",
     "review_requested": "Requested review from `{event.requested_reviewer}`",
     "unassigned": "Unassigned `{event.assignee.login}`",
     "unlabeled": "Removed the `{event.label.name}` label",
