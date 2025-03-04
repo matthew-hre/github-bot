@@ -156,18 +156,18 @@ async def _format_reply(reply: discord.Message) -> discord.Embed:
     )
 
 
-def _format_forward(forward: discord.Message) -> discord.Embed:
+async def _format_forward(forward: discord.Message) -> list[discord.Embed]:
     if forward is discord.utils.MISSING:
-        return _unattachable_embed("forward")
-    embed = (
-        discord.Embed(
-            description=forward.content,
-            timestamp=forward.created_at,
-            url=forward.jump_url,
-        )
-        .set_author(name="➜ Forwarded")
-        .add_field(name="", value=f"-# [**Jump**](<{forward.jump_url}>) 📎")
-    )
+        return [_unattachable_embed("forward")]
+
+    embeds = [
+        *forward.embeds,
+        *await asyncio.gather(*map(_get_sticker_embed, forward.stickers)),
+    ]
+    embed = discord.Embed(
+        description=forward.content, timestamp=forward.created_at, url=forward.jump_url
+    ).set_author(name="➜ Forwarded")
+
     if hasattr(forward.channel, "name"):
         # Some channel types don't have a `name` and Pyright can't figure out
         # that we certainly have a `name` here.
@@ -175,7 +175,17 @@ def _format_forward(forward: discord.Message) -> discord.Embed:
             forward.channel, discord.DMChannel | discord.PartialMessageable
         )
         embed.set_footer(text=f"#{forward.channel.name}")
-    return embed
+
+    if embeds:
+        embed.add_field(
+            name="", value="-# (other forwarded content is attached)", inline=False
+        )
+    embed.add_field(
+        name="", value=f"-# [**Jump**](<{forward.jump_url}>) 📎", inline=False
+    )
+
+    embeds.insert(0, embed)
+    return embeds
 
 
 def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
@@ -243,7 +253,7 @@ async def move_message_via_webhook(
     if (ref := await _get_reference(message)) is not None:
         assert message.reference is not None
         if message.reference.type == discord.MessageReferenceType.forward:
-            embeds.insert(0, _format_forward(ref))
+            embeds = await _format_forward(ref) + embeds
         else:
             embeds.append(await _format_reply(ref))
 
