@@ -11,7 +11,7 @@ from .cache import TTRCache, entity_cache
 from .discussions import get_discussion_comment
 from .fmt import get_entity_emoji
 from .models import Comment, EntityGist, GitHubUser
-from app.setup import gh
+from app.setup import config, gh
 from app.utils import MessageLinker, is_dm, is_mod, remove_view_after_timeout
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ SUPPORTED_EVENTS = ENTITY_UPDATE_EVENTS | {
     "assigned": "Assigned `{event.assignee.login}`",
     "labeled": "Added the `{event.label.name}` label",
     "milestoned": "Added this to the `{event.milestone.title}` milestone",
-    "review_requested": "Requested review from `{event.requested_reviewer}`",
+    "review_requested": "Requested review from `{reviewer}`",
     "unassigned": "Unassigned `{event.assignee.login}`",
     "unlabeled": "Removed the `{event.label.name}` label",
 }
@@ -156,6 +156,15 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
     event = (await gh.rest.issues.async_get_event(owner, repo, comment_id)).parsed_data
     if event.event not in SUPPORTED_EVENTS:
         body = f":ghost: Unsupported event: `{event.event}`"
+    elif event.event == "review_requested":
+        # Special-cased to handle requests for both users and teams
+        if event.requested_reviewer:
+            reviewer = event.requested_reviewer.login
+        else:
+            assert event.requested_team
+            # Throwing in the org name to make it clear that it's a team
+            reviewer = f"{config.GITHUB_ORG}/{event.requested_team.name}"
+        body = SUPPORTED_EVENTS[event.event].format(reviewer=reviewer)
     else:
         template = SUPPORTED_EVENTS[event.event]
         body = (
