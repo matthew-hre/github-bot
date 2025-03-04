@@ -1,6 +1,6 @@
 import re
 from collections.abc import Callable
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 import discord
 
@@ -34,13 +34,13 @@ MESSAGE_FILTERS = (
     # Delete non-image messages in #showcase
     MessageFilter(
         config.SHOWCASE_CHANNEL_ID,
-        lambda msg: msg.attachments,
+        lambda msg: cast(discord.Message, msg).attachments,
         ("any attachments", "a screenshot or a video"),
     ),
     # Delete non-link messages in #media
     MessageFilter(
         config.MEDIA_CHANNEL_ID,
-        lambda msg: URL_REGEX.search(msg.content),
+        lambda msg: URL_REGEX.search(cast(discord.Message, msg).content),
         ("a link", "a link"),
     ),
 )

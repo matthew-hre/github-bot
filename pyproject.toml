@@ -45,3 +45,4 @@ isort.known-local-folder = ["app"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
+reportUnknownLambdaType = false
