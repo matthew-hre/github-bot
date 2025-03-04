@@ -156,9 +156,11 @@ async def _format_reply(reply: discord.Message) -> discord.Embed:
     )
 
 
-async def _format_forward(forward: discord.Message) -> list[discord.Embed]:
+async def _format_forward(
+    forward: discord.Message,
+) -> tuple[list[discord.Embed], list[discord.File]]:
     if forward is discord.utils.MISSING:
-        return [_unattachable_embed("forward")]
+        return [_unattachable_embed("forward")], []
 
     msg_data = await scrape_message_data(forward)
     embeds = [
@@ -177,7 +179,7 @@ async def _format_forward(forward: discord.Message) -> list[discord.Embed]:
         )
         embed.set_footer(text=f"#{forward.channel.name}")
 
-    if embeds:
+    if embeds or msg_data.attachments:
         embed.add_field(
             name="", value="-# (other forwarded content is attached)", inline=False
         )
@@ -193,7 +195,7 @@ async def _format_forward(forward: discord.Message) -> list[discord.Embed]:
     )
 
     embeds.insert(0, embed)
-    return embeds
+    return embeds, msg_data.attachments
 
 
 def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
@@ -261,7 +263,9 @@ async def move_message_via_webhook(
     if (ref := await _get_reference(message)) is not None:
         assert message.reference is not None
         if message.reference.type == discord.MessageReferenceType.forward:
-            embeds = await _format_forward(ref) + embeds
+            forward_embeds, forward_attachments = await _format_forward(ref)
+            embeds = forward_embeds + embeds
+            msg_data.attachments.extend(forward_attachments)
         else:
             embeds.append(await _format_reply(ref))
 
