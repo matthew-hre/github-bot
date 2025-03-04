@@ -160,6 +160,7 @@ async def _format_forward(forward: discord.Message) -> list[discord.Embed]:
     if forward is discord.utils.MISSING:
         return [_unattachable_embed("forward")]
 
+    msg_data = await scrape_message_data(forward)
     embeds = [
         *forward.embeds,
         *await asyncio.gather(*map(_get_sticker_embed, forward.stickers)),
@@ -180,6 +181,13 @@ async def _format_forward(forward: discord.Message) -> list[discord.Embed]:
         embed.add_field(
             name="", value="-# (other forwarded content is attached)", inline=False
         )
+
+    for line in _format_subtext(
+        None,
+        msg_data,
+        include_timestamp=False,
+    ).splitlines():
+        embed.add_field(name="", value=line, inline=False)
     embed.add_field(
         name="", value=f"-# [**Jump**](<{forward.jump_url}>) 📎", inline=False
     )
@@ -217,8 +225,8 @@ def _format_subtext(
         else:
             lines.append(line)
     if skipped := msg_data.skipped_attachments:
-        lines.append(f"(skipped {skipped} large attachment(s))")
-    return "".join(f"\n-# {line}" for line in lines)
+        lines.append(f"(skipped {skipped} large attachment{'s' * (skipped != 1)})")
+    return "\n".join(f"-# {line}" for line in lines)
 
 
 async def get_or_create_webhook(
@@ -260,7 +268,7 @@ async def move_message_via_webhook(
     subtext = _format_subtext(executor, msg_data)
     content, file = format_or_file(
         msg_data.content,
-        template=f"{{}}{subtext}",
+        template=f"{{}}\n{subtext}",
         transform=_convert_nitro_emojis,
     )
     if file:
