@@ -152,7 +152,7 @@ async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Co
 
 
 async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
-    owner, repo, _ = entity_gist
+    owner, repo, entity_no = entity_gist
     event = (await gh.rest.issues.async_get_event(owner, repo, comment_id)).parsed_data
     if event.event not in SUPPORTED_EVENTS:
         body = f":ghost: Unsupported event: `{event.event}`"
@@ -173,13 +173,16 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
             else template.format(event=event)
         )
     author = GitHubUser(**event.actor.model_dump()) if event.actor else FALLBACK_AUTHOR
+    # The API doesn't return an html_url, gotta construct it manually.
+    # It's fine to say "issues" here, GitHub will resolve the correct type
+    url = f"https://github.com/{owner}/{repo}/issues/{entity_no}#event-{comment_id}"
     return Comment(
         author=author,
         body=f"**{body}**",
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
         created_at=event.created_at,
-        html_url=event.url,
+        html_url=url,
         kind="Event",
         color=EVENT_COLOR,
     )
