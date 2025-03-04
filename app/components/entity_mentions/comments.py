@@ -165,6 +165,12 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
             # Throwing in the org name to make it clear that it's a team
             reviewer = f"{config.GITHUB_ORG}/{event.requested_team.name}"
         body = SUPPORTED_EVENTS[event.event].format(reviewer=reviewer)
+    elif event.event.endswith("locked"):
+        body = SUPPORTED_EVENTS[event.event].format(
+            entity=await entity_cache.get(entity_gist)
+        )
+        if event.lock_reason:
+            body += f"\nReason: `{event.lock_reason or 'no reason'}`"
     else:
         template = SUPPORTED_EVENTS[event.event]
         body = (
