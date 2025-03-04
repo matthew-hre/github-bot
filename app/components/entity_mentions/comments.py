@@ -35,14 +35,8 @@ STATE_TO_COLOR = {
     "CHANGES_REQUESTED": 0xE74C3C,  # red
 }
 EVENT_COLOR = 0x3498DB  # blue
-ENTITY_UPDATE_EVENTS = {
-    "closed": "Closed the {entity.kind}",
-    "locked": "Locked the {entity.kind}",
-    "merged": "Merged the {entity.kind}",
-    "reopened": "Reopened the {entity.kind}",
-    "unlocked": "Unlocked the {entity.kind}",
-}
-SUPPORTED_EVENTS = ENTITY_UPDATE_EVENTS | {
+ENTITY_UPDATE_EVENTS = frozenset({"closed", "locked", "merged", "reopened", "unlocked"})
+SUPPORTED_EVENTS = {
     "assigned": "Assigned `{event.assignee.login}`",
     "labeled": "Added the `{event.label.name}` label",
     "milestoned": "Added this to the `{event.milestone.title}` milestone",
@@ -193,7 +187,7 @@ async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Co
 async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
     owner, repo, entity_no = entity_gist
     event = (await gh.rest.issues.async_get_event(owner, repo, comment_id)).parsed_data
-    if event.event not in SUPPORTED_EVENTS:
+    if event.event not in SUPPORTED_EVENTS.keys() | ENTITY_UPDATE_EVENTS:
         body = f":ghost: Unsupported event: `{event.event}`"
     elif event.event == "review_requested":
         # Special-cased to handle requests for both users and teams
@@ -204,19 +198,13 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
             # Throwing in the org name to make it clear that it's a team
             reviewer = f"{config.GITHUB_ORG}/{event.requested_team.name}"
         body = SUPPORTED_EVENTS[event.event].format(reviewer=reviewer)
-    elif event.event.endswith("locked"):
-        body = SUPPORTED_EVENTS[event.event].format(
-            entity=await entity_cache.get(entity_gist)
-        )
+    elif event.event in ENTITY_UPDATE_EVENTS:
+        entity = await entity_cache.get(entity_gist)
+        body = f"{event.event.capitalize()} the {entity.kind}"
         if event.lock_reason:
             body += f"\nReason: `{event.lock_reason or 'no reason'}`"
     else:
-        template = SUPPORTED_EVENTS[event.event]
-        body = (
-            template.format(entity=await entity_cache.get(entity_gist))
-            if event.event in ENTITY_UPDATE_EVENTS
-            else template.format(event=event)
-        )
+        body = SUPPORTED_EVENTS[event.event].format(event=event)
     author = GitHubUser(**event.actor.model_dump()) if event.actor else FALLBACK_AUTHOR
     # The API doesn't return an html_url, gotta construct it manually.
     # It's fine to say "issues" here, GitHub will resolve the correct type
