@@ -194,7 +194,7 @@ async def _get_entity_starter(entity_gist: EntityGist, _: int) -> Comment:
     entity = await entity_cache.get(entity_gist)
     return Comment(
         author=entity.user,
-        body=entity.body,
+        body=entity.body or "",
         entity=entity,
         entity_gist=entity_gist,
         created_at=entity.created_at,
