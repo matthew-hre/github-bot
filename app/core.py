@@ -1,3 +1,4 @@
+import asyncio
 import datetime as dt
 import sys
 from traceback import print_tb
@@ -78,15 +79,16 @@ async def on_message(message: discord.Message) -> None:
     if await check_message_filters(message):
         return
 
+    coros = [
+        check_for_zig_code(message),  # Check for Zig code blocks and format them
+        reply_with_comments(message),  # Check for entity comments and reply with embeds
+    ]
+
     # Look for issue/PR/discussion mentions and name/link them
     if ENTITY_REGEX.search(message.content):
-        await reply_with_entities(message)
+        coros.append(reply_with_entities(message))
 
-    # Check for Zig code blocks and format them
-    await check_for_zig_code(message)
-
-    # Check for comments and reply with their embeds
-    await reply_with_comments(message)
+    await asyncio.gather(*coros)
 
 
 @bot.event
