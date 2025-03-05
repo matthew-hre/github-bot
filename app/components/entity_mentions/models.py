@@ -2,7 +2,14 @@ import datetime as dt
 import re
 from typing import Annotated, Literal, NamedTuple
 
-from pydantic import AliasChoices, BaseModel, BeforeValidator, Field, field_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    field_validator,
+)
 
 from app.utils import truncate
 
@@ -21,12 +28,16 @@ def state_validator(value: object) -> bool:
 
 
 class GitHubUser(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     name: str = Field(alias="login")
     url: str = Field(validation_alias=AliasChoices("url", "html_url"))
     icon_url: str = Field(validation_alias=AliasChoices("icon_url", "avatar_url"))
 
 
 class Entity(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     number: int
     title: str
     body: str
@@ -64,6 +75,8 @@ class EntityGist(NamedTuple):
 
 
 class Comment(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     author: GitHubUser
     body: str
     entity: Entity

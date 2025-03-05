@@ -202,8 +202,12 @@ async def _get_entity_starter(entity_gist: EntityGist, _: int) -> Comment:
 
 
 async def get_comments(content: str) -> AsyncIterator[Comment]:
+    found_comments = set[Comment]()
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
         with suppress(KeyError):
-            yield await comment_cache.get((entity_gist, event, int(event_no)))
+            comment = await comment_cache.get((entity_gist, event, int(event_no)))
+            if comment not in found_comments:
+                found_comments.add(comment)
+                yield comment
