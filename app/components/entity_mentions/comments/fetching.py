@@ -12,7 +12,7 @@ from zig_codeblocks import extract_codeblocks
 from app.components.entity_mentions.cache import TTRCache, entity_cache
 from app.components.entity_mentions.discussions import get_discussion_comment
 from app.components.entity_mentions.models import Comment, EntityGist, GitHubUser
-from app.setup import config, gh
+from app.setup import gh
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -165,7 +165,8 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
         else:
             assert event.requested_team
             # Throwing in the org name to make it clear that it's a team
-            reviewer = f"{config.GITHUB_ORG}/{event.requested_team.name}"
+            org_name = event.requested_team.html_url.split("/", 5)[4]
+            reviewer = f"{org_name}/{event.requested_team.name}"
         body = SUPPORTED_EVENTS[event.event].format(reviewer=reviewer)
     elif event.event in ENTITY_UPDATE_EVENTS:
         entity = await entity_cache.get(entity_gist)
