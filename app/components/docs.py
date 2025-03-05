@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-from typing import NotRequired, TypedDict, cast
+from typing import TYPE_CHECKING, NotRequired, TypedDict, cast
 
 import discord
 from discord.app_commands import Choice, autocomplete
 
 from app.components.status import bot_status
 from app.setup import bot, config, gh
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 URL_TEMPLATE = "https://ghostty.org/docs/{section}{page}"
 
@@ -98,10 +101,13 @@ async def section_autocomplete(
 async def page_autocomplete(
     interaction: discord.Interaction, current: str
 ) -> list[Choice[str]]:
-    if not (interaction.data and (options := interaction.data.get("options"))):
+    if not interaction.data:
+        return []
+    options = cast("Iterable[dict[str, str]] | None", interaction.data.get("options"))
+    if not options:
         return []
     section = next(
-        (cast(str, opt["value"]) for opt in options if opt["name"] == "section"),
+        (opt["value"] for opt in options if opt["name"] == "section"),
         None,
     )
     if section is None:
