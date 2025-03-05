@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from githubkit.versions.latest.models import PullRequestReviewComment
+    from pydantic import BaseModel
 
 COMMENT_PATTERN = re.compile(
     r"https?://github\.com/([^/]+)/([^/]+)/(issues|discussions|pull)/(\d+)#(\w+?-?)(\d+)"
@@ -99,16 +100,21 @@ class DeleteMention(discord.ui.View):
 comment_linker = MessageLinker()
 
 
+def _make_author(user: BaseModel | None) -> GitHubUser:
+    if not user:
+        return FALLBACK_AUTHOR
+    return GitHubUser(**user.model_dump())
+
+
 async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
     owner, repo, _ = entity_gist
     comment_resp, entity = await asyncio.gather(
         gh.rest.issues.async_get_comment(owner, repo, comment_id),
         entity_cache.get(entity_gist),
     )
-    author = (comment := comment_resp.parsed_data).user
-    assert author is not None
+    comment = comment_resp.parsed_data
     return Comment(
-        author=GitHubUser(**author.model_dump()),
+        author=_make_author(comment.user),
         body=cast(str, comment.body),
         entity=entity,
         entity_gist=entity_gist,
@@ -121,9 +127,8 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
     comment = (
         await gh.rest.pulls.async_get_review(*entity_gist, comment_id)
     ).parsed_data
-    assert comment.user is not None
     return Comment(
-        author=GitHubUser(**comment.user.model_dump()),
+        author=_make_author(comment.user),
         body=comment.body,
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
@@ -172,9 +177,8 @@ async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Co
     comment = (
         await gh.rest.pulls.async_get_review_comment(owner, repo, comment_id)
     ).parsed_data
-    assert comment.user is not None
     return Comment(
-        author=GitHubUser(**comment.user.model_dump()),
+        author=_make_author(comment.user),
         body=_prettify_suggestions(comment),
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
@@ -205,12 +209,11 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
             body += f"\nReason: `{event.lock_reason or 'no reason'}`"
     else:
         body = SUPPORTED_EVENTS[event.event].format(event=event)
-    author = GitHubUser(**event.actor.model_dump()) if event.actor else FALLBACK_AUTHOR
     # The API doesn't return an html_url, gotta construct it manually.
     # It's fine to say "issues" here, GitHub will resolve the correct type
     url = f"https://github.com/{owner}/{repo}/issues/{entity_no}#event-{comment_id}"
     return Comment(
-        author=author,
+        author=_make_author(event.actor),
         body=f"**{body}**",
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
