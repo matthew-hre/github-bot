@@ -69,8 +69,17 @@ async def reply_with_comments(message: discord.Message) -> None:
     ]
     if not embeds:
         return
+    if len(embeds) > 10:
+        omitted = len(embeds) - 10
+        note = f"{omitted} comment{'s were' if omitted > 1 else ' was'} omitted"
+        embeds = embeds[:10]
+    else:
+        note = None
     sent_message = await message.reply(
-        embeds=embeds, mention_author=False, view=DeleteMention(message, len(embeds))
+        content=note,
+        embeds=embeds,
+        mention_author=False,
+        view=DeleteMention(message, len(embeds)),
     )
     await message.edit(suppress=True)
     comment_linker.link(message, sent_message)
