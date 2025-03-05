@@ -104,6 +104,22 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
     )
 
 
+async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
+    owner, repo, _ = entity_gist
+    comment = (
+        await gh.rest.pulls.async_get_review_comment(owner, repo, comment_id)
+    ).parsed_data
+    return Comment(
+        author=_make_author(comment.user),
+        body=_prettify_suggestions(comment),
+        entity=await entity_cache.get(entity_gist),
+        entity_gist=entity_gist,
+        created_at=comment.created_at,
+        html_url=comment.html_url,
+        kind="Review comment",
+    )
+
+
 def _prettify_suggestions(comment: PullRequestReviewComment) -> str:
     suggestions = [
         c for c in extract_codeblocks(comment.body) if c.lang == "suggestion"
@@ -137,22 +153,6 @@ def _make_crlf_codeblock(lang: str, body: str) -> str:
     return f"```{lang}\n{body}\n```".replace("\n", "\r\n")
 
 
-async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
-    owner, repo, _ = entity_gist
-    comment = (
-        await gh.rest.pulls.async_get_review_comment(owner, repo, comment_id)
-    ).parsed_data
-    return Comment(
-        author=_make_author(comment.user),
-        body=_prettify_suggestions(comment),
-        entity=await entity_cache.get(entity_gist),
-        entity_gist=entity_gist,
-        created_at=comment.created_at,
-        html_url=comment.html_url,
-        kind="Review comment",
-    )
-
-
 async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
     owner, repo, entity_no = entity_gist
     event = (await gh.rest.issues.async_get_event(owner, repo, comment_id)).parsed_data
@@ -171,7 +171,7 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
         entity = await entity_cache.get(entity_gist)
         body = f"{event.event.capitalize()} the {entity.kind}"
         if event.lock_reason:
-            body += f"\nReason: `{event.lock_reason or 'no reason'}`"
+            body += f"\nReason: `{event.lock_reason or 'unspecified'}`"
     else:
         body = SUPPORTED_EVENTS[event.event].format(event=event)
     # The API doesn't return an html_url, gotta construct it manually.

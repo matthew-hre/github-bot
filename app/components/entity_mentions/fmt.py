@@ -66,8 +66,7 @@ def get_entity_emoji(entity: Entity) -> discord.Emoji | None:
 
 
 def _format_mention(entity: Entity) -> str:
-    title = escape_special(entity.title)
-    headline = ENTITY_TEMPLATE.format(entity=entity, title=title)
+    headline = ENTITY_TEMPLATE.format(entity=entity, title=escape_special(entity.title))
 
     # https://github.com/owner/repo/issues/12
     # -> https://github.com  owner  repo  issues  12
