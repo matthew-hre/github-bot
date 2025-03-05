@@ -1,7 +1,19 @@
 import datetime as dt
-from typing import Annotated, Literal
+import re
+from typing import Annotated, Literal, NamedTuple
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    field_validator,
+)
+
+from app.utils import truncate
+
+PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
 
 def state_validator(value: object) -> bool:
@@ -16,15 +28,26 @@ def state_validator(value: object) -> bool:
 
 
 class GitHubUser(BaseModel):
-    login: str
+    model_config = ConfigDict(frozen=True)
+
+    name: str = Field(alias="login")
+    url: str = Field(validation_alias=AliasChoices("url", "html_url"))
+    icon_url: str = Field(validation_alias=AliasChoices("icon_url", "avatar_url"))
 
 
 class Entity(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     number: int
     title: str
+    body: str
     html_url: str
     user: GitHubUser
     created_at: dt.datetime
+
+    @property
+    def kind(self) -> str:
+        return PASCAL_CASE_WORD_BOUNDARY.sub(r"\1 \2", type(self).__name__)
 
 
 class Issue(Entity):
@@ -39,4 +62,31 @@ class PullRequest(Entity):
 
 
 class Discussion(Entity):
-    answered: bool
+    answered: bool | None
+
+
+class EntityGist(NamedTuple):
+    owner: str
+    repo: str
+    number: int
+
+    def __str__(self) -> str:
+        return f"{self.owner}/{self.repo}#{self.number}"
+
+
+class Comment(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    author: GitHubUser
+    body: str
+    entity: Entity
+    entity_gist: EntityGist
+    created_at: dt.datetime
+    html_url: str
+    kind: str = "Comment"
+    color: int | None = None
+
+    @field_validator("body")
+    @classmethod
+    def _truncate_body(cls, value: str) -> str:
+        return truncate(value, 4096)

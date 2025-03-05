@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from functools import partial
 from typing import cast
 
@@ -13,7 +12,7 @@ from app.components.entity_mentions.resolution import resolve_repo_signatures
 from app.setup import bot, config
 from app.utils import dynamic_timestamp, escape_special, get_ghostty_guild
 
-ENTITY_TEMPLATE = "**{kind} [#{entity.number}](<{entity.html_url}>):** {title}"
+ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
 EMOJI_NAMES = frozenset(
     {
         "discussion_answered",
@@ -27,7 +26,6 @@ EMOJI_NAMES = frozenset(
         "pull_open",
     }
 )
-PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
 entity_emojis: dict[str, discord.Emoji] = {}
 
@@ -45,23 +43,7 @@ async def load_emojis() -> None:
         )
 
 
-def _format_mention(entity: Entity) -> str:
-    entity_kind = PASCAL_CASE_WORD_BOUNDARY.sub(r"\1 \2", type(entity).__name__)
-    title = escape_special(entity.title)
-    headline = ENTITY_TEMPLATE.format(kind=entity_kind, entity=entity, title=title)
-
-    # https://github.com/owner/repo/issues/12
-    # -> https://github.com  owner  repo  issues  12
-    #    0                   1      2     3       4
-    domain, owner, name, *_ = entity.html_url.rsplit("/", 4)
-    author = entity.user.login
-    fmt_ts = partial(dynamic_timestamp, entity.created_at)
-    subtext = (
-        f"-# by [`{author}`](<{domain}/{author}>)"
-        f" in [`{owner}/{name}`](<{domain}/{owner}/{name}>)"
-        f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
-    )
-
+def get_entity_emoji(entity: Entity) -> discord.Emoji | None:
     if isinstance(entity, Issue):
         state = "closed_" if entity.closed else "open"
         if entity.closed:
@@ -77,10 +59,28 @@ def _format_mention(entity: Entity) -> str:
     elif isinstance(entity, Discussion):
         emoji_name = "discussion_answered" if entity.answered else "issue_draft"
     else:
-        msg = f"Unknown entity type: {entity_kind}"
+        msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)
 
-    emoji = entity_emojis.get(emoji_name, ":question:")
+    return entity_emojis.get(emoji_name)
+
+
+def _format_mention(entity: Entity) -> str:
+    headline = ENTITY_TEMPLATE.format(entity=entity, title=escape_special(entity.title))
+
+    # https://github.com/owner/repo/issues/12
+    # -> https://github.com  owner  repo  issues  12
+    #    0                   1      2     3       4
+    domain, owner, name, *_ = entity.html_url.rsplit("/", 4)
+    author = entity.user.name
+    fmt_ts = partial(dynamic_timestamp, entity.created_at)
+    subtext = (
+        f"-# by [`{author}`](<{domain}/{author}>)"
+        f" in [`{owner}/{name}`](<{domain}/{owner}/{name}>)"
+        f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
+    )
+
+    emoji = get_entity_emoji(entity) or ":question:"
     return f"{emoji} {headline}\n{subtext}"
 
 

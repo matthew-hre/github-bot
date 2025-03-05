@@ -3,43 +3,25 @@ from __future__ import annotations
 import discord
 
 from .fmt import entity_message
-from app.utils import MessageLinker, is_dm, is_mod, remove_view_after_timeout, try_dm
+from app.utils import (
+    DeleteMessage,
+    MessageLinker,
+    is_dm,
+    remove_view_after_timeout,
+    try_dm,
+)
 
 IGNORED_MESSAGE_TYPES = frozenset(
     (discord.MessageType.thread_created, discord.MessageType.channel_name_change)
 )
 
-
-class DeleteMention(discord.ui.View):
-    def __init__(self, message: discord.Message, entity_count: int) -> None:
-        super().__init__()
-        self.message = message
-        self.plural = entity_count > 1
-
-    @discord.ui.button(
-        label="Delete",
-        emoji="🗑️",
-        style=discord.ButtonStyle.gray,
-    )
-    async def delete(
-        self, interaction: discord.Interaction, _: discord.ui.Button[DeleteMention]
-    ) -> None:
-        assert not is_dm(interaction.user)
-        if interaction.user.id == self.message.author.id or is_mod(interaction.user):
-            assert interaction.message
-            await interaction.message.delete()
-            mention_linker.unlink_from_reply(interaction.message)
-            return
-
-        await interaction.response.send_message(
-            "Only the person who mentioned "
-            + ("these entities" if self.plural else "this entity")
-            + " can remove this message.",
-            ephemeral=True,
-        )
-
-
 mention_linker = MessageLinker()
+
+
+class DeleteMention(DeleteMessage):
+    linker = mention_linker
+    action_singular = "mentioned this entity"
+    action_plural = "mentioned these entities"
 
 
 async def reply_with_entities(message: discord.Message) -> None:

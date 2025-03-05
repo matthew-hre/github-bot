@@ -22,6 +22,7 @@ from app.setup import config
 
 __all__ = (
     "Account",
+    "DeleteMessage",
     "GuildTextChannel",
     "MessageData",
     "MessageLinker",
@@ -79,6 +80,39 @@ class MessageLinker:
         return False
 
 
+class DeleteMessage(discord.ui.View):
+    linker: MessageLinker
+    action_singular: str
+    action_plural: str
+
+    def __init__(self, message: discord.Message, item_count: int) -> None:
+        super().__init__()
+        self.message = message
+        self.item_count = item_count
+
+    @discord.ui.button(
+        label="Delete",
+        emoji="🗑️",
+        style=discord.ButtonStyle.gray,
+    )
+    async def delete(
+        self, interaction: discord.Interaction, _: discord.ui.Button[DeleteMessage]
+    ) -> None:
+        assert not is_dm(interaction.user)
+        if interaction.user.id == self.message.author.id or is_mod(interaction.user):
+            assert interaction.message
+            await interaction.message.delete()
+            self.linker.unlink_from_reply(interaction.message)
+            return
+
+        await interaction.response.send_message(
+            "Only the person who "
+            + (self.action_singular if self.item_count == 1 else self.action_plural)
+            + " can remove this message.",
+            ephemeral=True,
+        )
+
+
 def is_dm(account: Account) -> TypeIs[discord.User]:
     return not isinstance(account, discord.Member)
 
@@ -133,3 +167,9 @@ def escape_special(content: str) -> str:
     return "\n".join(
         _ORDERED_LIST_REGEX.sub(r"\1\. \2", line) for line in escaped.splitlines()
     )
+
+
+def truncate(s: str, length: int, *, suffix: str = "…") -> str:
+    if len(s) <= length:
+        return s
+    return s[: length - len(suffix)] + suffix
