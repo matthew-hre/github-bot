@@ -40,7 +40,7 @@ class Entity(BaseModel):
 
     number: int
     title: str
-    body: str
+    body: str | None
     html_url: str
     user: GitHubUser
     created_at: dt.datetime
@@ -86,7 +86,10 @@ class Comment(BaseModel):
     kind: str = "Comment"
     color: int | None = None
 
-    @field_validator("body")
+    @field_validator("body", mode="before")
     @classmethod
-    def _truncate_body(cls, value: str) -> str:
-        return truncate(value, 4096)
+    def _truncate_body(cls, value: object) -> str:
+        if not (isinstance(value, str) or value is None):
+            msg = "`body` must be a string or None"
+            raise ValueError(msg)
+        return truncate(value or "", 4096)
