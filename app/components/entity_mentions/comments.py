@@ -80,7 +80,7 @@ class DeleteMention(discord.ui.View):
         style=discord.ButtonStyle.gray,
     )
     async def delete(
-        self, interaction: discord.Interaction, _: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button[DeleteMention]
     ) -> None:
         assert not is_dm(interaction.user)
         if interaction.user.id == self.message.author.id or is_mod(interaction.user):
@@ -182,7 +182,7 @@ async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Co
         body=_prettify_suggestions(comment),
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
-        created_at=cast(dt.datetime, comment.created_at),
+        created_at=comment.created_at,
         html_url=comment.html_url,
         kind="Review comment",
     )
