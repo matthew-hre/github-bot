@@ -6,42 +6,19 @@ import discord
 
 from .fetching import get_comments
 from app.components.entity_mentions.fmt import get_entity_emoji
-from app.utils import MessageLinker, is_dm, is_mod, remove_view_after_timeout
+from app.utils import DeleteMessage, MessageLinker, remove_view_after_timeout
 
 if TYPE_CHECKING:
     from app.components.entity_mentions.models import Comment
 
 
-class DeleteMention(discord.ui.View):
-    def __init__(self, message: discord.Message, link_count: int) -> None:
-        super().__init__()
-        self.message = message
-        self.plural = link_count > 1
-
-    @discord.ui.button(
-        label="Delete",
-        emoji="🗑️",
-        style=discord.ButtonStyle.gray,
-    )
-    async def delete(
-        self, interaction: discord.Interaction, _: discord.ui.Button[DeleteMention]
-    ) -> None:
-        assert not is_dm(interaction.user)
-        if interaction.user.id == self.message.author.id or is_mod(interaction.user):
-            assert interaction.message
-            await interaction.message.delete()
-            comment_linker.unlink_from_reply(interaction.message)
-            return
-
-        await interaction.response.send_message(
-            "Only the person who linked "
-            + ("these comments" if self.plural else "this comment")
-            + " can remove this message.",
-            ephemeral=True,
-        )
-
-
 comment_linker = MessageLinker()
+
+
+class DeleteMention(DeleteMessage):
+    linker = comment_linker
+    action_singular = "linked this comment"
+    action_plural = "linked these comments"
 
 
 def comment_to_embed(comment: Comment) -> discord.Embed:
