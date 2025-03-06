@@ -20,7 +20,11 @@ _EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 
 
 def get_ghostty_guild() -> discord.Guild:
-    return next(g for g in bot.guilds if "ghostty" in g.name.casefold())
+    try:
+        return next(g for g in bot.guilds if "ghostty" in g.name.casefold())
+    except StopIteration:
+        msg = "bot guild name does not contain 'ghostty'"
+        raise ValueError(msg) from None
 
 
 def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
