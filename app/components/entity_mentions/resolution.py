@@ -48,6 +48,9 @@ async def resolve_repo_signatures(content: str) -> AsyncIterator[tuple[str, str,
             case None, "main" | "web" | "bot" as repo:
                 # Special ghostty-org prefixes
                 yield config.GITHUB_ORG, config.GITHUB_REPOS[repo], number
+            case None, "bobr":
+                # A touch of personalization
+                yield config.GITHUB_ORG, config.GITHUB_REPOS["bot"], number
             case None, repo:
                 # Only a name provided, e.g. uv#8020.
                 with suppress(RequestFailed, RuntimeError):
