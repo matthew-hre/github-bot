@@ -193,19 +193,23 @@ A command group to mark help channel posts as resolved, with various options for
 Automatic links to Ghostty's GitHub issues/PRs/discussions ("entities") when a
 message contains GitHub-like mentions (`#1234`). It reacts to message edits and
 deletions for 24 hours, while also providing a "🗑️ Delete" button for 30 seconds
-in case of false positives. Mentioning entities in other repos is also supported
-with prefixes:
+in case of false positives. Mentioning entities in other ghostty-org repos is
+supported with prefixes:
 * `web` for [ghostty-org/website][website-repo], e.g. `web#78`
-* `bot` for [ghostty-org/discord-bot][bot-repo], e.g. `bot#98`
+* `bot` or `bobr` for [ghostty-org/discord-bot][bot-repo], e.g. `bot#98`
 * `main` for [ghostty-org/ghostty][main-repo] (default), e.g. `main#2137` or
   just `#2137`
 
+On top of that, any GitHub repository can be mentioned, either with
+`owner/repo#1` (e.g. `astral-sh/uv#8020`), or `repo#1`, where the bot will
+try finding the most popular repo with that name (e.g. `rust#105586`).
+
 The bot also keeps a TTR cache to avoid looking up the same entity multiple
 times (with data being refetched 30 minutes since last use), making the bot more
-responsive (the example below can take ~7s on the first lookup and ~0.5ms on
+responsive (the example below can take ~2s on first lookup and ~5ms on
 subsequent lookups).
 
-<img src="https://github.com/user-attachments/assets/3bf4b978-5cb6-4f1e-a384-cd3397c28da9" alt="Entity mentions example" width="75%">
+<img src="https://github.com/user-attachments/assets/ce0df1f6-baac-43d7-9bee-1f2bdfda2ac4" alt="Entity mentions example" width="75%">
 
 
 ## Message filters
