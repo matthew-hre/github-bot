@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 from sentry_sdk import capture_exception
 
+from app.components.activity_status import randomize_activity_status
 from app.components.autoclose import autoclose_solved_posts
 from app.components.docs import refresh_sitemap
 from app.components.entity_mentions import (
@@ -36,6 +37,8 @@ async def on_ready() -> None:
     await load_emojis()
     if not autoclose_solved_posts.is_running():
         autoclose_solved_posts.start()
+    if not randomize_activity_status.is_running():
+        randomize_activity_status.start()
     bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
     print(f"Bot logged on as {bot.user}!")
 
