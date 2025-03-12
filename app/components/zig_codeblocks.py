@@ -166,6 +166,8 @@ async def _prepare_reply(
 
 
 async def check_for_zig_code(message: discord.Message) -> None:
+    if message.author.bot:
+        return
     msg_contents, files = await _prepare_reply(message)
     if not (msg_contents or files):
         return
