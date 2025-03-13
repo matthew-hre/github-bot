@@ -58,9 +58,12 @@ async def get_snippets(content: str) -> AsyncIterator[Snippet]:
         *snippet_path, range_start, range_end = match.groups()
 
         snippet_path = SnippetPath(*snippet_path)
-        r_start = int(range_start)
+        range_start = int(range_start)
         # slice(a - 1, b) since lines are 1-indexed
-        content_range = slice(r_start - 1, int(range_end) if range_end else r_start)
+        content_range = slice(
+            range_start - 1,
+            int(range_end) if range_end else range_start,
+        )
 
         snippet = await content_cache.get(snippet_path)
         selected_lines = "\n".join(snippet.splitlines()[content_range])
