@@ -102,7 +102,7 @@ async def snippet_message(message: discord.Message) -> tuple[str, int]:
         while len("\n\n".join(blobs)) > 1970:  # Accounting for omission note
             blobs.pop()
         if not blobs:
-            return "", 0
+            return "", -1  # Signal that all snippets were omitted
         blobs.append("-# Some snippets were omitted")
     return "\n".join(blobs), len(snippets)
 
@@ -111,6 +111,8 @@ async def reply_with_code(message: discord.Message) -> None:
     if message.author.bot:
         return
     msg_content, snippet_count = await snippet_message(message)
+    if snippet_count:
+        await message.edit(suppress=True)
     if not snippet_count:
         return
 
@@ -122,7 +124,6 @@ async def reply_with_code(message: discord.Message) -> None:
         view=DeleteCodeLink(message, snippet_count),
     )
     code_linker.link(message, sent_message)
-    await message.edit(suppress=True)
     await remove_view_after_timeout(sent_message)
 
 
