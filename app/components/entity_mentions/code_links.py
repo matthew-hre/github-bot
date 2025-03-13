@@ -5,7 +5,7 @@ from typing import NamedTuple
 import discord
 from zig_codeblocks import highlight_zig_code
 
-from app.components.entity_mentions.cache import TTRCache
+from .cache import TTRCache
 from app.components.zig_codeblocks import THEME
 from app.setup import gh
 from app.utils import DeleteMessage, MessageLinker, remove_view_after_timeout
