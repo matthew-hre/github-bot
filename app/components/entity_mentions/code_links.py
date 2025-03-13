@@ -1,4 +1,5 @@
 import re
+import urllib.parse
 from collections.abc import AsyncIterator
 from typing import NamedTuple
 
@@ -87,8 +88,9 @@ def _format_snippet(snippet: Snippet) -> str:
         if snippet.range.stop > snippet.range.start + 1
         else f"line {snippet.range.start + 1}"
     )
+    unquoted_path = urllib.parse.unquote(snippet.path)
     return (
-        f"`{snippet.path}`, {range_info}"
+        f"`{unquoted_path}`, {range_info}"
         f"\n-# Repo: `{snippet.repo}`, revision: `{snippet.rev}`"
         f"\n```{snippet.lang}\n{snippet.body}\n```"
     )
