@@ -111,9 +111,9 @@ async def reply_with_code(message: discord.Message) -> None:
     if message.author.bot:
         return
     msg_content, snippet_count = await snippet_message(message)
-    if snippet_count:
+    if snippet_count != 0:
         await message.edit(suppress=True)
-    if not snippet_count:
+    if snippet_count < 1:
         return
 
     sent_message = await message.reply(
