@@ -13,11 +13,14 @@ from app.components.autoclose import autoclose_solved_posts
 from app.components.docs import refresh_sitemap
 from app.components.entity_mentions import (
     ENTITY_REGEX,
+    code_link_delete_handler,
+    code_link_edit_handler,
     entity_comment_delete_handler,
     entity_comment_edit_handler,
     entity_mention_delete_handler,
     entity_mention_edit_handler,
     load_emojis,
+    reply_with_code,
     reply_with_comments,
     reply_with_entities,
 )
@@ -84,6 +87,7 @@ async def on_message(message: discord.Message) -> None:
 
     coros = [
         check_for_zig_code(message),  # Check for Zig code blocks and format them
+        reply_with_code(message),  # Look for GitHub code links and reply with contents
         reply_with_comments(message),  # Check for entity comments and reply with embeds
     ]
 
@@ -99,6 +103,7 @@ async def on_message_edit(before: discord.Message, after: discord.Message) -> No
     await entity_mention_edit_handler(before, after)
     await zig_codeblock_edit_handler(before, after)
     await entity_comment_edit_handler(before, after)
+    await code_link_edit_handler(before, after)
 
 
 @bot.event
@@ -106,6 +111,7 @@ async def on_message_delete(message: discord.Message) -> None:
     await entity_mention_delete_handler(message)
     await zig_codeblock_delete_handler(message)
     await entity_comment_delete_handler(message)
+    await code_link_delete_handler(message)
 
 
 async def sync(bot: commands.Bot, message: discord.Message) -> None:
