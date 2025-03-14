@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 authors = [
     { name = "Mitchell Hashimoto", email = "m@mitchell.com" },
-    { name = "trag1c", email = "trag1cdev@yahoo.com" },
+    { name = "trag1c", email = "dev@jakubr.me" },
 ]
 dependencies = [
     "discord-py~=2.4",
