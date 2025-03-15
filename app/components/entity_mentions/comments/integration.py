@@ -6,7 +6,12 @@ import discord
 
 from .fetching import get_comments
 from app.components.entity_mentions.fmt import get_entity_emoji
-from app.utils import DeleteMessage, MessageLinker, remove_view_after_timeout
+from app.utils import (
+    DeleteMessage,
+    MessageLinker,
+    create_edit_hook,
+    remove_view_after_timeout,
+)
 
 if TYPE_CHECKING:
     from app.components.entity_mentions.models import Comment
@@ -73,37 +78,15 @@ async def entity_comment_delete_handler(message: discord.Message) -> None:
             await reply.delete()
 
 
-async def entity_comment_edit_handler(
-    before: discord.Message, after: discord.Message
-) -> None:
-    if before.content == after.content:
-        return
-    old_comments = [i async for i in get_comments(before.content)]
-    new_comments = [i async for i in get_comments(after.content)]
-    if old_comments == new_comments:
-        # Message changed but linked comments are the same
-        return
+async def comment_processor(msg: discord.Message) -> tuple[list[discord.Embed], int]:
+    comments = [comment_to_embed(i) async for i in get_comments(msg.content)]
+    return comments, len(comments)
 
-    if not (replies := comment_linker.get(before)):
-        if not old_comments:
-            # There were no linked comments before, so treat this as a new message
-            await reply_with_comments(after)
-        # The message was removed from the M2C map at some point
-        return
 
-    reply = replies[0]
-    if not new_comments:
-        # All comment links were edited out
-        comment_linker.unlink(before)
-        await reply.delete()
-        return
-
-    if comment_linker.unlink_if_expired(reply):
-        return
-
-    await reply.edit(
-        embeds=list(map(comment_to_embed, new_comments)),
-        view=DeleteMention(after, len(new_comments)),
-        allowed_mentions=discord.AllowedMentions.none(),
-    )
-    await remove_view_after_timeout(reply)
+entity_comment_edit_handler = create_edit_hook(
+    linker=comment_linker,
+    message_processor=comment_processor,
+    interactor=reply_with_comments,
+    view_type=DeleteMention,
+    embed_mode=True,
+)
