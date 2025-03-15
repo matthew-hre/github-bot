@@ -5,7 +5,7 @@ description = ""
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [
-    { name = "Mitchell Hashimoto", email = "m@mitchell.com" },
+    { name = "Mitchell Hashimoto", email = "m@mitchellh.com" },
     { name = "trag1c", email = "dev@jakubr.me" },
 ]
 dependencies = [
