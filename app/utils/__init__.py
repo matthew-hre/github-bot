@@ -6,7 +6,12 @@ from typing import TYPE_CHECKING, Any
 
 import discord
 
-from .hooks import MessageLinker, create_edit_hook, remove_view_after_timeout
+from .hooks import (
+    MessageLinker,
+    create_delete_hook,
+    create_edit_hook,
+    remove_view_after_timeout,
+)
 from .message_data import MessageData, scrape_message_data
 from .webhooks import (
     GuildTextChannel,
@@ -23,6 +28,7 @@ __all__ = (
     "GuildTextChannel",
     "MessageData",
     "MessageLinker",
+    "create_delete_hook",
     "create_edit_hook",
     "escape_special",
     "format_or_file",

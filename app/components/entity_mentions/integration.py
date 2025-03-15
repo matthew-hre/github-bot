@@ -6,6 +6,7 @@ from .fmt import entity_message
 from app.utils import (
     DeleteMessage,
     MessageLinker,
+    create_delete_hook,
     create_edit_hook,
     is_dm,
     remove_view_after_timeout,
@@ -51,13 +52,7 @@ async def reply_with_entities(message: discord.Message) -> None:
     await remove_view_after_timeout(sent_message)
 
 
-async def entity_mention_delete_handler(message: discord.Message) -> None:
-    if message.author.bot:
-        mention_linker.unlink_from_reply(message)
-    elif replies := mention_linker.get(message):
-        for reply in replies:
-            await reply.delete()
-
+entity_mention_delete_handler = create_delete_hook(linker=mention_linker)
 
 entity_mention_edit_handler = create_edit_hook(
     linker=mention_linker,

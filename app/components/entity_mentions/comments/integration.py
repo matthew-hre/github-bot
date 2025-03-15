@@ -9,6 +9,7 @@ from app.components.entity_mentions.fmt import get_entity_emoji
 from app.utils import (
     DeleteMessage,
     MessageLinker,
+    create_delete_hook,
     create_edit_hook,
     remove_view_after_timeout,
 )
@@ -70,18 +71,12 @@ async def reply_with_comments(message: discord.Message) -> None:
     await remove_view_after_timeout(sent_message)
 
 
-async def entity_comment_delete_handler(message: discord.Message) -> None:
-    if message.author.bot:
-        comment_linker.unlink_from_reply(message)
-    elif replies := comment_linker.get(message):
-        for reply in replies:
-            await reply.delete()
-
-
 async def comment_processor(msg: discord.Message) -> tuple[list[discord.Embed], int]:
     comments = [comment_to_embed(i) async for i in get_comments(msg.content)]
     return comments, len(comments)
 
+
+entity_comment_delete_handler = create_delete_hook(linker=comment_linker)
 
 entity_comment_edit_handler = create_edit_hook(
     linker=comment_linker,

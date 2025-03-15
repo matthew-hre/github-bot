@@ -12,6 +12,7 @@ from app.setup import gh
 from app.utils import (
     DeleteMessage,
     MessageLinker,
+    create_delete_hook,
     create_edit_hook,
     remove_view_after_timeout,
 )
@@ -137,13 +138,7 @@ async def reply_with_code(message: discord.Message) -> None:
     await remove_view_after_timeout(sent_message)
 
 
-async def code_link_delete_handler(message: discord.Message) -> None:
-    if message.author.bot:
-        code_linker.unlink_from_reply(message)
-    elif replies := code_linker.get(message):
-        for reply in replies:
-            await reply.delete()
-
+code_link_delete_handler = create_delete_hook(linker=code_linker)
 
 code_link_edit_handler = create_edit_hook(
     linker=code_linker,

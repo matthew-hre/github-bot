@@ -103,3 +103,16 @@ def create_edit_hook(
         await remove_view_after_timeout(reply)
 
     return edit_hook
+
+
+def create_delete_hook(
+    *, linker: MessageLinker
+) -> Callable[[discord.Message], Awaitable[None]]:
+    async def delete_hook(message: discord.Message) -> None:
+        if message.author.bot:
+            linker.unlink_from_reply(message)
+        elif replies := linker.get(message):
+            for reply in replies:
+                await reply.delete()
+
+    return delete_hook
