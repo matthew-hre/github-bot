@@ -197,7 +197,7 @@ async def check_for_zig_code(message: discord.Message) -> None:
     await remove_view_after_timeout(final_msg, VIEW_TIMEOUT)
 
 
-async def zig_codeblock_edit_handler(
+async def zig_codeblock_edit_hook(
     before: discord.Message, after: discord.Message
 ) -> None:
     if before.content == after.content and before.attachments == after.attachments:
@@ -271,7 +271,7 @@ async def zig_codeblock_edit_handler(
         await remove_view_after_timeout(saved_msg, VIEW_TIMEOUT)
 
 
-async def zig_codeblock_delete_handler(message: discord.Message) -> None:
+async def zig_codeblock_delete_hook(message: discord.Message) -> None:
     if message.author.bot and (
         original := codeblock_linker.get_original_message(message)
     ):
