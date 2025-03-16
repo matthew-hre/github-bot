@@ -130,12 +130,23 @@ def truncate(s: str, length: int, *, suffix: str = "…") -> str:
     return s[: length - len(suffix)] + suffix
 
 
-def _format_reply(reply: discord.Message) -> discord.Embed:
+async def _format_reply(reply: discord.Message) -> discord.Embed:
     if reply is discord.utils.MISSING:
         return _unattachable_embed("reply")
+    description_prefix = ""
+    description = reply.content
+    if (ref := await _get_reference(reply)) is not None:
+        assert reply.reference is not None
+        if reply.reference.type == discord.MessageReferenceType.forward:
+            description_prefix = "➜ Forwarded\n"
+            if ref is discord.utils.MISSING:
+                description = "> *Unable to attach forward.*"
+            else:
+                description = f"> {ref.content}"
     return (
         discord.Embed(
-            description=f"> {truncate(reply.content, 100)}", url=reply.jump_url
+            description=f"{description_prefix}{truncate(description, 100)}",
+            url=reply.jump_url,
         )
         .set_author(
             name=f"↪️ Replying to {reply.author.display_name}",
@@ -234,7 +245,7 @@ async def move_message_via_webhook(
         if message.reference.type == discord.MessageReferenceType.forward:
             embeds.insert(0, _format_forward(ref))
         else:
-            embeds.append(_format_reply(ref))
+            embeds.append(await _format_reply(ref))
 
     subtext = _format_subtext(executor, msg_data)
     content, file = format_or_file(
