@@ -141,8 +141,10 @@ async def _format_reply(reply: discord.Message) -> discord.Embed:
             description_prefix = "➜ Forwarded\n"
             if ref is discord.utils.MISSING:
                 description = "> *Unable to attach forward.*"
-            else:
+            elif ref.content:
                 description = f"> {ref.content}"
+            else:
+                description = "> *Some forwarded content elided.*"
     return (
         discord.Embed(
             description=f"{description_prefix}{truncate(description, 100)}",
