@@ -30,3 +30,5 @@ jobs:
         run: uv run taplo fmt --check pyproject.toml
       - name: Type-check code
         run: uv run pyright app
+      - name: Run tests
+        run: uv run pytest

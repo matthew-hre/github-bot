@@ -140,6 +140,7 @@ This bot runs on Python 3.12+ and is managed with [uv]. To get started:
    $ uv run ruff format
    $ uv run pyright app
    $ uv run taplo fmt pyproject.toml
+   $ uv run pytest
    ```
 
 
