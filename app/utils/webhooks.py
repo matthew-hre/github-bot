@@ -81,7 +81,6 @@ def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
 
 
 def _format_subtext(
-    message: discord.Message,
     executor: discord.Member | None,
     msg_data: MessageData,
     *,
@@ -90,12 +89,12 @@ def _format_subtext(
     lines: list[str] = []
     if reactions := msg_data.reactions.items():
         lines.append("   ".join(f"{emoji} x{count}" for emoji, count in reactions))
-    if message.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(hours=12):
+    if msg_data.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(hours=12):
         include_timestamp = False
     if include_timestamp:
-        line = dynamic_timestamp(message.created_at)
-        if message.edited_at is not None:
-            line += f" (edited at {dynamic_timestamp(message.edited_at, 't')})"
+        line = dynamic_timestamp(msg_data.created_at)
+        if msg_data.edited_at is not None:
+            line += f" (edited at {dynamic_timestamp(msg_data.edited_at, 't')})"
         lines.append(line)
     if executor:
         assert isinstance(msg_data.channel, GuildTextChannel)
@@ -133,7 +132,7 @@ async def move_message_via_webhook(
 ) -> discord.WebhookMessage:
     msg_data = await scrape_message_data(message)
 
-    subtext = _format_subtext(message, executor, msg_data)
+    subtext = _format_subtext(executor, msg_data)
     content, file = format_or_file(
         msg_data.content,
         template=f"{{}}{subtext}",
