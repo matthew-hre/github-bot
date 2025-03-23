@@ -75,13 +75,34 @@ async def _get_sticker_embed(sticker: discord.StickerItem) -> discord.Embed:
     )
 
 
-def _format_subtext(executor: discord.Member | None, msg_data: MessageData) -> str:
+def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
+    fmt = f":{fmt}" if fmt is not None else ""
+    return f"<t:{int(dt.timestamp())}{fmt}>"
+
+
+def _format_subtext(
+    executor: discord.Member | None,
+    msg_data: MessageData,
+    *,
+    include_timestamp: bool = True,
+) -> str:
     lines: list[str] = []
     if reactions := msg_data.reactions.items():
         lines.append("   ".join(f"{emoji} x{count}" for emoji, count in reactions))
+    if msg_data.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(hours=12):
+        include_timestamp = False
+    if include_timestamp:
+        line = dynamic_timestamp(msg_data.created_at)
+        if msg_data.edited_at is not None:
+            line += f" (edited at {dynamic_timestamp(msg_data.edited_at, 't')})"
+        lines.append(line)
     if executor:
         assert isinstance(msg_data.channel, GuildTextChannel)
-        lines.append(f"Moved from {msg_data.channel.mention} by {executor.mention}")
+        line = f"Moved from {msg_data.channel.mention} by {executor.mention}"
+        if include_timestamp:
+            lines[-1] += " • " + line
+        else:
+            lines.append(line)
     if skipped := msg_data.skipped_attachments:
         lines.append(f"(skipped {skipped} large attachment(s))")
     return "".join(f"\n-# {line}" for line in lines)
