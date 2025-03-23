@@ -67,5 +67,7 @@ async def test_mention_entity(
     monkeypatch.setattr("app.components.entity_mentions.resolution.config", bot_env)
     monkeypatch.setattr("app.components.entity_mentions.cache.gh", gh_env)
     monkeypatch.setattr("app.components.entity_mentions.discussions.gh", gh_env)
-    msg_content = await mention_entity(entity_id, 0)
+
+    msg_content = await mention_entity(entity_id)
+
     assert f"{kind} [#{entity_id}]" in msg_content
