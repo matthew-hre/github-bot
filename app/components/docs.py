@@ -85,7 +85,6 @@ def refresh_sitemap() -> None:
 
 
 sitemap: dict[str, list[str]] = {}
-refresh_sitemap()
 
 
 async def section_autocomplete(
