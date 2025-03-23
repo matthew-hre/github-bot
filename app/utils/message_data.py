@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from io import BytesIO
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import discord
+
+if TYPE_CHECKING:
+    import datetime as dt
 
 MAX_ATTACHMENT_SIZE = 67_108_864  # 64 MiB
 
@@ -11,6 +14,8 @@ MAX_ATTACHMENT_SIZE = 67_108_864  # 64 MiB
 class MessageData(NamedTuple):
     content: str
     channel: discord.abc.MessageableChannel
+    created_at: dt.datetime
+    edited_at: dt.datetime | None
     attachments: list[discord.File]
     skipped_attachments: int
     reactions: dict[str | discord.Emoji, int]
@@ -20,6 +25,8 @@ async def scrape_message_data(message: discord.Message) -> MessageData:
     return MessageData(
         message.content,
         message.channel,
+        message.created_at,
+        message.edited_at,
         *await _get_attachments(message),
         _get_reactions(message),
     )
