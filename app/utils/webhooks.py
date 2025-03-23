@@ -90,6 +90,8 @@ def _format_subtext(
     lines: list[str] = []
     if reactions := msg_data.reactions.items():
         lines.append("   ".join(f"{emoji} x{count}" for emoji, count in reactions))
+    if message.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(hours=12):
+        include_timestamp = False
     if include_timestamp:
         line = dynamic_timestamp(message.created_at)
         if message.edited_at is not None:
