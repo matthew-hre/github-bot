@@ -66,7 +66,7 @@ async def _get_reference(message: discord.Message) -> discord.Message | None:
         # There was no reference whatsoever.
         return ref
     assert message.reference is not None
-    if message.reference.type != discord.MessageReferenceType.forward:
+    if message.reference.type is not discord.MessageReferenceType.forward:
         # We don't have a forward, fantastic, we're done here.
         return ref
     # And now, we have a forward. Discord doesn't collapse forwarded forwards,
@@ -82,7 +82,7 @@ async def _get_reference(message: discord.Message) -> discord.Message | None:
             # forward chain, rather than being converted into an error embed.
             return discord.utils.MISSING
         assert message.reference is not None
-        if message.reference.type != discord.MessageReferenceType.forward:
+        if message.reference.type is not discord.MessageReferenceType.forward:
             # This check is subtly different from the one at the top. If we
             # have a reference that's not a forward, we don't want to continue,
             # of course. *But*, unlike up top where we return the reference, we
@@ -122,7 +122,7 @@ def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
 
 async def _get_sticker_embed(sticker: discord.StickerItem) -> discord.Embed:
     # Lottie images can't be used in embeds, unfortunately.
-    if sticker.format == discord.StickerFormatType.lottie:
+    if sticker.format is discord.StickerFormatType.lottie:
         return _unattachable_embed("sticker")
     async with httpx.AsyncClient() as client:
         for u in (
@@ -134,7 +134,7 @@ async def _get_sticker_embed(sticker: discord.StickerItem) -> discord.Embed:
         ):
             if (await client.head(u)).is_success:
                 embed = discord.Embed().set_image(url=u)
-                if sticker.format == discord.StickerFormatType.apng:
+                if sticker.format is discord.StickerFormatType.apng:
                     embed.set_footer(text="Unable to animate sticker.")
                     embed.color = discord.Color.orange()
                 return embed
@@ -160,7 +160,7 @@ async def _format_reply(reply: discord.Message) -> discord.Embed:
         ref_exists = False
     if ref is not None:
         assert reply.reference is not None
-        if reply.reference.type == discord.MessageReferenceType.forward:
+        if reply.reference.type is discord.MessageReferenceType.forward:
             description_prefix = "➜ Forwarded\n"
             if not ref_exists:
                 description = "> *Forwarded message was deleted.*"
@@ -256,14 +256,14 @@ def _format_missing_reference(
     message: discord.Message,
 ) -> discord.Embed:
     assert message.reference is not None
-    if message.reference.type == discord.MessageReferenceType.forward:
+    if message.reference.type is discord.MessageReferenceType.forward:
         return discord.Embed(description="*Forwarded message was deleted.*").set_author(
             name="➜ Forwarded"
         )
     return discord.Embed(description="*Original message was deleted.*").set_author(
         name=(
             "⚡️ Message"
-            if message.type == discord.MessageType.context_menu_command
+            if message.type is discord.MessageType.context_menu_command
             else "↪️ Reply"
         )
     )
@@ -277,7 +277,7 @@ def _format_interaction(message: discord.Message) -> str:
     # if it is ignored. There is no other way to get the name, and
     # Message._interaction is not marked deprecated. Delectable.
     if hasattr(message, "_interaction") and (interaction := message._interaction):  # pyright: ignore [reportPrivateUsage] # noqa: SLF001
-        prefix = "/" * (message.type != discord.MessageType.context_menu_command)
+        prefix = "/" * (message.type is not discord.MessageType.context_menu_command)
         name = f"`{prefix}{interaction.name}`"
     else:
         name = "a command"
@@ -364,11 +364,11 @@ async def move_message_via_webhook(
     else:
         if ref is not None:
             assert message.reference is not None
-            if message.reference.type == discord.MessageReferenceType.forward:
+            if message.reference.type is discord.MessageReferenceType.forward:
                 forward_embeds, forward_attachments = await _format_forward(ref)
                 embeds = [*forward_embeds, *embeds]
                 msg_data.attachments.extend(forward_attachments)
-            elif message.type == discord.MessageType.context_menu_command:
+            elif message.type is discord.MessageType.context_menu_command:
                 embeds.append(await _format_context_menu_command(ref))
             else:
                 embeds.append(await _format_reply(ref))
