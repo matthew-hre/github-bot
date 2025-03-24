@@ -15,16 +15,10 @@ INVALID_REQUEST_DATA = 400
 INVALID_FORM_BODY = 50035
 
 
-async def mention_entity(entity_id: int, owner_id: int) -> str:
+async def mention_entity(entity_id: int) -> str:
     msg, _ = await entity_message(
         # Forging a message to use the entity_mentions logic
-        cast(
-            discord.Message,
-            SimpleNamespace(
-                content=f"#{entity_id}",
-                author=SimpleNamespace(id=owner_id),
-            ),
-        )
+        cast(discord.Message, SimpleNamespace(content=f"#{entity_id}"))
     )
     return msg
 
@@ -55,7 +49,7 @@ class Close(app_commands.Group):
             interaction,
             "moved",
             title_prefix=f"[MOVED: #{entity_id}]",
-            additional_reply=await mention_entity(entity_id, interaction.user.id),
+            additional_reply=await mention_entity(entity_id),
         )
 
     @app_commands.command(name="duplicate", description="Mark post as duplicate.")
@@ -72,7 +66,7 @@ class Close(app_commands.Group):
         if len(str_id) < 10:
             # GitHub entity number
             title_prefix = f"[DUPLICATE: #{id_}]"
-            additional_reply = await mention_entity(int(id_), interaction.user.id)
+            additional_reply = await mention_entity(int(id_))
         else:
             # Help post ID
             title_prefix = None

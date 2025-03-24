@@ -37,6 +37,7 @@ from app.utils import is_dm, is_mod, try_dm
 
 @bot.event
 async def on_ready() -> None:
+    refresh_sitemap()
     await load_emojis()
     if not autoclose_solved_posts.is_running():
         autoclose_solved_posts.start()
