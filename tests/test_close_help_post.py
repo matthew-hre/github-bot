@@ -17,7 +17,7 @@ def fill_entity(**kwargs: Any) -> SimpleNamespace:
         "number": 0,
         "title": "",
         "body": None,
-        "html_url": "https://github.com/foo/bar/issues/1",
+        "html_url": "https://github.com/trag1c/zig-codeblocks/issues/1",
         "user": GitHubUser(login="", url="", icon_url=""),
         "created_at": dt.datetime(1, 1, 1, tzinfo=dt.UTC),
         "state": False,

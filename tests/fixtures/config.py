@@ -7,7 +7,7 @@ BOT_ENV = SimpleNamespace(
     GITHUB_ORG="ghostty-org",
     GITHUB_REPOS={"main": "ghostty", "bot": "discord-bot", "web": "website"},
     GITHUB_TOKEN="fake-gh-token",
-    BOT_ACCEPT_INVITE_URL="https://discord.com/",
+    BOT_ACCEPT_INVITE_URL="https://youtu.be/-8KqaxE7kD0",
     SENTRY_DSN=None,
     BOT_HELP_CHANNEL_TAG_IDS={
         "moved": "1214210403",

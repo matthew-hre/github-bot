@@ -57,7 +57,7 @@ class KitPoser:
             raise PoserSetupError(msg)
 
         blackbox = self.responses[self._context]
-        # Hack: Fetching the original key instead of doing "Call(*a, **kw) in blackbox"
+        # HACK: Fetching the original key instead of doing "Call(*a, **kw) in blackbox"
         # to preserve the __kitposer_*__ settings.
         arg_store = next((call for call in blackbox if call == Call(*a, **kw)), None)
         if arg_store is None:
