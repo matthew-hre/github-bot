@@ -25,6 +25,8 @@ MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
 VIEW_TIMEOUT = 60.0
 
+# This pattern is intentionally simple; it's only meant to operate on sequences
+# produced by zig-codeblocks which will never appear in any other form.
 SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
 THEME = DEFAULT_THEME.copy()
 del THEME["comments"]
