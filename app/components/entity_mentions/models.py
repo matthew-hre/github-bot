@@ -1,5 +1,4 @@
 import datetime as dt
-import re
 from typing import Annotated, Literal, NamedTuple
 
 from pydantic import (
@@ -12,8 +11,6 @@ from pydantic import (
 )
 
 from app.utils import truncate
-
-PASCAL_CASE_WORD_BOUNDARY = re.compile(r"([a-z])([A-Z])")
 
 
 def state_validator(value: object) -> bool:
@@ -47,7 +44,9 @@ class Entity(BaseModel):
 
     @property
     def kind(self) -> str:
-        return PASCAL_CASE_WORD_BOUNDARY.sub(r"\1 \2", type(self).__name__)
+        if not (name := type(self).__name__):
+            return name
+        return name[0] + "".join(f" {c}" if c.isupper() else c for c in name[1:])
 
 
 class Issue(Entity):
