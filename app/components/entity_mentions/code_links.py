@@ -50,7 +50,7 @@ class ContentCache(TTRCache[SnippetPath, str]):
         self[key] = resp.text
 
 
-content_cache = ContentCache(1800)  # 30 minutes
+content_cache = ContentCache(minutes=30)
 code_linker = MessageLinker()
 
 

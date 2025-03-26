@@ -62,7 +62,7 @@ class CommentCache(TTRCache[tuple[EntityGist, str, int], Comment]):
             self[key] = await coro(entity_gist, event_no)
 
 
-comment_cache = CommentCache(1800)  # 30 minutes
+comment_cache = CommentCache(minutes=30)
 
 
 def _make_author(user: BaseModel | None) -> GitHubUser:

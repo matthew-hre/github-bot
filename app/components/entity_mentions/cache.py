@@ -11,8 +11,9 @@ type CacheKey = tuple[str, str, int]
 
 
 class TTRCache[KT, VT](ABC):
-    def __init__(self, ttr: int) -> None:
-        self._ttr = dt.timedelta(seconds=ttr)
+    def __init__(self, **ttr: int | float) -> None:
+        """Keyword arguments are passed to datetime.timedelta."""
+        self._ttr = dt.timedelta(**ttr)
         self._cache: dict[KT, tuple[dt.datetime, VT]] = {}
 
     def __contains__(self, key: KT) -> bool:
@@ -55,4 +56,4 @@ class EntityCache(TTRCache[CacheKey, Entity]):
             self[key] = await get_discussion(*key)
 
 
-entity_cache = EntityCache(1800)  # 30 minutes
+entity_cache = EntityCache(minutes=30)
