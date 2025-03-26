@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import discord
 
+from .cache import TTRCache
 from .hooks import (
     MessageLinker,
     create_delete_hook,
@@ -29,6 +30,7 @@ __all__ = (
     "GuildTextChannel",
     "MessageData",
     "MessageLinker",
+    "TTRCache",
     "create_delete_hook",
     "create_edit_hook",
     "dynamic_timestamp",

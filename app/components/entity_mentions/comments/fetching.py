@@ -9,10 +9,11 @@ from typing import TYPE_CHECKING, cast
 from githubkit.exception import RequestFailed
 from zig_codeblocks import extract_codeblocks
 
-from app.components.entity_mentions.cache import TTRCache, entity_cache
+from app.components.entity_mentions.cache import entity_cache
 from app.components.entity_mentions.discussions import get_discussion_comment
 from app.components.entity_mentions.models import Comment, EntityGist, GitHubUser
 from app.setup import gh
+from app.utils import TTRCache
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
