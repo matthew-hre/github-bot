@@ -6,12 +6,12 @@ from typing import NamedTuple
 import discord
 from zig_codeblocks import highlight_zig_code
 
-from .cache import TTRCache
 from app.components.zig_codeblocks import THEME
 from app.setup import gh
 from app.utils import (
     DeleteMessage,
     MessageLinker,
+    TTRCache,
     create_delete_hook,
     create_edit_hook,
     remove_view_after_timeout,
@@ -50,7 +50,7 @@ class ContentCache(TTRCache[SnippetPath, str]):
         self[key] = resp.text
 
 
-content_cache = ContentCache(1800)  # 30 minutes
+content_cache = ContentCache(minutes=30)
 code_linker = MessageLinker()
 
 

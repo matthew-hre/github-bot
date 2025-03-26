@@ -20,7 +20,7 @@ class OwnerCache(TTRCache[str, str]):
         self[key] = await find_repo_owner(key)
 
 
-owner_cache = OwnerCache(3600)  # 1 hour
+owner_cache = OwnerCache(hours=1)
 
 
 async def find_repo_owner(name: str) -> str:
