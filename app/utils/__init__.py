@@ -15,16 +15,22 @@ from .hooks import (
 )
 from .message_data import MessageData, scrape_message_data
 from .webhooks import (
+    NON_SYSTEM_MESSAGE_TYPES,
+    SUPPORTED_IMAGE_FORMATS,
     GuildTextChannel,
     dynamic_timestamp,
     format_or_file,
     get_ghostty_guild,
     get_or_create_webhook,
+    message_can_be_moved,
     move_message_via_webhook,
+    truncate,
 )
 from app.setup import config
 
 __all__ = (
+    "NON_SYSTEM_MESSAGE_TYPES",
+    "SUPPORTED_IMAGE_FORMATS",
     "Account",
     "DeleteMessage",
     "GuildTextChannel",
@@ -41,9 +47,11 @@ __all__ = (
     "is_dm",
     "is_helper",
     "is_mod",
+    "message_can_be_moved",
     "move_message_via_webhook",
     "remove_view_after_timeout",
     "scrape_message_data",
+    "truncate",
     "try_dm",
 )
 
@@ -130,9 +138,3 @@ def escape_special(content: str) -> str:
     return "\n".join(
         _ORDERED_LIST_REGEX.sub(r"\1\. \2", line) for line in escaped.splitlines()
     )
-
-
-def truncate(s: str, length: int, *, suffix: str = "…") -> str:
-    if len(s) <= length:
-        return s
-    return s[: length - len(suffix)] + suffix

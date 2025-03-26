@@ -11,6 +11,7 @@ from app.utils import (
     is_dm,
     is_helper,
     is_mod,
+    message_can_be_moved,
     move_message_via_webhook,
 )
 
@@ -71,7 +72,7 @@ class Ghostping(discord.ui.View):
     @discord.ui.button(
         label="Ghostping",
         emoji="👻",
-        style=discord.ButtonStyle.secondary,
+        style=discord.ButtonStyle.gray,
     )
     async def ghostping(
         self, interaction: discord.Interaction, button: discord.ui.Button[Ghostping]
@@ -117,6 +118,28 @@ class HelpPostTitle(discord.ui.Modal, title="Turn into #help post"):
         )
 
 
+class DeleteOriginalMessage(discord.ui.View):
+    def __init__(self, message: discord.Message) -> None:
+        super().__init__()
+        self.message = message
+
+    @discord.ui.button(
+        label="Delete instead",
+        emoji="🗑️",
+        style=discord.ButtonStyle.danger,
+    )
+    async def delete(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button[DeleteOriginalMessage],
+    ) -> None:
+        button.disabled = True
+        await self.message.delete()
+        await interaction.response.edit_message(
+            content="Deleted the original message.", view=self
+        )
+
+
 @bot.tree.context_menu(name="Move message")
 @discord.app_commands.default_permissions(manage_messages=True)
 @discord.app_commands.guild_only()
@@ -132,6 +155,14 @@ async def move_message(
     if not (is_mod(interaction.user) or is_helper(interaction.user)):
         await interaction.response.send_message(
             "You do not have permission to move messages.", ephemeral=True
+        )
+        return
+
+    if not message_can_be_moved(message):
+        await interaction.response.send_message(
+            "System messages cannot be moved.",
+            ephemeral=True,
+            view=DeleteOriginalMessage(message),
         )
         return
 
@@ -157,6 +188,14 @@ async def turn_into_help_post(
     if not (is_mod(interaction.user) or is_helper(interaction.user)):
         await interaction.response.send_message(
             "You do not have permission to use this action.", ephemeral=True
+        )
+        return
+
+    if not message_can_be_moved(message):
+        await interaction.response.send_message(
+            f"System messages cannot be turned into <#{config.HELP_CHANNEL_ID}> posts.",
+            ephemeral=True,
+            view=DeleteOriginalMessage(message),
         )
         return
 
