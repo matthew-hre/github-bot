@@ -8,9 +8,11 @@ from .cache import TTRCache
 from app.setup import config, gh
 
 ENTITY_REGEX = re.compile(
+    r"(?P<site>\bhttps?://github\.com/)?"
     r"(?P<owner>\b[a-z0-9\-]+/)?"
     r"(?P<repo>\b[a-z0-9\-\._]+)?"
-    r"#(?P<number>\d{1,6})(?!\.\d)\b",
+    r"(?P<sep>/(?:issues|pull|discussions)/|#)"
+    r"(?P<number>\d{1,6})(?!\.\d)\b",
     re.IGNORECASE,
 )
 
@@ -37,9 +39,17 @@ async def find_repo_owner(name: str) -> str:
 async def resolve_repo_signatures(content: str) -> AsyncIterator[tuple[str, str, int]]:
     valid_signatures = 0
     for match in ENTITY_REGEX.finditer(content):
+        site, sep = match["site"], match["sep"]
+        # Ensure that the correct separator is used.
+        if bool(site) == (sep == "#"):
+            continue
+        # NOTE: this *must* be after the previous check, as the number can be
+        # an empty string if an incorrect separator was used, which would
+        # result in a ValueError in the call to int().
         owner, repo, number = match["owner"], match["repo"], int(match["number"])
+
         match owner, repo:
-            case None, None if number < 10:
+            case None, None if number < 10 and not site:
                 # Ignore single-digit mentions like #1, (likely a false positive)
                 continue
             case None, None:
