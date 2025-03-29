@@ -140,6 +140,10 @@ async def docs(
         await interaction.response.send_message("Documentation linked.", ephemeral=True)
     except ValueError as exc:
         await interaction.response.send_message(str(exc), ephemeral=True)
+    except discord.HTTPException:
+        await interaction.response.send_message(
+            "Message content too long.", ephemeral=True
+        )
 
 
 def get_docs_link(section: str, page: str) -> str:
