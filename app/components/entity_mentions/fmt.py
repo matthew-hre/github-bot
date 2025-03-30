@@ -85,9 +85,7 @@ def _format_mention(entity: Entity) -> str:
 
 
 async def entity_message(message: discord.Message) -> tuple[str, int]:
-    matches = list(
-        dict.fromkeys([r async for r in resolve_repo_signatures(message.content)])
-    )
+    matches = list(dict.fromkeys([r async for r in resolve_repo_signatures(message)]))
 
     entities = [
         _format_mention(entity)

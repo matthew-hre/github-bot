@@ -2,6 +2,7 @@ import re
 from collections.abc import AsyncIterator
 from contextlib import suppress
 
+import discord
 from githubkit.exception import RequestFailed
 
 from .cache import TTRCache
@@ -36,9 +37,11 @@ async def find_repo_owner(name: str) -> str:
     )
 
 
-async def resolve_repo_signatures(content: str) -> AsyncIterator[tuple[str, str, int]]:
+async def resolve_repo_signatures(
+    message: discord.Message,
+) -> AsyncIterator[tuple[str, str, int]]:
     valid_signatures = 0
-    for match in ENTITY_REGEX.finditer(content):
+    for match in ENTITY_REGEX.finditer(message.content):
         site, sep = match["site"], match["sep"]
         # Ensure that the correct separator is used.
         if bool(site) == (sep == "#"):
@@ -47,6 +50,8 @@ async def resolve_repo_signatures(content: str) -> AsyncIterator[tuple[str, str,
         # an empty string if an incorrect separator was used, which would
         # result in a ValueError in the call to int().
         owner, repo, number = match["owner"], match["repo"], int(match["number"])
+        if site:
+            await message.edit(suppress=True)
 
         match owner, repo:
             case None, None if number < 10 and not site:
