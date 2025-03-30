@@ -209,6 +209,10 @@ On top of that, any GitHub repository can be mentioned, either with
 `owner/repo#1` (e.g. `astral-sh/uv#8020`), or `repo#1`, where the bot will
 try finding the most popular repo with that name (e.g. `rust#105586`).
 
+A full GitHub URL (such as https://github.com/ghostty-org/ghostty/pull/4876)
+will also be responded to in a similar fashion, and the (useless) GitHub embed
+will be suppressed.
+
 The bot also keeps a TTR cache to avoid looking up the same entity multiple
 times (with data being refetched 30 minutes since last use), making the bot more
 responsive (the example below can take ~2s on first lookup and ~5ms on
