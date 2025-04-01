@@ -175,7 +175,7 @@ message option:
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/2cc0f7f0-8145-4dca-b7e6-5db18d939427" alt="/docs command autocomplete" height="250px">
-  <img src="https://github.com/user-attachments/assets/0938881f-80ad-44d0-8414-915324f2761e" alt="/docs command message option" height="250px">
+  <img src="https://github.com/user-attachments/assets/9d97e37b-e31a-4664-9329-bb727fca3965" alt="/docs command message option" height="250px">
 </p>
 
 If a message is provided, a webhook will be used to send the message under the
