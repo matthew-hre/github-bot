@@ -27,6 +27,7 @@ from app.components.entity_mentions import (
 from app.components.lock_old_posts import check_for_old_posts
 from app.components.message_filter import check_message_filters
 from app.components.status import bot_status, report_status
+from app.components.xkcd_mentions import handle_xkcd_mentions
 from app.components.zig_codeblocks import (
     check_for_zig_code,
     zig_codeblock_delete_hook,
@@ -92,6 +93,7 @@ async def on_message(message: discord.Message) -> None:
         reply_with_code(message),  # Look for GitHub code links and reply with contents
         reply_with_comments(message),  # Check for entity comments and reply with embeds
         check_for_old_posts(message),  # Check for bumps of old help posts and lock them
+        handle_xkcd_mentions(message),  # Reply to xkcd mentions with the URL
     ]
 
     # Look for issue/PR/discussion mentions and name/link them
