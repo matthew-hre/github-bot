@@ -29,7 +29,7 @@ def fill_entity(**kwargs: Any) -> SimpleNamespace:
     return SimpleNamespace(**defaults | kwargs)
 
 
-# Calling __new__ to skip initialization and having to pass in a proper Reponse object
+# Calling __new__ to skip initialization and having to pass in a proper Response object
 failed_request = RequestFailed.__new__(RequestFailed)
 repo = ("ghostty-org", "ghostty")
 gh_env = kp.KitPoser(

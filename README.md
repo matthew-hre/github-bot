@@ -109,7 +109,7 @@ Below are explanations for each variable:
 * `BOT_ACCEPT_INVITE_URL`: a URL to visit to accept the Ghostty invite
 * channel/role IDs from [step 3](#3-preparing-a-discord-server):
   * `BOT_HELP_CHANNEL_ID`
-  * `BOT_HELP_CHANNEL_TAG_IDS`: a comma-seperated list of `tag_name:tag_id`
+  * `BOT_HELP_CHANNEL_TAG_IDS`: a comma-separated list of `tag_name:tag_id`
     pairs. The tag names are `moved`, `solved`, `stale` and `duplicate`.
   * `BOT_MEDIA_CHANNEL_ID`
   * `BOT_SHOWCASE_CHANNEL_ID`
