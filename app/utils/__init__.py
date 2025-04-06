@@ -56,6 +56,8 @@ __all__ = (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from typing_extensions import TypeIs
 
 
@@ -128,6 +130,15 @@ def post_is_solved(post: discord.Thread) -> bool:
         post_has_tag(post, tag)
         for tag in ("solved", "moved to github", "duplicate", "stale")
     )
+
+
+async def aenumerate[T](
+    it: AsyncIterator[T], start: int = 0
+) -> AsyncIterator[tuple[int, T]]:
+    i = start
+    async for x in it:
+        yield i, x
+        i += 1
 
 
 def escape_special(content: str) -> str:
