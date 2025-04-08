@@ -147,7 +147,17 @@ This bot runs on Python 3.12+ and is managed with [uv]. To get started:
 
 # Project structure
 
-<img src="https://github.com/user-attachments/assets/1a82433e-9f20-4189-a409-03cbc108a44c" alt="Project structure graph">
+```mermaid
+flowchart LR;
+
+cfg{{config.py}} --> setup([setup.py])
+setup --> utils(utils/) --> core([core.py])
+setup --> components(components/)
+utils --> components
+setup --> core
+components --> core
+core --> main{{\_\_main__.py}}
+```
 
 * `components/` is a place for all dedicated features, such as message filters
   or entity mentions. Most new features should become modules belonging to this
@@ -163,7 +173,7 @@ This bot runs on Python 3.12+ and is managed with [uv]. To get started:
 * `core.py` loads the `components` package and houses the code for handling the
   most standard bot events (e.g. `on_ready`, `on_message`, `on_error`).
 * `setup.py` creates the Discord and GitHub clients.
-* `utils.py` contains utility functions not exactly tied to a specific feature.
+* `utils/` contains helper functions/classes not tied to any specific feature.
 * `__main__.py` initializes Sentry (optional) and starts the bot.
 
 
@@ -221,8 +231,8 @@ On top of that, any GitHub repository can be mentioned, either with
 `owner/repo#1` (e.g. `astral-sh/uv#8020`), or `repo#1`, where the bot will
 try finding the most popular repo with that name (e.g. `rust#105586`).
 
-A full GitHub URL (such as https://github.com/ghostty-org/ghostty/pull/4876)
-will also be responded to in a similar fashion, and the (useless) GitHub embed
+A full GitHub URL (such as `https://github.com/ghostty-org/ghostty/pull/4876`)
+will also be responded to in a similar fashion, and the original GitHub embed
 will be suppressed.
 
 The bot also keeps a TTR cache to avoid looking up the same entity multiple
