@@ -18,6 +18,10 @@ async def check_for_old_posts(message: discord.Message) -> None:
         or post.locked
         or post.last_message_id is None
         or not post_is_solved(post)
+        or (
+            (starter := post.starter_message) is not None
+            and starter.created_at > now - dt.timedelta(days=30)
+        )
     ):
         return
 
