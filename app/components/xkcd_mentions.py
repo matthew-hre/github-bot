@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import re
+from contextlib import suppress
 
 import discord
 import httpx
@@ -141,6 +142,17 @@ class XKCDMentionActions(DeleteMessage):
         _button: discord.ui.Button[XKCDMentionActions],
     ) -> None:
         reply, *_ = self.linker.get(self.message)
+        with suppress(discord.NotFound, discord.Forbidden, discord.HTTPException):
+            # TODO(Kat): this is just a temporary workaround to correctly
+            # handle edited XKCD mention messages. There seems to be a bug
+            # somewhere, possibly in the edit hook; my assumption is that it
+            # doesn't update the linked message after the edit, leading to
+            # stale embeds being served. Thus, fetch the real message from
+            # Discord's servers before proceeding. If anything fails, ignore it
+            # and just go with whatever we have in the cache. To reiterate,
+            # this is just a TEMPORARY measure until somebody fixes the actual
+            # issue that causes the returned messages to be stale.
+            reply = await reply.channel.fetch_message(reply.id)
         transcripts, failed = await self._get_transcripts(reply.embeds)
         match len(transcripts) - failed:
             case 0:
