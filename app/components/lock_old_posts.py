@@ -11,6 +11,9 @@ from app.utils import aenumerate, dynamic_timestamp, post_is_solved
 async def check_for_old_posts(message: discord.Message) -> None:
     post = message.channel
     now = dt.datetime.now(tz=dt.UTC)
+    one_minute_ago = now - dt.timedelta(minutes=1)
+    one_month_ago = now - dt.timedelta(days=30)
+
     if (
         not isinstance(post, discord.Thread)
         or not post.parent
@@ -20,7 +23,11 @@ async def check_for_old_posts(message: discord.Message) -> None:
         or not post_is_solved(post)
         or (
             (starter := post.starter_message) is not None
-            and starter.created_at > now - dt.timedelta(days=30)
+            # Also check the post starter message, whose timestamp is readily
+            # available without fetching messages from Discord. This reduces
+            # ratelimits due to a high volume of fetches when messages are sent
+            # in the #help channel.
+            and starter.created_at > one_month_ago
         )
     ):
         return
@@ -28,9 +35,9 @@ async def check_for_old_posts(message: discord.Message) -> None:
     # Ignore messages less than a minute old for the same person may have
     # sent multiple in quick succession, resulting in their own message
     # being considered as activity.
-    last = await _get_message(post, 1, before=now - dt.timedelta(minutes=1))
+    last = await _get_message(post, 1, before=one_minute_ago)
     # Don't lock the post if it isn't old enough.
-    if last is None or last.created_at > now - dt.timedelta(days=30):
+    if last is None or last.created_at > one_month_ago:
         # If last was None, there were no messages older than one minute.
         # Assuming the threshold above stays at a reasonably large limit, this
         # either means that every message was deleted, or that there was no
