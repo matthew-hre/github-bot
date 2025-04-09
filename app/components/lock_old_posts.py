@@ -23,6 +23,10 @@ async def check_for_old_posts(message: discord.Message) -> None:
         or not post_is_solved(post)
         or (
             (starter := post.starter_message) is not None
+            # Also check the post starter message, whose timestamp is readily
+            # available without fetching messages from Discord. This reduces
+            # ratelimits due to a high volume of fetches when messages are sent
+            # in the #help channel.
             and starter.created_at > one_month_ago
         )
     ):
