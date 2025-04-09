@@ -34,6 +34,12 @@ class BotStatus:
     last_scan_results: tuple[dt.datetime, int, int] | None = None
     last_sitemap_refresh: dt.datetime | None = None
 
+    @property
+    def initialized(self) -> bool:
+        return all(
+            (self.last_login_time, self.last_sitemap_refresh, self.last_scan_results)
+        )
+
     def _get_scan_data(self) -> SimpleNamespace:
         # Avoid circular import
         from app.components.autoclose import autoclose_solved_posts
@@ -66,6 +72,10 @@ class BotStatus:
         )
 
     def export(self) -> dict[str, str | SimpleNamespace]:
+        """
+        Make sure the bot has finished initializing before calling this, using
+        the `initialized` property.
+        """
         assert self.last_login_time is not None
         assert self.last_sitemap_refresh is not None
         return {
@@ -94,6 +104,8 @@ def _get_commit_hash() -> str:
 
 
 def status_message() -> str:
+    if not bot_status.initialized:
+        return "The bot has not finished initializing yet; try again shortly."
     return STATUS_MESSAGE_TEMPLATE.format(
         commit_hash=_get_commit_hash(),
         **bot_status.export(),
