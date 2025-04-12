@@ -18,7 +18,8 @@ from app.utils import (
 )
 
 CODE_LINK_PATTERN = re.compile(
-    r"https?://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/([^\?#]+)(?:[^\#]*)?#L(\d+)(?:-L(\d+))?"
+    r"https?://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/([^\?#]+)(?:[^\#]*)?"
+    r"#L(\d+)(?:C\d+)?(?:-L(\d+)(?:C\d+)?)?"
 )
 
 
