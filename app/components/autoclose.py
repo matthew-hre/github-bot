@@ -15,7 +15,7 @@ async def autoclose_solved_posts() -> None:
     closed_posts: list[discord.Thread] = []
     failures: list[discord.Thread] = []
 
-    help_channel = cast(discord.ForumChannel, bot.get_channel(config.HELP_CHANNEL_ID))
+    help_channel = cast("discord.ForumChannel", bot.get_channel(config.HELP_CHANNEL_ID))
     open_posts = len(help_channel.threads)
     for post in help_channel.threads:
         if post.archived or not post_is_solved(post):
@@ -28,7 +28,7 @@ async def autoclose_solved_posts() -> None:
             await post.edit(archived=True)
             closed_posts.append(post)
 
-    log_channel = cast(discord.TextChannel, bot.get_channel(config.LOG_CHANNEL_ID))
+    log_channel = cast("discord.TextChannel", bot.get_channel(config.LOG_CHANNEL_ID))
     bot_status.last_scan_results = (
         dt.datetime.now(tz=dt.UTC),
         open_posts,

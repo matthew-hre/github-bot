@@ -63,8 +63,8 @@ def create_edit_hook(  # noqa: PLR0913
         content: str | list[discord.Embed],
     ) -> tuple[str, list[discord.Embed]]:
         if embed_mode:
-            return "", cast(list[discord.Embed], content)
-        return cast(str, content), []
+            return "", cast("list[discord.Embed]", content)
+        return cast("str", content), []
 
     async def edit_hook(before: discord.Message, after: discord.Message) -> None:
         if before.content == after.content:

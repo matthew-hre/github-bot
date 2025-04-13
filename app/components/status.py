@@ -44,7 +44,7 @@ class BotStatus:
         # Avoid circular import
         from app.components.autoclose import autoclose_solved_posts
 
-        next_scan = cast(dt.datetime, autoclose_solved_posts.next_iteration)
+        next_scan = cast("dt.datetime", autoclose_solved_posts.next_iteration)
 
         assert self.last_scan_results is not None
         last_scan, scanned, closed = self.last_scan_results

@@ -59,7 +59,7 @@ class SelectChannel(discord.ui.View):
         )
         await interaction.edit_original_response(
             content=f"Moved the message to {channel.mention}.",
-            view=Ghostping(cast(discord.Member, self.message.author), channel),
+            view=Ghostping(cast("discord.Member", self.message.author), channel),
         )
 
 
@@ -99,7 +99,7 @@ class HelpPostTitle(discord.ui.Modal, title="Turn into #help post"):
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         help_channel = cast(
-            discord.ForumChannel, bot.get_channel(config.HELP_CHANNEL_ID)
+            "discord.ForumChannel", bot.get_channel(config.HELP_CHANNEL_ID)
         )
         await interaction.response.defer(ephemeral=True)
 
@@ -107,7 +107,7 @@ class HelpPostTitle(discord.ui.Modal, title="Turn into #help post"):
         msg = await move_message_via_webhook(
             webhook,
             self._message,
-            cast(discord.Member, interaction.user),
+            cast("discord.Member", interaction.user),
             thread_name=self.title_.value,
         )
         await (await msg.channel.send(self._message.author.mention)).delete()
