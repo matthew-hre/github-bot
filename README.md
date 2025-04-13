@@ -25,6 +25,7 @@ community moderation more efficient.
   - [`#help` channel moderation](#help-channel-moderation)
   - [Entity mentions](#entity-mentions)
     - [Code links](#code-links)
+    - [Entity comments](#entity-comments)
   - [XKCD mentions](#xkcd-mentions)
   - [Message filters](#message-filters)
   - [Moving messages](#moving-messages)
@@ -256,6 +257,15 @@ Ghostty Bot responds to GitHub code range links with code blocks containing the
 linked code. Same edit/delete hook and TTR cache rules apply.
 
 <img src="https://github.com/user-attachments/assets/336b4a18-52c5-4ae6-9035-2a1f72856dfe" alt="Code links example" width="85%">
+
+
+### Entity comments
+
+Comments on issues, PRs, and discussions are displayed by the bot when linked.
+A subset of GitHub events (e.g. "requested review", "closed the issue", "added
+label") is also supported. Same edit/delete hook and TTR cache rules apply.
+
+<img src="https://github.com/user-attachments/assets/217ef598-5fcb-4854-b2d6-a2b7d67435e8" alt="Entity comments example" width="65%">
 
 
 ## XKCD mentions
