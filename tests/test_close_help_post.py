@@ -64,13 +64,10 @@ async def test_mention_entity(
     monkeypatch: pytest.MonkeyPatch,
     bot_env: SimpleNamespace,
 ) -> None:
-    monkeypatch.setattr(
-        "app.components.github_integration.mentions.resolution.config", bot_env
-    )
-    monkeypatch.setattr("app.components.github_integration.mentions.cache.gh", gh_env)
-    monkeypatch.setattr(
-        "app.components.github_integration.mentions.discussions.gh", gh_env
-    )
+    mentions_subpkg_path = "app.components.github_integration.mentions"
+    monkeypatch.setattr(f"{mentions_subpkg_path}.resolution.config", bot_env)
+    monkeypatch.setattr(f"{mentions_subpkg_path}.cache.gh", gh_env)
+    monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
 
     msg_content = await mention_entity(entity_id)
 
