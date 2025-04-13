@@ -275,7 +275,7 @@ Similar to the above feature, entity mentions with a prefix of `xkcd`, such as
 Message edits and deletion are also handled, and a “🗑️ Delete” button is
 provided for one hour.
 
-<img src="https://github.com/user-attachments/assets/ff1cf1c8-2927-4156-87af-aa5671252ee7" alt="XKCD mentions example" width=75%">
+<img src="https://github.com/user-attachments/assets/ff1cf1c8-2927-4156-87af-aa5671252ee7" alt="XKCD mentions example" width="75%">
 
 
 ## Message filters
