@@ -104,6 +104,7 @@ permission):
 * `mod`
 * `helper`
 
+
 ## 4. Preparing the `.env` file
 
 Create a `.env` file in the root of the project based on `.env.example`.
@@ -193,9 +194,11 @@ message option:
 If a message is provided, a webhook will be used to send the message under the
 interactor's server profile.
 
+
 ## `/close`
 
-A command group to mark help channel posts as resolved, with various options for different resolution scenarios:
+A command group to mark help channel posts as resolved, with various options for
+different resolution scenarios:
 
 | Command            | Applied tag     | Argument                                  | Additional information                             |
 | ------------------ | --------------- | ----------------------------------------- | -------------------------------------------------- |
@@ -204,6 +207,7 @@ A command group to mark help channel posts as resolved, with various options for
 | `/close stale`     | Stale           | -                                         | -                                                  |
 | `/close moved`     | Moved to GitHub | GitHub entity number                      | Links to the GitHub entity                         |
 | `/close duplicate` | Duplicate       | Help post ID/link or GitHub entity number | Links to original post or GitHub entity            |
+
 
 ## `#help` channel moderation
 
@@ -215,6 +219,7 @@ the bot log channel.
 Bumps to old solved posts (older than one month) are also handled by warning the
 user and locking the thread, to prevent often unrelated help requests in posts
 that are no longer relevant.
+
 
 ## Entity mentions
 
@@ -243,6 +248,7 @@ subsequent lookups).
 
 <img src="https://github.com/user-attachments/assets/ce0df1f6-baac-43d7-9bee-1f2bdfda2ac4" alt="Entity mentions example" width="75%">
 
+
 ## XKCD mentions
 
 Similar to the above feature, entity mentions with a prefix of `xkcd`, such as
@@ -251,6 +257,7 @@ Message edits and deletion are also handled, and a “🗑️ Delete” button i
 provided for one hour.
 
 <img src="https://github.com/user-attachments/assets/ff1cf1c8-2927-4156-87af-aa5671252ee7" alt="XKCD mentions example" width=75%">
+
 
 ## Message filters
 
@@ -263,6 +270,7 @@ It will also DM users about the deletion and provide an explanation to make it
 less confusing:
 
 <img src="https://github.com/user-attachments/assets/2064111f-6e64-477c-b564-4034c5245adc" alt="Message filter notification" width="80%">
+
 
 ## Moving messages
 
