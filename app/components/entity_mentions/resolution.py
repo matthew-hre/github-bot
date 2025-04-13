@@ -9,7 +9,7 @@ from .cache import TTRCache
 from app.setup import config, gh
 
 ENTITY_REGEX = re.compile(
-    r"(?P<site>\bhttps?://github\.com/)?"
+    r"(?P<site>\bhttps?://(?:www\.)?github\.com/)?"
     r"(?P<owner>\b[a-z0-9\-]+/)?"
     r"(?P<repo>\b[a-z0-9\-\._]+)?"
     r"(?P<sep>/(?:issues|pull|discussions)/|#)"
