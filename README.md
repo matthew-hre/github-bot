@@ -24,6 +24,7 @@ community moderation more efficient.
   - [`/close`](#close)
   - [`#help` channel moderation](#help-channel-moderation)
   - [Entity mentions](#entity-mentions)
+    - [Code links](#code-links)
   - [XKCD mentions](#xkcd-mentions)
   - [Message filters](#message-filters)
   - [Moving messages](#moving-messages)
@@ -247,6 +248,14 @@ responsive (the example below can take ~2s on first lookup and ~5ms on
 subsequent lookups).
 
 <img src="https://github.com/user-attachments/assets/ce0df1f6-baac-43d7-9bee-1f2bdfda2ac4" alt="Entity mentions example" width="75%">
+
+
+### Code links
+
+Ghostty Bot responds to GitHub code range links with code blocks containing the
+linked code. Same edit/delete hook and TTR cache rules apply.
+
+<img src="https://github.com/user-attachments/assets/336b4a18-52c5-4ae6-9035-2a1f72856dfe" alt="Code links example" width="85%">
 
 
 ## XKCD mentions
