@@ -27,6 +27,23 @@ STATUS_MESSAGE_TEMPLATE = """
 """
 
 
+def get_github_data() -> SimpleNamespace:
+    match gh.auth:
+        case TokenAuthStrategy(token) if token.startswith(("gh", "github")):
+            correct_token = True
+        case _:
+            correct_token = False
+    try:
+        resp = gh.rest.users.get_authenticated()
+        api_ok = resp.status_code == 200
+    except RequestFailed:
+        api_ok = False
+    return SimpleNamespace(
+        auth=":white_check_mark:" if correct_token else ":x:",
+        api=":white_check_mark:" if api_ok else ":x:",
+    )
+
+
 @dataclass
 class BotStatus:
     launch_time: dt.datetime
@@ -44,7 +61,7 @@ class BotStatus:
         # Avoid circular import
         from app.components.autoclose import autoclose_solved_posts
 
-        next_scan = cast(dt.datetime, autoclose_solved_posts.next_iteration)
+        next_scan = cast("dt.datetime", autoclose_solved_posts.next_iteration)
 
         assert self.last_scan_results is not None
         last_scan, scanned, closed = self.last_scan_results
@@ -53,22 +70,6 @@ class BotStatus:
             time_until_next=dynamic_timestamp(next_scan, "R"),
             scanned=scanned,
             closed=closed,
-        )
-
-    def _get_github_data(self) -> SimpleNamespace:
-        match gh.auth:
-            case TokenAuthStrategy(token) if token.startswith(("gh", "github")):
-                correct_token = True
-            case _:
-                correct_token = False
-        try:
-            resp = gh.rest.users.get_authenticated()
-            api_ok = resp.status_code == 200
-        except RequestFailed:
-            api_ok = False
-        return SimpleNamespace(
-            auth=":white_check_mark:" if correct_token else ":x:",
-            api=":white_check_mark:" if api_ok else ":x:",
         )
 
     def export(self) -> dict[str, str | SimpleNamespace]:
@@ -84,7 +85,7 @@ class BotStatus:
             "last_sitemap_refresh": dynamic_timestamp(self.last_sitemap_refresh, "R"),
             "help_channel": f"<#{config.HELP_CHANNEL_ID}>",
             "scan": self._get_scan_data(),
-            "gh": self._get_github_data(),
+            "gh": get_github_data(),
         }
 
 

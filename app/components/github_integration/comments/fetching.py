@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import datetime as dt
 import re
 from contextlib import suppress
 from typing import TYPE_CHECKING, cast
@@ -18,6 +17,7 @@ from app.setup import gh
 from app.utils import TTRCache
 
 if TYPE_CHECKING:
+    import datetime as dt
     from collections.abc import AsyncIterator
 
     from githubkit.versions.latest.models import PullRequestReviewComment
@@ -83,7 +83,7 @@ async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Commen
     comment = comment_resp.parsed_data
     return Comment(
         author=_make_author(comment.user),
-        body=cast(str, comment.body),
+        body=cast("str", comment.body),
         entity=entity,
         entity_gist=entity_gist,
         created_at=comment.created_at,
@@ -100,7 +100,7 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
         body=comment.body,
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
-        created_at=cast(dt.datetime, comment.submitted_at),
+        created_at=cast("dt.datetime", comment.submitted_at),
         html_url=comment.html_url,
         color=STATE_TO_COLOR.get(comment.state),
         kind="Review",
@@ -131,8 +131,8 @@ def _prettify_suggestions(comment: PullRequestReviewComment) -> str:
     if not suggestions:
         return body
 
-    start = cast(int | None, comment.original_start_line)
-    end = cast(int, comment.original_line)
+    start = cast("int | None", comment.original_start_line)
+    end = cast("int", comment.original_line)
     hunk_size = end - (end if start is None else start) + 1
     hunk_as_deleted_diff = "\n".join(
         ("-" + line[1:] if line[0] == "+" else line)

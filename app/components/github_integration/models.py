@@ -51,7 +51,7 @@ class Entity(BaseModel):
 
 class Issue(Entity):
     closed: Annotated[bool, Field(alias="state"), BeforeValidator(state_validator)]
-    state_reason: Literal["completed", "reopened", "not_planned", "duplicate", None]
+    state_reason: Literal["completed", "reopened", "not_planned", "duplicate"] | None
 
 
 class PullRequest(Entity):

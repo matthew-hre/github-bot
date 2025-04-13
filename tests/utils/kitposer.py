@@ -28,8 +28,8 @@ class Call:
     def __init__(self, *args: object, **kwargs: object) -> None:
         self._a = args
         self._kw = kwargs
-        self.make_async = cast(bool, kwargs.pop("__kitposer_async__", True))
-        self.make_kitresponse = cast(bool, kwargs.pop("__kitposer_wrap__", True))
+        self.make_async = cast("bool", kwargs.pop("__kitposer_async__", True))
+        self.make_kitresponse = cast("bool", kwargs.pop("__kitposer_wrap__", True))
 
     def __hash__(self) -> int:
         return hash((str(self._a), str(self._kw)))

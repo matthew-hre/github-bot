@@ -55,7 +55,7 @@ async def on_ready() -> None:
 
 @bot.event
 async def on_error(*_: object) -> None:
-    handle_error(cast(BaseException, sys.exc_info()[1]))
+    handle_error(cast("BaseException", sys.exc_info()[1]))
 
 
 @bot.tree.error

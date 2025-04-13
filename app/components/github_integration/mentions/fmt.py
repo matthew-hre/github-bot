@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import cast
-
-import discord
+from typing import TYPE_CHECKING, cast
 
 from .cache import Entity, Issue, PullRequest, entity_cache
 from .resolution import resolve_repo_signatures
 from app.components.github_integration.models import Discussion
 from app.setup import bot, config
 from app.utils import dynamic_timestamp, escape_special, get_ghostty_guild
+
+if TYPE_CHECKING:
+    import discord
 
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
 EMOJI_NAMES = frozenset(
@@ -36,7 +37,9 @@ async def load_emojis() -> None:
         if emoji.name in EMOJI_NAMES:
             entity_emojis[emoji.name] = emoji
     if len(entity_emojis) < len(EMOJI_NAMES):
-        log_channel = cast(discord.TextChannel, bot.get_channel(config.LOG_CHANNEL_ID))
+        log_channel = cast(
+            "discord.TextChannel", bot.get_channel(config.LOG_CHANNEL_ID)
+        )
         await log_channel.send(
             "Failed to load the following emojis: "
             + ", ".join(EMOJI_NAMES - entity_emojis.keys())
