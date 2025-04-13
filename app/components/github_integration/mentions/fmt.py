@@ -7,8 +7,8 @@ from typing import cast
 import discord
 
 from .cache import Entity, Issue, PullRequest, entity_cache
-from app.components.entity_mentions.models import Discussion
-from app.components.entity_mentions.resolution import resolve_repo_signatures
+from .resolution import resolve_repo_signatures
+from app.components.github_integration.models import Discussion
 from app.setup import bot, config
 from app.utils import dynamic_timestamp, escape_special, get_ghostty_guild
 

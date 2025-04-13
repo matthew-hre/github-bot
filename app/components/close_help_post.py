@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 
 from app.components.docs import get_docs_link
-from app.components.entity_mentions import entity_message
+from app.components.github_integration import entity_message
 from app.setup import bot, config
 from app.utils import is_dm, is_helper, is_mod
 
@@ -17,7 +17,7 @@ INVALID_FORM_BODY = 50035
 
 async def mention_entity(entity_id: int) -> str:
     msg, _ = await entity_message(
-        # Forging a message to use the entity_mentions logic
+        # Forging a message to use the entity mention logic
         cast(discord.Message, SimpleNamespace(content=f"#{entity_id}"))
     )
     return msg

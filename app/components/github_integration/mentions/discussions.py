@@ -1,6 +1,6 @@
 from base64 import urlsafe_b64encode
 
-from .models import Comment, Discussion, EntityGist
+from app.components.github_integration.models import Comment, Discussion, EntityGist
 from app.setup import gh
 
 DISCUSSION_QUERY = """
