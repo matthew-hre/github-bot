@@ -27,6 +27,7 @@ community moderation more efficient.
     - [Code links](#code-links)
     - [Entity comments](#entity-comments)
   - [XKCD mentions](#xkcd-mentions)
+  - [Zig code blocks](#zig-code-blocks)
   - [Message filters](#message-filters)
   - [Moving messages](#moving-messages)
 
@@ -278,6 +279,26 @@ provided for one hour.
 <img src="https://github.com/user-attachments/assets/ff1cf1c8-2927-4156-87af-aa5671252ee7" alt="XKCD mentions example" width="75%">
 
 
+## Zig code blocks
+
+Ghostty Bot looks for any code blocks with the language set to `zig` and
+responds with custom `ansi` code blocks that contain correctly
+syntax-highlighted Zig code (since Discord doesn't support Zig).
+Replies include a dismiss button, plus:
+* a **Freeze** button: stops the bot from reacting to edits/deletion of the
+  original message (useful if the author wants to remove their unhighlighted
+  code block but keep the bot's reply),
+* a **Replace my message** button (for shorter messages only): deletes both the
+  original and the bot's reply, then resends the original message via webhook
+  as the original author, but with proper syntax highlighting.
+
+The bot can also highlight Zig code in `.zig` attachments.
+
+<img src="https://github.com/user-attachments/assets/a634482d-00fc-410f-a59d-ef4120ec66db" alt="Zig code blocks example" width="75%">
+
+<sub>This feature relies on [trag1c/zig-codeblocks][zig-codeblocks-repo]! ^^</sub>
+
+
 ## Message filters
 
 This feature takes care of keeping the `#showcase` and `#media` channels clean.
@@ -311,3 +332,4 @@ related feature:
 [main-repo]: https://github.com/ghostty-org/ghostty
 [uv]: https://docs.astral.sh/uv/
 [website-repo]: https://github.com/ghostty-org/website
+[zig-codeblocks-repo]: https://github.com/trag1c/zig-codeblocks
