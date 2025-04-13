@@ -8,8 +8,8 @@ from githubkit.exception import RequestFailed
 from tests.utils import kitposer as kp
 
 from app.components.close_help_post import mention_entity
-from app.components.entity_mentions.discussions import DISCUSSION_QUERY
-from app.components.entity_mentions.models import GitHubUser
+from app.components.github_integration.mentions.discussions import DISCUSSION_QUERY
+from app.components.github_integration.models import GitHubUser
 
 
 def fill_entity(**kwargs: Any) -> SimpleNamespace:
@@ -64,9 +64,13 @@ async def test_mention_entity(
     monkeypatch: pytest.MonkeyPatch,
     bot_env: SimpleNamespace,
 ) -> None:
-    monkeypatch.setattr("app.components.entity_mentions.resolution.config", bot_env)
-    monkeypatch.setattr("app.components.entity_mentions.cache.gh", gh_env)
-    monkeypatch.setattr("app.components.entity_mentions.discussions.gh", gh_env)
+    monkeypatch.setattr(
+        "app.components.github_integration.mentions.resolution.config", bot_env
+    )
+    monkeypatch.setattr("app.components.github_integration.mentions.cache.gh", gh_env)
+    monkeypatch.setattr(
+        "app.components.github_integration.mentions.discussions.gh", gh_env
+    )
 
     msg_content = await mention_entity(entity_id)
 

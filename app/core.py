@@ -11,7 +11,7 @@ from sentry_sdk import capture_exception
 from app.components.activity_status import randomize_activity_status
 from app.components.autoclose import autoclose_solved_posts
 from app.components.docs import refresh_sitemap
-from app.components.entity_mentions import (
+from app.components.github_integration import (
     ENTITY_REGEX,
     code_link_delete_hook,
     code_link_edit_hook,

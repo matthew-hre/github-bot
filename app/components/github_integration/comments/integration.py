@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import discord
 
 from .fetching import get_comments
-from app.components.entity_mentions.fmt import get_entity_emoji
+from app.components.github_integration.mentions.fmt import get_entity_emoji
 from app.utils import (
     DeleteMessage,
     MessageLinker,
@@ -15,7 +15,7 @@ from app.utils import (
 )
 
 if TYPE_CHECKING:
-    from app.components.entity_mentions.models import Comment
+    from app.components.github_integration.models import Comment
 
 
 comment_linker = MessageLinker()
