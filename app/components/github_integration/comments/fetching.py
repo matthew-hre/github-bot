@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING, cast
 from githubkit.exception import RequestFailed
 from zig_codeblocks import extract_codeblocks
 
-from app.components.github_integration.mentions.cache import entity_cache
-from app.components.github_integration.mentions.discussions import (
+from app.components.github_integration.comments.discussions import (
     get_discussion_comment,
 )
+from app.components.github_integration.mentions.cache import entity_cache
 from app.components.github_integration.models import Comment, EntityGist, GitHubUser
 from app.setup import gh
 from app.utils import TTRCache
