@@ -18,7 +18,7 @@ class MessageData(NamedTuple):
     edited_at: dt.datetime | None
     attachments: list[discord.File]
     skipped_attachments: int
-    reactions: dict[str | discord.Emoji, int]
+    reactions: list[discord.Reaction]
 
 
 async def scrape_message_data(message: discord.Message) -> MessageData:
@@ -28,7 +28,7 @@ async def scrape_message_data(message: discord.Message) -> MessageData:
         message.created_at,
         message.edited_at,
         *await _get_attachments(message),
-        _get_reactions(message),
+        message.reactions,
     )
 
 
@@ -47,14 +47,3 @@ async def _get_attachments(message: discord.Message) -> tuple[list[discord.File]
         attachments.append(discord.File(fp, filename=attachment.filename))
 
     return attachments, skipped_attachments
-
-
-def _get_reactions(message: discord.Message) -> dict[str | discord.Emoji, int]:
-    reactions: dict[str | discord.Emoji, int] = {}
-    for reaction in message.reactions:
-        if isinstance(emoji := reaction.emoji, discord.Emoji) and not emoji.is_usable():
-            continue
-        if isinstance(emoji, discord.PartialEmoji):
-            continue
-        reactions[emoji] = reaction.count
-    return reactions
