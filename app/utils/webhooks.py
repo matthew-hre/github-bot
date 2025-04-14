@@ -297,7 +297,7 @@ def _format_subtext(
     include_timestamp: bool = True,
 ) -> str:
     lines: list[str] = []
-    if reactions := msg_data.raw_reactions:
+    if reactions := msg_data.reactions:
         formatted_reactions = [
             f"{emoji} ×{reaction.count}"  # noqa: RUF001
             if isinstance(emoji := reaction.emoji, str)

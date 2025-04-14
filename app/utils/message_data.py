@@ -18,7 +18,7 @@ class MessageData(NamedTuple):
     edited_at: dt.datetime | None
     attachments: list[discord.File]
     skipped_attachments: int
-    raw_reactions: list[discord.Reaction]
+    reactions: list[discord.Reaction]
 
 
 async def scrape_message_data(message: discord.Message) -> MessageData:
