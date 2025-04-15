@@ -29,7 +29,7 @@ VIEW_TIMEOUT = 60.0
 # produced by zig-codeblocks which will never appear in any other form.
 SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
 THEME = DEFAULT_THEME.copy()
-del THEME["comments"]
+del THEME["Comment"]
 
 codeblock_linker = MessageLinker()
 frozen_messages = set[discord.Message]()
