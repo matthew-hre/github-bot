@@ -90,7 +90,7 @@ class Ghostping(discord.ui.View):
 
 class HelpPostTitle(discord.ui.Modal, title="Turn into #help post"):
     title_: discord.ui.TextInput[HelpPostTitle] = discord.ui.TextInput(
-        label="#help post title", style=discord.TextStyle.short
+        label="#help post title", style=discord.TextStyle.short, max_length=100
     )
 
     def __init__(self, message: discord.Message) -> None:
