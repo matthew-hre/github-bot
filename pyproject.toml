@@ -10,7 +10,7 @@ authors = [
 ]
 dependencies = [
   "discord-py~=2.4",
-  "githubkit~=0.12.4",
+  "githubkit==0.12.11",
   "pydantic>=2.10.6,<3",
   "python-dotenv==1.0.1",
   "sentry-sdk>=2.3.1,<3",
