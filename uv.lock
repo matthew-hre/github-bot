@@ -244,7 +244,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "discord-py", specifier = "~=2.4" },
-    { name = "githubkit", specifier = "~=0.12.4" },
+    { name = "githubkit", specifier = "==0.12.11" },
     { name = "httpx", specifier = "~=0.28.0" },
     { name = "pydantic", specifier = ">=2.10.6,<3" },
     { name = "python-dotenv", specifier = "==1.0.1" },
@@ -263,7 +263,7 @@ dev = [
 
 [[package]]
 name = "githubkit"
-version = "0.12.7"
+version = "0.12.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -272,9 +272,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/45/f3060f86f8b2352e3e046c54c0dbade104c6390263a9b82fa213a2c319e2/githubkit-0.12.7.tar.gz", hash = "sha256:770378423c4a5ee5c035705822bb67ab6cccdf7e914e7b773827282ccd9f04a7", size = 1867922 }
+sdist = { url = "https://files.pythonhosted.org/packages/25/8b/258ac36ce9dffbc4b03575e77bea724223eebbed66fcb4445e5f2821b172/githubkit-0.12.11.tar.gz", hash = "sha256:e9988369b42e7831753d61109e8f4c24ff80731bd8edb150e7ef09ea93f827af", size = 2109416 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1f/b3/11e25f2fcee7db79ccf417e434af55722b4a94fdad2591dcd0b0847f7ee7/githubkit-0.12.7-py3-none-any.whl", hash = "sha256:26278e97feb68b1bde47b309c95885edccab9a27042375d7fa0b6ccebc870a7c", size = 5354987 },
+    { url = "https://files.pythonhosted.org/packages/35/87/249847d435f1c1a1dafa1e9d7e620a761a756408bb6eb43aafaf83019e63/githubkit-0.12.11-py3-none-any.whl", hash = "sha256:d88b991ac1368065af2d4f81cca8780d8e868db815176a33c100e5d1c6f67219", size = 5697259 },
 ]
 
 [[package]]
