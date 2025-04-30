@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 import discord
 
@@ -83,7 +83,7 @@ class DeleteMessage(discord.ui.View):
         style=discord.ButtonStyle.gray,
     )
     async def delete(
-        self, interaction: discord.Interaction, _: discord.ui.Button[DeleteMessage]
+        self, interaction: discord.Interaction, _: discord.ui.Button[Self]
     ) -> None:
         assert not is_dm(interaction.user)
         if interaction.user.id == self.message.author.id or is_mod(interaction.user):
