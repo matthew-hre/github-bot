@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import cast
+from typing import Self, cast
 
 import discord
 
@@ -32,7 +30,7 @@ class SelectChannel(discord.ui.View):
     async def select_channel(
         self,
         interaction: discord.Interaction,
-        sel: discord.ui.ChannelSelect[SelectChannel],
+        sel: discord.ui.ChannelSelect[Self],
     ) -> None:
         channel = await bot.fetch_channel(sel.values[0].id)
         assert isinstance(channel, GuildTextChannel)
@@ -75,7 +73,7 @@ class Ghostping(discord.ui.View):
         style=discord.ButtonStyle.gray,
     )
     async def ghostping(
-        self, interaction: discord.Interaction, button: discord.ui.Button[Ghostping]
+        self, interaction: discord.Interaction, button: discord.ui.Button[Self]
     ) -> None:
         button.disabled = True
         await interaction.response.edit_message(
@@ -89,7 +87,7 @@ class Ghostping(discord.ui.View):
 
 
 class HelpPostTitle(discord.ui.Modal, title="Turn into #help post"):
-    title_: discord.ui.TextInput[HelpPostTitle] = discord.ui.TextInput(
+    title_: discord.ui.TextInput[Self] = discord.ui.TextInput(
         label="#help post title", style=discord.TextStyle.short, max_length=100
     )
 
@@ -131,7 +129,7 @@ class DeleteOriginalMessage(discord.ui.View):
     async def delete(
         self,
         interaction: discord.Interaction,
-        button: discord.ui.Button[DeleteOriginalMessage],
+        button: discord.ui.Button[Self],
     ) -> None:
         button.disabled = True
         await self.message.delete()

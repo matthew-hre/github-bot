@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import datetime as dt
 import json
-from typing import TYPE_CHECKING, NotRequired, TypedDict, cast
+from typing import TYPE_CHECKING, NotRequired, Self, TypedDict, cast
 
 import discord
 from discord.app_commands import Choice, autocomplete
@@ -34,7 +32,7 @@ SECTIONS = {
 class Entry(TypedDict):
     type: str
     path: str
-    children: NotRequired[list[Entry]]
+    children: NotRequired[list[Self]]
 
 
 def _load_children(
