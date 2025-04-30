@@ -11,7 +11,7 @@ import discord
 import httpx
 
 from app.setup import bot
-from app.utils.message_data import MessageData, scrape_message_data
+from app.utils.message_data import MessageData
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -207,7 +207,7 @@ async def _format_forward(
     if forward is discord.utils.MISSING:
         return [_unattachable_embed("forward")], []
 
-    msg_data = await scrape_message_data(forward)
+    msg_data = await MessageData.scrape(forward)
     embeds = [
         *forward.embeds,
         *await asyncio.gather(*map(_get_sticker_embed, forward.stickers)),
@@ -225,9 +225,9 @@ async def _format_forward(
         embed.set_footer(text=f"#{forward.channel.name}")
 
     images = [
-        attachment
-        for attachment in msg_data.attachments
-        if Path(attachment.filename).suffix in SUPPORTED_IMAGE_FORMATS
+        file
+        for file in msg_data.files
+        if Path(file.filename).suffix in SUPPORTED_IMAGE_FORMATS
     ]
     image_only_embeds = [
         embed
@@ -244,7 +244,7 @@ async def _format_forward(
             # not have a proxy_url.
             embed.set_image(url=image.proxy_url or image.url)
             embeds.remove(image_only_embeds[0])
-    if embeds or len(msg_data.attachments) > (1 if images else 0):
+    if embeds or len(msg_data.files) > (1 if images else 0):
         embed.add_field(
             name="", value="-# (other forwarded content is attached)", inline=False
         )
@@ -260,7 +260,7 @@ async def _format_forward(
     )
 
     embeds.insert(0, embed)
-    return embeds, msg_data.attachments
+    return embeds, msg_data.files
 
 
 def _format_missing_reference(
@@ -368,7 +368,7 @@ async def move_message_via_webhook(
     """
     assert message_can_be_moved(message)
 
-    msg_data = await scrape_message_data(message)
+    msg_data = await MessageData.scrape(message)
 
     embeds = [
         *message.embeds,
@@ -385,7 +385,7 @@ async def move_message_via_webhook(
             if message.reference.type is discord.MessageReferenceType.forward:
                 forward_embeds, forward_attachments = await _format_forward(ref)
                 embeds = [*forward_embeds, *embeds]
-                msg_data.attachments.extend(forward_attachments)
+                msg_data.files.extend(forward_attachments)
             elif message.type is discord.MessageType.context_menu_command:
                 embeds.append(await _format_context_menu_command(ref))
             else:
@@ -398,7 +398,7 @@ async def move_message_via_webhook(
         transform=_convert_nitro_emojis,
     )
     if file:
-        msg_data.attachments.append(file)
+        msg_data.files.append(file)
         content += "\n-# (content attached)"
 
     # Discord does not like polls with a negative duration. Polls created by
@@ -421,7 +421,7 @@ async def move_message_via_webhook(
         username=message.author.display_name,
         avatar_url=message.author.display_avatar.url,
         allowed_mentions=discord.AllowedMentions.none(),
-        files=msg_data.attachments,
+        files=msg_data.files,
         embeds=embeds,
         thread=thread,
         thread_name=thread_name,
