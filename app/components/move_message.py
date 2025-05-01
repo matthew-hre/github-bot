@@ -82,6 +82,7 @@ class Ghostping(discord.ui.View):
                 f" and ghostpinged {self._author.mention}."
             ),
             view=self,
+            allowed_mentions=discord.AllowedMentions.none(),
         )
         await (await self._channel.send(self._author.mention)).delete()
 
