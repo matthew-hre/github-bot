@@ -35,9 +35,9 @@ class XKCDMentionCache(TTRCache[int, discord.Embed]):
             resp = await client.get(f"{url}/info.0.json")
         if not resp.is_success:
             error = (
-                f"XKCD #{key} does not exist."
+                f"xkcd #{key} does not exist."
                 if resp.status_code == 404
-                else f"Unable to fetch XKCD #{key}."
+                else f"Unable to fetch xkcd #{key}."
             )
             self[key] = discord.Embed(color=discord.Color.red()).set_footer(text=error)
             return
@@ -59,8 +59,8 @@ xkcd_mention_linker = MessageLinker()
 
 class DeleteButton(DeleteMessage):
     linker = xkcd_mention_linker
-    action_singular = "linked this XKCD comic"
-    action_plural = "linked these XKCD comics"
+    action_singular = "linked this xkcd comic"
+    action_plural = "linked these xkcd comics"
 
 
 async def xkcd_mention_message(
@@ -71,7 +71,7 @@ async def xkcd_mention_message(
     omitted = None
     if len(matches) > 10:
         omitted = discord.Embed(color=discord.Color.orange()).set_footer(
-            text=f"{len(matches) - 9} XKCD comics were omitted."
+            text=f"{len(matches) - 9} xkcd comics were omitted."
         )
         # Nine instead of ten to account for the `omitted` embed.
         matches = matches[:9]
