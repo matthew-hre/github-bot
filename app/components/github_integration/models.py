@@ -28,7 +28,9 @@ class GitHubUser(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str = Field(alias="login")
-    url: str = Field(validation_alias=AliasChoices("url", "html_url"))
+    # `html_url` comes before `url` to prefer the human-readable GitHub page link
+    # when both fields are present
+    url: str = Field(validation_alias=AliasChoices("html_url", "url"))
     icon_url: str = Field(validation_alias=AliasChoices("icon_url", "avatar_url"))
 
 
