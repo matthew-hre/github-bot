@@ -5,7 +5,7 @@ import datetime as dt
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import discord
 import httpx
@@ -94,8 +94,10 @@ async def _get_reference(message: discord.Message) -> discord.Message | None:
     return message
 
 
-def _unattachable_embed(unattachable_elem: str) -> discord.Embed:
-    return discord.Embed(color=discord.Color.brand_red()).set_footer(
+def _unattachable_embed(unattachable_elem: str, **kwargs: Any) -> discord.Embed:
+    """kwargs are passed to discord.Embed()."""
+    kwargs["color"] = discord.Color.brand_red()
+    return discord.Embed(**kwargs).set_footer(
         text=f"Unable to attach {unattachable_elem}."
     )
 
@@ -121,9 +123,12 @@ def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
 
 
 async def _get_sticker_embed(sticker: discord.StickerItem) -> discord.Embed:
-    # Lottie images can't be used in embeds, unfortunately.
+    description = (await sticker.fetch()).description
     if sticker.format is discord.StickerFormatType.lottie:
-        return _unattachable_embed("sticker")
+        # Lottie images can't be used in embeds, unfortunately.
+        return _unattachable_embed(
+            "sticker", title=sticker.name, description=description
+        )
     async with httpx.AsyncClient() as client:
         for u in (
             sticker.url,
@@ -132,13 +137,19 @@ async def _get_sticker_embed(sticker: discord.StickerItem) -> discord.Embed:
             # Same as above but backward, just in case.
             sticker.url.replace("media.discordapp.net", "cdn.discordapp.com"),
         ):
-            if (await client.head(u)).is_success:
-                embed = discord.Embed().set_image(url=u)
-                if sticker.format is discord.StickerFormatType.apng:
-                    embed.set_footer(text="Unable to animate sticker.")
-                    embed.color = discord.Color.orange()
-                return embed
-    return _unattachable_embed("sticker")
+            if not (await client.head(u)).is_success:
+                # The sticker URL is not actually available.
+                continue
+            embed = discord.Embed(title=sticker.name).set_image(url=u)
+            footer = description
+            if sticker.format is discord.StickerFormatType.apng:
+                footer = "Unable to animate sticker" + (
+                    f" • {footer}" if footer else "."
+                )
+                embed.color = discord.Color.orange()
+            embed.set_footer(text=footer)
+            return embed
+    return _unattachable_embed("sticker", title=sticker.name, description=description)
 
 
 def truncate(s: str, length: int, *, suffix: str = "…") -> str:
