@@ -72,7 +72,7 @@ async def _get_reference(message: discord.Message) -> discord.Message | None:
     # And now, we have a forward. Discord doesn't collapse forwarded forwards,
     # so we shall do it ourselves. This loop should not run for replies, as if
     # that happens we would end up dereferencing all the way back to the start
-    # of a reply chain, which would be a horendous idea.
+    # of a reply chain, which would be a horrendous idea.
     message = ref
     while (ref := await _get_original_message(message)) is not None:
         if ref is discord.utils.MISSING:
@@ -401,8 +401,9 @@ async def move_message_via_webhook(
         msg_data.attachments.append(file)
         content += "\n-# (content attached)"
 
-    # Discord does not like negative poll durations. Polls created by a Webhook
-    # cannot be ended manually, so simply discard polls which have ended.
+    # Discord does not like polls with a negative duration. Polls created by
+    # a webhook cannot be ended manually, so simply discard polls which have
+    # ended.
     if message.poll is None:
         poll = discord.utils.MISSING
     elif (
