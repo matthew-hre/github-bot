@@ -29,6 +29,6 @@ jobs:
       - name: Check TOML formatting
         run: uv run taplo fmt --check pyproject.toml
       - name: Type-check code
-        run: uv run pyright app
+        run: uv run pyright app tests
       - name: Run tests
         run: uv run pytest
