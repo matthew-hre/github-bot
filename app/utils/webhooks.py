@@ -253,9 +253,9 @@ async def _format_forward(
             name="", value="-# (other forwarded content is attached)", inline=False
         )
 
-    subtext = _SubText(msg_data, None)
-    for field in filter(None, (subtext.reactions, subtext.skipped)):
-        embed.add_field(name="", value=f"-# {field}", inline=False)
+    if msg_data.skipped_attachments:
+        skipped = _SubText.format_skipped(msg_data.skipped_attachments)
+        embed.add_field(name="", value=f"-# {skipped}", inline=False)
 
     embed.add_field(
         name="", value=f"-# [**Jump**](<{forward.jump_url}>) 📎", inline=False
@@ -326,7 +326,7 @@ class _SubText:
             else ""
         )
         self.skipped = (
-            f"Skipped {skipped} large attachment{'s' * (skipped != 1)}"
+            self.format_skipped(skipped)
             if (skipped := msg_data.skipped_attachments)
             else ""
         )
@@ -355,6 +355,10 @@ class _SubText:
             self.timestamp += (
                 f" (edited at {dynamic_timestamp(self.msg_data.edited_at, 't')})"
             )
+
+    @staticmethod
+    def format_skipped(skipped: int) -> str:
+        return f"Skipped {skipped} large attachment{'s' * (skipped != 1)}"
 
     def format(self) -> str:
         context = (
