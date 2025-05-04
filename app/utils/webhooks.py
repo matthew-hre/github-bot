@@ -112,7 +112,7 @@ def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     def replace_nitro_emoji(match: re.Match[str]) -> str:
         animated, name, id_ = match.groups()
         emoji = bot.get_emoji(int(id_))
-        if not force and not animated and emoji and emoji.guild_id == guild.id:
+        if not force and emoji and emoji.guild_id == guild.id:
             return match[0]
 
         ext = "gif" if animated else "webp"
