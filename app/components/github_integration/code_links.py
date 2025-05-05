@@ -22,6 +22,11 @@ CODE_LINK_PATTERN = re.compile(
     r"https?://(?:www\.)?github\.com/([^/]+)/([^/]+)/blob/([^/]+)/([^\?#]+)(?:[^\#]*)?"
     r"#L(\d+)(?:C\d+)?(?:-L(\d+)(?:C\d+)?)?"
 )
+LANG_SUBSTITUTIONS = {
+    "el": "lisp",
+    "pyi": "py",
+    "fnl": "clojure",
+}
 
 
 class SnippetPath(NamedTuple):
@@ -80,6 +85,7 @@ async def get_snippets(content: str) -> AsyncIterator[Snippet]:
         if lang == "zig":
             lang = "ansi"
             selected_lines = highlight_zig_code(selected_lines, THEME)
+        lang = LANG_SUBSTITUTIONS.get(lang, lang)
         yield Snippet(
             f"{snippet_path.owner}/{snippet_path.repo}",
             snippet_path.path,
