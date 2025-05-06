@@ -13,7 +13,7 @@ from .hooks import (
     create_edit_hook,
     remove_view_after_timeout,
 )
-from .message_data import MessageData, scrape_message_data
+from .message_data import MessageData
 from .webhooks import (
     NON_SYSTEM_MESSAGE_TYPES,
     SUPPORTED_IMAGE_FORMATS,
@@ -50,7 +50,6 @@ __all__ = (
     "message_can_be_moved",
     "move_message_via_webhook",
     "remove_view_after_timeout",
-    "scrape_message_data",
     "truncate",
     "try_dm",
 )
