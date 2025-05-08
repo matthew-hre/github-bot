@@ -249,12 +249,10 @@ async def _format_forward(
             name="", value="-# (other forwarded content is attached)", inline=False
         )
 
-    for line in _format_subtext(
-        None,
-        msg_data,
-        include_timestamp=False,
-    ).splitlines():
-        embed.add_field(name="", value=line, inline=False)
+    subtext = _SubText(msg_data, None)
+    for field in filter(None, (subtext.reactions, subtext.skipped)):
+        embed.add_field(name="", value=f"-# {field}", inline=False)
+
     embed.add_field(
         name="", value=f"-# [**Jump**](<{forward.jump_url}>) 📎", inline=False
     )
@@ -301,39 +299,74 @@ def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
     return f"<t:{int(dt.timestamp())}{fmt}>"
 
 
-def _format_subtext(
-    executor: discord.Member | None,
-    msg_data: MessageData,
-    *,
-    include_timestamp: bool = True,
-) -> str:
-    lines: list[str] = []
-    if reactions := msg_data.reactions:
+class _SubText:
+    reactions: str
+    timestamp: str
+    move_hint: str
+    skipped: str
+    poll_error: str
+
+    def __init__(
+        self,
+        msg_data: MessageData,
+        executor: discord.Member | None,
+        poll: discord.Poll | None = None,
+    ) -> None:
+        self.msg_data = msg_data
+        self._format_reactions()
+        self._format_timestamp()
+        assert isinstance(self.msg_data.channel, GuildTextChannel)
+        self.move_hint = (
+            f"Moved from {self.msg_data.channel.mention} by {executor.mention}"
+            if executor is not None
+            else ""
+        )
+        self.skipped = (
+            f"Skipped {skipped} large attachment{'s' * (skipped != 1)}"
+            if (skipped := msg_data.skipped_attachments)
+            else ""
+        )
+        self.poll_error = (
+            "Unable to attach closed poll" if poll is discord.utils.MISSING else ""
+        )
+
+    def _format_reactions(self) -> None:
         formatted_reactions = [
             f"{emoji} ×{reaction.count}"  # noqa: RUF001
             if isinstance(emoji := reaction.emoji, str)
             or getattr(emoji, "is_usable", lambda: False)()
             else f"[{emoji.name}](<{emoji.url}>) ×{reaction.count}"  # noqa: RUF001
-            for reaction in reactions
+            for reaction in self.msg_data.reactions
         ]
-        lines.append("   ".join(formatted_reactions))
-    if msg_data.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(hours=12):
-        include_timestamp = False
-    if include_timestamp:
-        line = dynamic_timestamp(msg_data.created_at)
-        if msg_data.edited_at is not None:
-            line += f" (edited at {dynamic_timestamp(msg_data.edited_at, 't')})"
-        lines.append(line)
-    if executor:
-        assert isinstance(msg_data.channel, GuildTextChannel)
-        line = f"Moved from {msg_data.channel.mention} by {executor.mention}"
-        if include_timestamp:
-            lines[-1] += " • " + line
-        else:
-            lines.append(line)
-    if skipped := msg_data.skipped_attachments:
-        lines.append(f"(skipped {skipped} large attachment{'s' * (skipped != 1)})")
-    return "\n".join(f"-# {line}" for line in lines)
+        self.reactions = "   ".join(formatted_reactions)
+
+    def _format_timestamp(self) -> None:
+        if self.msg_data.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(
+            hours=12
+        ):
+            self.timestamp = ""
+            return
+        self.timestamp = dynamic_timestamp(self.msg_data.created_at)
+        if self.msg_data.edited_at is not None:
+            self.timestamp += (
+                f" (edited at {dynamic_timestamp(self.msg_data.edited_at, 't')})"
+            )
+
+    def format(self) -> str:
+        context = (
+            self.timestamp,
+            self.move_hint,
+            self.skipped,
+            self.poll_error,
+        )
+        return self._sub_join(self.reactions, " • ".join(filter(None, context)))
+
+    def format_simple(self) -> str:
+        return self._sub_join(self.reactions, self.skipped, self.poll_error)
+
+    @staticmethod
+    def _sub_join(*strs: str) -> str:
+        return "\n".join(f"-# {s}" for s in strs if s)
 
 
 async def get_or_create_webhook(
@@ -391,7 +424,22 @@ async def move_message_via_webhook(
             else:
                 embeds.append(await _format_reply(ref))
 
-    subtext = _format_subtext(executor, msg_data)
+    if (
+        message.poll is None
+        # Discord does not like polls with a negative duration. Polls created
+        # by a webhook cannot be ended manually, so simply discard polls which
+        # have ended.
+        or message.poll.expires_at is None
+        or dt.datetime.now(tz=dt.UTC) >= message.poll.expires_at
+    ):
+        poll = discord.utils.MISSING
+    else:
+        poll = message.poll
+
+    # The if expression is to skip the poll ended message if there was no poll.
+    subtext = _SubText(
+        msg_data, executor, poll if message.poll is not None else None
+    ).format()
     content, file = format_or_file(
         _format_interaction(message),
         template=f"{{}}\n{subtext}",
@@ -399,21 +447,7 @@ async def move_message_via_webhook(
     )
     if file:
         msg_data.files.append(file)
-        content += "\n-# (content attached)"
-
-    # Discord does not like polls with a negative duration. Polls created by
-    # a webhook cannot be ended manually, so simply discard polls which have
-    # ended.
-    if message.poll is None:
-        poll = discord.utils.MISSING
-    elif (
-        message.poll.expires_at is None
-        or dt.datetime.now(tz=dt.UTC) >= message.poll.expires_at
-    ):
-        content += "\n-# (unable to attach closed poll)"
-        poll = discord.utils.MISSING
-    else:
-        poll = message.poll
+        content += " • Content attached" if content.strip() else "-# Content attached"
 
     msg = await webhook.send(
         content=content,
