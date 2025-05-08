@@ -112,7 +112,7 @@ def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     def replace_nitro_emoji(match: re.Match[str]) -> str:
         animated, name, id_ = match.groups()
         emoji = bot.get_emoji(int(id_))
-        if not force and not animated and emoji and emoji.guild_id == guild.id:
+        if not force and emoji and emoji.guild_id == guild.id:
             return match[0]
 
         ext = "gif" if animated else "webp"
@@ -207,13 +207,17 @@ async def _format_forward(
     if forward is discord.utils.MISSING:
         return [_unattachable_embed("forward")], []
 
+    content = _convert_nitro_emojis(forward.content)
+    if len(content) > 4096:
+        content = forward.content
+
     msg_data = await MessageData.scrape(forward)
     embeds = [
         *forward.embeds,
         *await asyncio.gather(*map(_get_sticker_embed, forward.stickers)),
     ]
     embed = discord.Embed(
-        description=forward.content, timestamp=forward.created_at, url=forward.jump_url
+        description=content, timestamp=forward.created_at, url=forward.jump_url
     ).set_author(name="➜ Forwarded")
 
     if hasattr(forward.channel, "name"):
