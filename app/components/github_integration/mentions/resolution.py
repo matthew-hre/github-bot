@@ -20,6 +20,14 @@ ENTITY_REGEX = re.compile(
 )
 
 
+REPO_ALIASES = {
+    "ghostty": "main",
+    "website": "web",
+    "discord-bot": "bot",
+    "bobr": "bot",
+}
+
+
 class OwnerCache(TTRCache[str, str]):
     async def fetch(self, key: str) -> None:
         self[key] = await find_repo_owner(key)
@@ -68,14 +76,14 @@ async def resolve_repo_signatures(
             case None, None:
                 # Standard Ghostty mention, e.g. #2354
                 yield config.GITHUB_ORG, config.GITHUB_REPOS["main"], number
-            case None, "main" | "web" | "bot" as repo:
+            case None, repo if repo in config.GITHUB_REPOS:
                 # Special ghostty-org prefixes
                 yield config.GITHUB_ORG, config.GITHUB_REPOS[repo], number
-            case None, "bobr":
-                # A touch of personalization
-                yield config.GITHUB_ORG, config.GITHUB_REPOS["bot"], number
+            case None, repo if repo in REPO_ALIASES:
+                # Aliases for special ghostty-org repositories
+                yield config.GITHUB_ORG, config.GITHUB_REPOS[REPO_ALIASES[repo]], number
             case None, "xkcd":
-                # Ignore the xkcd prefix, as it is handled by xkcd_mentions.py.
+                # Ignore the xkcd prefix, as it is handled by xkcd_mentions.py
                 continue
             case None, repo:
                 # Only a name provided, e.g. uv#8020.
