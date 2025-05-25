@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 COMMENT_PATTERN = re.compile(
     r"https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s]+)/"
-    r"(issues|discussions|pull)/(\d+)#(\w+?-?)(\d+)"
+    r"(issues|discussions|pull)/(\d+)/?#(\w+?-?)(\d+)"
 )
 FALLBACK_AUTHOR = GitHubUser(
     login="GitHub",

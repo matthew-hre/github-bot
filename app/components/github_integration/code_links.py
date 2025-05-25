@@ -70,6 +70,7 @@ class DeleteCodeLink(DeleteMessage):
 async def get_snippets(content: str) -> AsyncIterator[Snippet]:
     for match in CODE_LINK_PATTERN.finditer(content):
         *snippet_path, range_start, range_end = match.groups()
+        snippet_path[-1] = snippet_path[-1].rstrip("/")
 
         snippet_path = SnippetPath(*snippet_path)
         range_start = int(range_start)
