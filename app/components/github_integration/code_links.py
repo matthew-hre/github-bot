@@ -19,8 +19,8 @@ from app.utils import (
 )
 
 CODE_LINK_PATTERN = re.compile(
-    r"https?://(?:www\.)?github\.com/([^/]+)/([^/]+)/blob/([^/]+)/([^\?#]+)(?:[^\#]*)?"
-    r"#L(\d+)(?:C\d+)?(?:-L(\d+)(?:C\d+)?)?"
+    r"https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s]+)/blob/([^/\s]+)/([^\?#\s]+)"
+    r"(?:[^\#\s]*)?#L(\d+)(?:C\d+)?(?:-L(\d+)(?:C\d+)?)?"
 )
 LANG_SUBSTITUTIONS = {
     "el": "lisp",
