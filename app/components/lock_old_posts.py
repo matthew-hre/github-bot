@@ -58,7 +58,7 @@ async def check_for_old_posts(message: discord.Message) -> None:
         "relevant. Please open a new thread instead, making sure to provide "
         "the required information."
     )
-    await post.edit(locked=True)
+    await post.edit(locked=True, archived=True)
 
 
 async def _get_message(
