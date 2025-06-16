@@ -28,6 +28,7 @@ LANG_SUBSTITUTIONS = {
     "el": "lisp",
     "pyi": "py",
     "fnl": "clojure",
+    "m": "objc",
 }
 
 
