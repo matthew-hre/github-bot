@@ -25,7 +25,7 @@ jobs:
       - name: Lint code
         run: uv run ruff check --output-format github
       - name: Check Python formatting
-        run: uv run ruff format --diff
+        run: uv run ruff format --preview --diff
       - name: Check TOML formatting
         run: uv run taplo fmt --check pyproject.toml
       - name: Type-check code
