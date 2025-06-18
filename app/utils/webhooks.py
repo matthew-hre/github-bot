@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 GuildTextChannel = discord.TextChannel | discord.Thread
 
 _EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
-
+_REACTION_REGEX = re.compile(r"([^\s×]+) ×(\d+)", re.ASCII)  # noqa: RUF001
 _SNOWFLAKE_REGEX = re.compile(r"<(\D{0,2})(\d+)>", re.ASCII)
 
 # A list of image formats supported by Discord, in the form of their file
@@ -388,6 +388,32 @@ class _Subtext:
     @staticmethod
     def _sub_join(*strs: str) -> str:
         return "\n".join(f"-# {s}" for s in strs if s)
+
+
+class SplitSubtext:
+    def __init__(self, message: MovedMessage) -> None:
+        # Since we know that we definitely have a moved message here (due to
+        # the restriction on `message`'s type), the last line must be the
+        # subtext.
+        *lines, reactions_line, self.subtext = message.content.splitlines()
+        self.reactions = self._get_reactions(reactions_line)
+        self.content = "\n".join(lines if self.reactions else (*lines, reactions_line))
+
+    @staticmethod
+    def _get_reactions(reaction_line: str) -> dict[str, int]:
+        if not reaction_line.startswith("-# "):
+            return {}
+        d: dict[str, int] = {}
+        for s in reaction_line.removeprefix("-# ").split("   "):
+            if not (match := _REACTION_REGEX.fullmatch(s)):
+                # If any of the reactions don't match, we don't have an actual
+                # reaction line; return an empty dictionary to ignore that line
+                # as it may just be a similarly-formatted line present in the
+                # actual message content itself.
+                return {}
+            emoji, count = match.groups()
+            d[emoji] = int(count)
+        return d
 
 
 async def get_or_create_webhook(
