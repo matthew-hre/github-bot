@@ -303,13 +303,9 @@ def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
 
 
 class _SubText:
-    # WARNING: get_moved_message_author_id() makes a lot of assumptions about
-    # the structure of the subtext; be careful when editing this as
-    # invalidating the previous expected structure can break editing and
-    # deletion of messages moved before the change was merged or ALLOW THE
-    # WRONG PERSON TO EDIT OR DELETE A MOVED MESSAGE, *even if* that function
-    # is updated to match the new structure, as this subtext change won't
-    # retroactively apply to previously moved messages on Discord's servers.
+    # NOTE: when changing the subtext's format in ways that are not
+    # backward-compatible, don't forget to bump the cut-off time in
+    # app/components/message_filter.py!
     reactions: str
     timestamp: str
     author: str
@@ -463,8 +459,6 @@ async def move_message_via_webhook(  # noqa: PLR0913
     subtext = s.format() if include_move_marks else s.format_simple()
     content, file = format_or_file(
         _format_interaction(message),
-        # WARNING: the subtext must always be on the very last line for
-        # get_moved_message_author_id() to function.
         template=f"{{}}\n{subtext}",
         transform=_convert_nitro_emojis,
     )

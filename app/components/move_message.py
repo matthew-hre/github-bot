@@ -1,3 +1,4 @@
+import datetime as dt
 from typing import Self, cast
 
 import discord
@@ -204,6 +205,12 @@ async def turn_into_help_post(
     await interaction.response.send_modal(HelpPostTitle(message))
 
 
+# TODO(somebody): update timestamp to time of merge.
+MOVED_MESSAGE_MODIFICATION_CUTOFF = dt.datetime(
+    year=2025, month=6, day=18, hour=0, minute=0, tzinfo=dt.UTC
+)
+
+
 @bot.tree.context_menu(name="Delete moved message")
 @discord.app_commands.guild_only()
 async def delete_moved_message(
@@ -211,9 +218,10 @@ async def delete_moved_message(
 ) -> None:
     assert not is_dm(interaction.user)
 
-    if (
-        webhook_message := await get_moved_message(message)
-    ) is MovedMessageLookupFailed.NOT_FOUND:
+    if dt.datetime.now(tz=dt.UTC) < MOVED_MESSAGE_MODIFICATION_CUTOFF or (
+        (webhook_message := await get_moved_message(message))
+        is MovedMessageLookupFailed.NOT_FOUND
+    ):
         await interaction.response.send_message(
             "This message cannot be deleted.", ephemeral=True
         )
