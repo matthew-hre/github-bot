@@ -608,9 +608,18 @@ async def move_message_via_webhook(  # noqa: PLR0913
     else:
         poll = message.poll
 
-    # The if expression is to skip the poll ended message if there was no poll.
-    s = _Subtext(msg_data, executor, poll if message.poll is not None else None)
-    subtext = s.format() if include_move_marks else s.format_simple()
+    if include_move_marks and isinstance(
+        moved_message := await get_moved_message(message), MovedMessage
+    ):
+        # Append the new move mark to the existing subtext.
+        split_subtext = SplitSubtext(moved_message)
+        split_subtext.update(message, executor)
+        message.content, subtext = split_subtext.content, split_subtext.format()
+    else:
+        # The if expression skips the poll ended message if there was no poll.
+        s = _Subtext(msg_data, executor, poll if message.poll is not None else None)
+        subtext = s.format() if include_move_marks else s.format_simple()
+
     content, file = format_or_file(
         _format_interaction(message),
         template=f"{{}}\n{subtext}",
