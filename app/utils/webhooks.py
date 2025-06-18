@@ -347,10 +347,10 @@ class _Subtext:
         )
 
     def _format_reactions(self) -> None:
-        self.reactions = "   ".join([
+        self.reactions = "   ".join(
             f"{_format_emoji(reaction.emoji)} ×{reaction.count}"  # noqa: RUF001
             for reaction in self.msg_data.reactions
-        ])
+        )
 
     def _format_timestamp(self) -> None:
         if self.msg_data.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(
@@ -414,6 +414,15 @@ class SplitSubtext:
             emoji, count = match.groups()
             d[emoji] = int(count)
         return d
+
+    def format(self) -> str:
+        if not self.reactions:
+            return self.subtext
+        formatted_reactions = "   ".join(
+            f"{emoji} ×{count}"  # noqa: RUF001
+            for emoji, count in self.reactions.items()
+        )
+        return f"-# {formatted_reactions}\n{self.subtext}"
 
 
 async def get_or_create_webhook(
