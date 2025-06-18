@@ -30,14 +30,12 @@ SUPPORTED_IMAGE_FORMATS = frozenset({".avif", ".gif", ".jpeg", ".jpg", ".png", "
 # Non-system-message types taken from the description of
 # https://discordpy.readthedocs.io/en/stable/api.html#discord.Message.system_content.
 # However, also include bot commands, despite them being system messages.
-NON_SYSTEM_MESSAGE_TYPES = frozenset(
-    {
-        discord.MessageType.default,
-        discord.MessageType.reply,
-        discord.MessageType.chat_input_command,
-        discord.MessageType.context_menu_command,
-    }
-)
+NON_SYSTEM_MESSAGE_TYPES = frozenset({
+    discord.MessageType.default,
+    discord.MessageType.reply,
+    discord.MessageType.chat_input_command,
+    discord.MessageType.context_menu_command,
+})
 
 
 def get_ghostty_guild() -> discord.Guild:

@@ -53,9 +53,11 @@ class BotStatus:
 
     @property
     def initialized(self) -> bool:
-        return all(
-            (self.last_login_time, self.last_sitemap_refresh, self.last_scan_results)
-        )
+        return all((
+            self.last_login_time,
+            self.last_sitemap_refresh,
+            self.last_scan_results,
+        ))
 
     def _get_scan_data(self) -> SimpleNamespace:
         # Avoid circular import

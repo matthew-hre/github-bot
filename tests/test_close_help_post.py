@@ -32,25 +32,23 @@ def fill_entity(**kwargs: Any) -> SimpleNamespace:
 # Calling __new__ to skip initialization and having to pass in a proper Response object
 failed_request = RequestFailed.__new__(RequestFailed)
 repo = ("ghostty-org", "ghostty")
-gh_env = kp.KitPoser(
-    {
-        "/rest/pulls/async_get": {
-            kp.Call(*repo, 1234): fill_entity(number=1234),
-        },
-        "/rest/issues/async_get": {
-            kp.Call(*repo, 2354): failed_request,
-            kp.Call(*repo, 1234): fill_entity(number=1234, pull_request=True),
-            kp.Call(*repo, 189): fill_entity(number=189, pull_request=False),
-        },
-        "/graphql/arequest": {
-            kp.Call(
-                DISCUSSION_QUERY,
-                variables={"number": 2354, "org": "ghostty-org", "repo": "ghostty"},
-                __kitposer_wrap__=False,
-            ): {"repository": {"discussion": fill_entity(number=2354).__dict__}},
-        },
-    }
-)
+gh_env = kp.KitPoser({
+    "/rest/pulls/async_get": {
+        kp.Call(*repo, 1234): fill_entity(number=1234),
+    },
+    "/rest/issues/async_get": {
+        kp.Call(*repo, 2354): failed_request,
+        kp.Call(*repo, 1234): fill_entity(number=1234, pull_request=True),
+        kp.Call(*repo, 189): fill_entity(number=189, pull_request=False),
+    },
+    "/graphql/arequest": {
+        kp.Call(
+            DISCUSSION_QUERY,
+            variables={"number": 2354, "org": "ghostty-org", "repo": "ghostty"},
+            __kitposer_wrap__=False,
+        ): {"repository": {"discussion": fill_entity(number=2354).__dict__}},
+    },
+})
 
 
 @pytest.mark.parametrize(

@@ -14,19 +14,17 @@ if TYPE_CHECKING:
     import discord
 
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
-EMOJI_NAMES = frozenset(
-    {
-        "discussion_answered",
-        "issue_closed_completed",
-        "issue_closed_unplanned",
-        "issue_draft",
-        "issue_open",
-        "pull_closed",
-        "pull_draft",
-        "pull_merged",
-        "pull_open",
-    }
-)
+EMOJI_NAMES = frozenset({
+    "discussion_answered",
+    "issue_closed_completed",
+    "issue_closed_unplanned",
+    "issue_draft",
+    "issue_open",
+    "pull_closed",
+    "pull_draft",
+    "pull_merged",
+    "pull_open",
+})
 
 entity_emojis: dict[str, discord.Emoji] = {}
 

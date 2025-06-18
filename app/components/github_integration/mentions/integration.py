@@ -11,9 +11,10 @@ from app.utils import (
     try_dm,
 )
 
-IGNORED_MESSAGE_TYPES = frozenset(
-    (discord.MessageType.thread_created, discord.MessageType.channel_name_change)
-)
+IGNORED_MESSAGE_TYPES = frozenset((
+    discord.MessageType.thread_created,
+    discord.MessageType.channel_name_change,
+))
 
 mention_linker = MessageLinker()
 

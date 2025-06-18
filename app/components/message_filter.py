@@ -19,9 +19,10 @@ COPY_TEXT_HINT = (
     "-# **Hint:** You can get your original message with formatting preserved "
     'by using the "Copy Text" action on right-click.'
 )
-REGULAR_MESSAGE_TYPES = frozenset(
-    {discord.MessageType.default, discord.MessageType.reply}
-)
+REGULAR_MESSAGE_TYPES = frozenset({
+    discord.MessageType.default,
+    discord.MessageType.reply,
+})
 
 
 class MessageFilter(NamedTuple):
