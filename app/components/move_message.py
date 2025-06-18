@@ -17,9 +17,8 @@ from app.utils import (
     move_message_via_webhook,
 )
 
-# TODO(trag1c): update timestamp to time of deploy
 MOVED_MESSAGE_MODIFICATION_CUTOFF = dt.datetime(
-    year=2025, month=6, day=18, hour=0, minute=0, tzinfo=dt.UTC
+    year=2025, month=6, day=18, hour=23, minute=10, tzinfo=dt.UTC
 )
 
 
