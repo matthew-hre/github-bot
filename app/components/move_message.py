@@ -217,7 +217,7 @@ async def delete_moved_message(
 ) -> None:
     assert not is_dm(interaction.user)
 
-    if dt.datetime.now(tz=dt.UTC) < MOVED_MESSAGE_MODIFICATION_CUTOFF or (
+    if message.created_at < MOVED_MESSAGE_MODIFICATION_CUTOFF or (
         (webhook_message := await get_moved_message(message))
         is MovedMessageLookupFailed.NOT_FOUND
     ):
