@@ -61,7 +61,7 @@ class BotStatus:
 
     def _get_scan_data(self) -> SimpleNamespace:
         # Avoid circular import
-        from app.components.autoclose import autoclose_solved_posts
+        from app.components.autoclose import autoclose_solved_posts  # noqa: PLC0415
 
         next_scan = cast("dt.datetime", autoclose_solved_posts.next_iteration)
 
