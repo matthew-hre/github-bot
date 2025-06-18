@@ -17,6 +17,11 @@ from app.utils import (
     move_message_via_webhook,
 )
 
+# TODO(trag1c): update timestamp to time of deploy
+MOVED_MESSAGE_MODIFICATION_CUTOFF = dt.datetime(
+    year=2025, month=6, day=18, hour=0, minute=0, tzinfo=dt.UTC
+)
+
 
 class SelectChannel(discord.ui.View):
     def __init__(self, message: discord.Message, executor: discord.Member) -> None:
@@ -203,12 +208,6 @@ async def turn_into_help_post(
         return
 
     await interaction.response.send_modal(HelpPostTitle(message))
-
-
-# TODO(somebody): update timestamp to time of merge.
-MOVED_MESSAGE_MODIFICATION_CUTOFF = dt.datetime(
-    year=2025, month=6, day=18, hour=0, minute=0, tzinfo=dt.UTC
-)
 
 
 @bot.tree.context_menu(name="Delete moved message")
