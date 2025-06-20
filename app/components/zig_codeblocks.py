@@ -158,7 +158,7 @@ async def _prepare_reply(
         )
 
     codeblocks = list(extract_codeblocks(message.content))
-    file_highlight_note = 'Click "View whole file" to see the highlighting.'
+    file_highlight_note = 'On desktop, click "View whole file" to see the highlighting.'
     if codeblocks and any(block.lang == "zig" for block in codeblocks):
         zig_code = process_discord_markdown(message.content, only_code=True)
         zig_code += f"\n{file_highlight_note}" if attachments else ""

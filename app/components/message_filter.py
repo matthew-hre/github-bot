@@ -16,8 +16,8 @@ MESSAGE_DELETION_TEMPLATE = (
 )
 MESSAGE_CONTENT_NOTICE = "Here's the message you tried to send:"
 COPY_TEXT_HINT = (
-    "-# **Hint:** You can get your original message with formatting preserved "
-    'by using the "Copy Text" action on right-click.'
+    "-# **Hint:** you can get your original message with formatting preserved "
+    'by using the "Copy Text" action in the context menu.'
 )
 REGULAR_MESSAGE_TYPES = frozenset({
     discord.MessageType.default,
