@@ -4,6 +4,7 @@ import urllib.parse
 from collections.abc import AsyncIterator
 from io import BytesIO
 from pathlib import Path
+from textwrap import dedent
 from typing import NamedTuple
 
 import discord
@@ -95,7 +96,7 @@ async def get_snippets(content: str) -> AsyncIterator[Snippet]:
             snippet_path.path,
             snippet_path.rev,
             lang,
-            selected_lines,
+            dedent(selected_lines),
             content_range,
         )
 
