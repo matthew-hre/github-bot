@@ -11,28 +11,36 @@ import discord
 MAX_ATTACHMENT_SIZE = 67_108_864  # 64 MiB
 
 
-class MessageData(discord.Message):
-    files: list[discord.File]
-    skipped_attachments: int
+class ExtensibleMessage(discord.Message):
+    """
+    This class is intended to be subclassed when wanting a constructor that
+    uses the state from an existing Message instead of constructing a new one
+    with Message.__init__().
+    """
 
     def __init__(self, message: discord.Message) -> None:
-        # This code cannot be in the scrape() constructor itself as the
-        # subclass' __init__() *should not* be called, and overriding the
-        # __init__() is the most elegant solution.
+        # Message doesn't expose a __dict__ that we can update() onto our
+        # __dict__, so use dir() to manually add them all.
         for attr in dir(message):
             val = getattr(type(self), attr)
             if (
                 # Don't break the class.
                 attr == "__class__"
-                # Acquired already by the subclass declaration.
+                # Already acquired by the subclass declaration.
                 or isinstance(val, property)
                 or callable(val)
             ):
                 continue
             with suppress(AttributeError):
-                # At the time of writing, the only things which cause an AttributeError
-                # to be thrown are `call` and everything that starts with `_cs_`.
+                # At the time of writing, the only things which cause an
+                # AttributeError to be thrown are `call` and everything that
+                # starts with `_cs_`.
                 setattr(self, attr, getattr(message, attr))
+
+
+class MessageData(ExtensibleMessage):
+    files: list[discord.File]
+    skipped_attachments: int
 
     @classmethod
     async def scrape(cls, message: discord.Message) -> Self:

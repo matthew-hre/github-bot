@@ -8,7 +8,6 @@ from app.utils import (
     GuildTextChannel,
     MovedMessageLookupFailed,
     get_moved_message,
-    get_moved_message_author_id,
     get_or_create_webhook,
     is_dm,
     is_helper,
@@ -217,7 +216,7 @@ async def delete_moved_message(
     assert not is_dm(interaction.user)
 
     if message.created_at < MOVED_MESSAGE_MODIFICATION_CUTOFF or (
-        (webhook_message := await get_moved_message(message))
+        (moved_message := await get_moved_message(message))
         is MovedMessageLookupFailed.NOT_FOUND
     ):
         await interaction.response.send_message(
@@ -225,17 +224,14 @@ async def delete_moved_message(
         )
         return
 
-    if (
-        webhook_message is MovedMessageLookupFailed.NOT_MOVED
-        or (author_id := get_moved_message_author_id(webhook_message)) is None
-    ):
+    if moved_message is MovedMessageLookupFailed.NOT_MOVED:
         await interaction.response.send_message(
             "This message is not a moved message.", ephemeral=True
         )
         return
 
     if not (
-        interaction.user.id == author_id
+        interaction.user.id == moved_message.original_author_id
         or message.channel.permissions_for(interaction.user).manage_messages
     ):
         await interaction.response.send_message(
