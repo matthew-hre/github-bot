@@ -251,7 +251,7 @@ async def _format_forward(
         )
 
     if msg_data.skipped_attachments:
-        skipped = _SubText.format_skipped(msg_data.skipped_attachments)
+        skipped = _Subtext.format_skipped(msg_data.skipped_attachments)
         embed.add_field(name="", value=f"-# {skipped}", inline=False)
 
     embed.add_field(
@@ -300,7 +300,7 @@ def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
     return f"<t:{int(dt.timestamp())}{fmt}>"
 
 
-class _SubText:
+class _Subtext:
     # NOTE: when changing the subtext's format in ways that are not
     # backward-compatible, don't forget to bump the cut-off time in
     # app/components/message_filter.py!
@@ -453,7 +453,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
         poll = message.poll
 
     # The if expression is to skip the poll ended message if there was no poll.
-    s = _SubText(msg_data, executor, poll if message.poll is not None else None)
+    s = _Subtext(msg_data, executor, poll if message.poll is not None else None)
     subtext = s.format() if include_move_marks else s.format_simple()
     content, file = format_or_file(
         _format_interaction(message),
