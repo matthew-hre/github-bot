@@ -395,9 +395,14 @@ class SplitSubtext:
         # Since we know that we definitely have a moved message here (due to
         # the restriction on `message`'s type), the last line must be the
         # subtext.
-        *lines, reactions_line, self.subtext = message.content.splitlines()
-        self.reactions = self._get_reactions(reactions_line)
-        self.content = "\n".join(lines if self.reactions else (*lines, reactions_line))
+        *lines, self.subtext = message.content.splitlines()
+        if not lines:
+            self.content, self.reactions = "", {}
+            return
+        self.reactions = self._get_reactions(lines[-1])
+        if self.reactions:
+            lines.pop()
+        self.content = "\n".join(lines)
 
     @staticmethod
     def _get_reactions(reaction_line: str) -> dict[str, int]:
