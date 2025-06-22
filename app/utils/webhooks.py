@@ -581,11 +581,16 @@ async def move_message_via_webhook(  # noqa: PLR0913
         wait=True,
     )
     await message.delete()
-    # We are definitely in a server.
-    assert isinstance(message.author, discord.Member)
+
+    # Even though `message` is definitely from a guild, not all messages have
+    # a Member as its author. A notable example is WebhookMessage, whose author
+    # is the webhook, which is a User and not a Member. This means that we
+    # cannot assert message.author to be a Member since that would fail when
+    # moving a moved message.
+    author = message.author if isinstance(message.author, discord.Member) else None
     # This never throws as the subtext has the author present if including move
     # marks (see above).
-    return MovedMessage(msg, author=message.author) if include_move_marks else msg
+    return MovedMessage(msg, author=author) if include_move_marks else msg
 
 
 def format_or_file(
