@@ -6,13 +6,13 @@ import re
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 import discord
 import httpx
 
 from app.setup import bot
-from app.utils.message_data import MessageData
+from app.utils.message_data import ExtensibleMessage, MessageData
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -251,7 +251,7 @@ async def _format_forward(
         )
 
     if msg_data.skipped_attachments:
-        skipped = _SubText.format_skipped(msg_data.skipped_attachments)
+        skipped = _Subtext.format_skipped(msg_data.skipped_attachments)
         embed.add_field(name="", value=f"-# {skipped}", inline=False)
 
     embed.add_field(
@@ -300,7 +300,7 @@ def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
     return f"<t:{int(dt.timestamp())}{fmt}>"
 
 
-class _SubText:
+class _Subtext:
     # NOTE: when changing the subtext's format in ways that are not
     # backward-compatible, don't forget to bump the cut-off time in
     # app/components/message_filter.py!
@@ -402,6 +402,110 @@ def message_can_be_moved(message: discord.Message) -> bool:
     return message.type in NON_SYSTEM_MESSAGE_TYPES
 
 
+def _find_snowflake(content: str, type_: str) -> tuple[int, int] | tuple[None, None]:
+    """
+    WARNING: this function does not account for Markdown features such as code
+    blocks that may disarm a snowflake.
+    """
+    # NOTE: while this function could just return tuple[int, int] | None, that
+    # makes it less convenient to destructure the return value.
+    snowflake = _SNOWFLAKE_REGEX.search(content)
+    if snowflake is None or snowflake[1] != type_:
+        return None, None
+    return int(snowflake[2]), snowflake.span()[0]
+
+
+class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
+    def __init__(
+        self, message: discord.WebhookMessage, *, author: discord.Member | None = None
+    ) -> None:
+        """
+        If the subtext does not contain an author, ValueError is thrown.
+        Providing `author` may save a web request when using
+        get_original_author().
+        """
+        super().__init__(message)
+        id_ = self._extract_author_id(message.content)
+        if id_ is None:
+            msg = "not a moved message"
+            raise ValueError(msg)
+        if author is not None and id_ != author.id:
+            # The author in the subtext isn't the same as the author object
+            # passed.
+            msg = "incorrect author passed"
+            raise ValueError(msg)
+        self.original_author_id = id_
+        self._original_author = author
+
+    @staticmethod
+    def _extract_author_id(content: str) -> int | None:
+        # HACK: as far as I know, Discord does not provide any way to attach
+        # a hidden number to a webhook message, nor does it provide a way to
+        # link a webhook message to a user. Thus, this information is extracted
+        # from the subtext of moved messages.
+        try:
+            subtext = content.splitlines()[-1]
+        except IndexError:
+            return None
+        # Heuristics to determine if a message is really a moved message.
+        if not subtext.startswith("-# "):
+            return None
+        # One other thing that could be checked is whether content.splitlines()
+        # is at least two elements long; that would backfire when moved media
+        # or forwards is passed through this function, however, as those moved
+        # messages don't contain anything except the subtext in their
+        # `Message.content`.
+
+        # If we have a channel mention, the executor is present; discard that
+        # part so that the executor is not accidentally picked as the author.
+        _, pos = _find_snowflake(subtext, "#")
+        if pos is not None:
+            subtext = subtext[:pos]
+
+        # The first user mention in the subtext is the author. If it is not
+        # present, _find_snowflake() would return None; pass that right back to
+        # the caller.
+        snowflake, _ = _find_snowflake(subtext, "@")
+        return snowflake
+
+    async def get_original_author(self) -> discord.Member:
+        if self._original_author is not None:
+            # Use the cached author.
+            return self._original_author
+        assert self.guild is not None
+        if (author := self.guild.get_member(self.original_author_id)) is None:
+            # discord.py doesn't have the member in its user cache, so we need
+            # a web request to Discord to get the author.
+            author = await self.guild.fetch_member(self.original_author_id)
+        # Cache the author.
+        self._original_author = author
+        return author
+
+
+@overload
+async def move_message_via_webhook(
+    webhook: discord.Webhook,
+    message: discord.Message,
+    executor: discord.Member | None = None,
+    *,
+    thread: discord.abc.Snowflake = discord.utils.MISSING,
+    thread_name: str = discord.utils.MISSING,
+    include_move_marks: Literal[True] = True,
+) -> MovedMessage: ...
+
+
+@overload
+async def move_message_via_webhook(
+    webhook: discord.Webhook,
+    message: discord.Message,
+    executor: discord.Member | None = None,
+    *,
+    thread: discord.abc.Snowflake = discord.utils.MISSING,
+    thread_name: str = discord.utils.MISSING,
+    include_move_marks: Literal[False] = False,
+) -> discord.WebhookMessage: ...
+
+
 async def move_message_via_webhook(  # noqa: PLR0913
     webhook: discord.Webhook,
     message: discord.Message,
@@ -410,7 +514,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
     thread: discord.abc.Snowflake = discord.utils.MISSING,
     thread_name: str = discord.utils.MISSING,
     include_move_marks: bool = True,
-) -> discord.WebhookMessage:
+) -> MovedMessage | discord.WebhookMessage:
     """
     WARNING: it is the caller's responsibility to check message_can_be_moved()
     and to display an informative warning message.
@@ -453,7 +557,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
         poll = message.poll
 
     # The if expression is to skip the poll ended message if there was no poll.
-    s = _SubText(msg_data, executor, poll if message.poll is not None else None)
+    s = _Subtext(msg_data, executor, poll if message.poll is not None else None)
     subtext = s.format() if include_move_marks else s.format_simple()
     content, file = format_or_file(
         _format_interaction(message),
@@ -477,7 +581,16 @@ async def move_message_via_webhook(  # noqa: PLR0913
         wait=True,
     )
     await message.delete()
-    return msg
+
+    # Even though `message` is definitely from a guild, not all messages have
+    # a Member as its author. A notable example is WebhookMessage, whose author
+    # is the webhook, which is a User and not a Member. This means that we
+    # cannot assert message.author to be a Member since that would fail when
+    # moving a moved message.
+    author = message.author if isinstance(message.author, discord.Member) else None
+    # This never throws as the subtext has the author present if including move
+    # marks (see above).
+    return MovedMessage(msg, author=author) if include_move_marks else msg
 
 
 def format_or_file(
@@ -507,7 +620,7 @@ class MovedMessageLookupFailed(Enum):
 
 async def get_moved_message(
     message: discord.Message, *, webhook_name: str = "Ghostty Moderator"
-) -> discord.WebhookMessage | MovedMessageLookupFailed:
+) -> MovedMessage | MovedMessageLookupFailed:
     if message.webhook_id is None or isinstance(
         message.channel,
         # These types can't even have a webhook.
@@ -533,57 +646,13 @@ async def get_moved_message(
         return MovedMessageLookupFailed.NOT_MOVED
 
     try:
-        return await webhook.fetch_message(message.id, thread=thread)
+        return MovedMessage(await webhook.fetch_message(message.id, thread=thread))
     except discord.Forbidden:
         return MovedMessageLookupFailed.NOT_FOUND
-    except discord.NotFound:
-        # NOTE: while it may seem like this should be returning `NotFound`,
-        # this branch is run when the *webhook* couldn't find the associated
-        # message, rather than when the message doesn't exist. Since all moved
-        # messages are sent by the webhook, this branch symbolizes a message
-        # that isn't a moved message.
+    except (ValueError, discord.NotFound):
+        # NOTE: while it may seem like this function should be returning
+        # `NotFound` on `discord.NotFound`, that exception is thrown when the
+        # *webhook* couldn't find the associated message, rather than when the
+        # message doesn't exist. Since all moved messages are sent by the
+        # webhook, this branch symbolizes a message that isn't a moved message.
         return MovedMessageLookupFailed.NOT_MOVED
-
-
-def _find_snowflake(content: str, type_: str) -> tuple[int, int] | tuple[None, None]:
-    """
-    WARNING: this function does not account for Markdown features such as code
-    blocks that may disarm a snowflake.
-    """
-    # NOTE: while this function could just return tuple[int, int] | None, that
-    # makes it less convenient to destructure the return value.
-    snowflake = _SNOWFLAKE_REGEX.search(content)
-    if snowflake is None or snowflake[1] != type_:
-        return None, None
-    return int(snowflake[2]), snowflake.span()[0]
-
-
-def get_moved_message_author_id(message: discord.WebhookMessage) -> int | None:
-    # NOTE: this function takes a discord.WebhookMessage instead of
-    # a discord.Message to force the caller to ensure that the requested
-    # message is actually from a webhook.
-
-    # HACK: as far as I know, Discord does not provide any way to attach
-    # a hidden number to a webhook message, nor does it provide a way to link
-    # a webhook message to a user. Thus, this information is extracted from the
-    # subtext of moved messages.
-    try:
-        subtext = message.content.splitlines()[-1]
-    except IndexError:
-        return None
-    # Heuristics to determine if a message is really a moved message.
-    if not subtext.startswith("-# "):
-        return None
-    # One other thing that could be checked is whether content.splitlines() is
-    # at least two elements long; that would backfire when moved media or
-    # forwards is passed through this function, however, as those move messages
-    # don't contain anything except the subtext in their `Message.content`.
-
-    # If we have a channel mention, the executor is present; discard that part
-    # so that the executor is not accidentally picked as the author.
-    _, pos = _find_snowflake(subtext, "#")
-    if pos is not None:
-        subtext = subtext[:pos]
-
-    snowflake, _ = _find_snowflake(subtext, "@")
-    return snowflake

@@ -1,15 +1,8 @@
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, cast
+# pyright: reportPrivateUsage=false
 
 import pytest
 
-from app.utils.webhooks import (
-    _find_snowflake,  # pyright: ignore [reportPrivateUsage]
-    get_moved_message_author_id,
-)
-
-if TYPE_CHECKING:
-    import discord
+from app.utils.webhooks import MovedMessage, _find_snowflake
 
 
 @pytest.mark.parametrize(
@@ -50,7 +43,7 @@ if TYPE_CHECKING:
     ],
 )
 def test_find_snowflake(
-    content: str, type_: str, result: tuple[int | None, int | None]
+    content: str, type_: str, result: tuple[int, int] | tuple[None, None]
 ) -> None:
     assert _find_snowflake(content, type_) == result
 
@@ -119,5 +112,6 @@ def test_find_snowflake(
     ],
 )
 def test_get_moved_message_author_id(content: str, result: int | None) -> None:
-    fake_message = cast("discord.WebhookMessage", SimpleNamespace(content=content))
-    assert get_moved_message_author_id(fake_message) == result
+    # NOTE: casting a SimpleNamespace to MovedMessage seems to break the code
+    # in ExtensibleMessage, so we shall access _extract_author_id() directly.
+    assert MovedMessage._extract_author_id(content) == result  # noqa: SLF001
