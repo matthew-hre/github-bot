@@ -24,7 +24,11 @@ def fill_entity(**kwargs: Any) -> SimpleNamespace:
         "state_reason": None,
         "draft": False,
         "merged": False,
-        "answered": None,
+        "answer": None,
+        "additions": 0,
+        "deletions": 0,
+        "changed_files": 0,
+        "labels": [],
     }
     return SimpleNamespace(**defaults | kwargs)
 

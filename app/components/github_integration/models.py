@@ -1,6 +1,7 @@
 import datetime as dt
-from typing import Annotated, Literal, NamedTuple
+from typing import Annotated, Literal, NamedTuple, cast
 
+from githubkit.versions.latest.models import IssuePropLabelsItemsOneof1
 from pydantic import (
     AliasChoices,
     BaseModel,
@@ -68,12 +69,21 @@ class Entity(BaseModel):
 class Issue(Entity):
     closed: Annotated[bool, Field(alias="state"), BeforeValidator(state_validator)]
     state_reason: Literal["completed", "reopened", "not_planned", "duplicate"] | None
+    labels: list[str]
+
+    @field_validator("labels", mode="before")
+    @classmethod
+    def capitalize(cls, value: list[IssuePropLabelsItemsOneof1]) -> list[str]:
+        return [cast("str", label.name) for label in value]
 
 
 class PullRequest(Entity):
     closed: Annotated[bool, Field(alias="state"), BeforeValidator(state_validator)]
     draft: bool
     merged: bool
+    additions: int
+    deletions: int
+    changed_files: int
 
 
 class Discussion(Entity):
