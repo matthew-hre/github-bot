@@ -43,7 +43,7 @@ from app.utils.webhooks import MovedMessage, _find_snowflake
     ],
 )
 def test_find_snowflake(
-    content: str, type_: str, result: tuple[int | None, int | None]
+    content: str, type_: str, result: tuple[int, int] | tuple[None, None]
 ) -> None:
     assert _find_snowflake(content, type_) == result
 
