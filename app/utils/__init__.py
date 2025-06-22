@@ -36,6 +36,7 @@ __all__ = (
     "NON_SYSTEM_MESSAGE_TYPES",
     "SUPPORTED_IMAGE_FORMATS",
     "Account",
+    "DeleteInstead",
     "DeleteMessage",
     "ExtensibleMessage",
     "GuildTextChannel",
@@ -101,6 +102,22 @@ class DeleteMessage(discord.ui.View):
             + " can remove this message.",
             ephemeral=True,
         )
+
+
+class DeleteInstead(discord.ui.View):
+    def __init__(self, message: discord.Message) -> None:
+        super().__init__()
+        self.message = message
+
+    @discord.ui.button(label="Delete instead", emoji="❌")
+    async def delete(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button[Self],
+    ) -> None:
+        button.disabled = True
+        await self.message.delete()
+        await interaction.response.edit_message(view=self)
 
 
 def is_dm(account: Account) -> TypeIs[discord.User]:
