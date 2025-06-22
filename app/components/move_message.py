@@ -6,6 +6,7 @@ import discord
 
 from app.setup import bot, config
 from app.utils import (
+    Account,
     GuildTextChannel,
     MessageData,
     MovedMessage,
@@ -85,6 +86,17 @@ TOO_MANY_ATTACHMENTS = (
 
 # A dictionary mapping threads to the message to edit and the subtext.
 edit_threads: dict[int, tuple[MovedMessage, str]] = {}
+
+
+async def _remove_edit_thread(
+    thread: discord.Thread, author: Account, *, action: str
+) -> None:
+    # Suppress NotFound and KeyError to prevent an exception thrown if the user
+    # attempts to remove the edit thread through multiple means (such as the
+    # cancel button and sending an edited message) at the same time.
+    with suppress(discord.NotFound, KeyError):
+        await thread.delete(reason=f"{author.name} {action} a moved message")
+        del edit_threads[thread.id]
 
 
 class SelectChannel(discord.ui.View):
@@ -408,13 +420,9 @@ class CancelEditing(discord.ui.View):
         # minutes so that the user never sees "Something went wrong." before
         # the thread is gone and the user is moved out of the thread.
         await interaction.response.defer()
-        # Suppress NotFound and KeyError to prevent an exception thrown if the
-        # user sends a message and hits cancel at the same time.
-        with suppress(discord.NotFound, KeyError):
-            await self._thread.delete(
-                reason="{message.author.name} canceled editing of a moved message"
-            )
-            del edit_threads[self._thread.id]
+        await _remove_edit_thread(
+            self._thread, interaction.user, action="canceled editing of"
+        )
         # We can't actually followup on the deferred response here because
         # doing so would result in NotFound being thrown since the thread was
         # just deleted above.
@@ -566,11 +574,6 @@ async def check_for_edit_response(message: discord.Message) -> None:
         ],
         allowed_mentions=discord.AllowedMentions.none(),
     )
-
-    # Suppress NotFound and KeyError to prevent an exception thrown if the user
-    # sends a message and hits the cancel at the same time.
-    with suppress(discord.NotFound, KeyError):
-        await message.channel.delete(
-            reason="{message.author.name} finished editing a moved message"
-        )
-        del edit_threads[message.channel.id]
+    await _remove_edit_thread(
+        message.channel, message.author, action="finished editing"
+    )
