@@ -77,7 +77,7 @@ class PullRequest(Entity):
 
 
 class Discussion(Entity):
-    answered: bool | None
+    answered_by: GitHubUser | None
 
 
 class EntityGist(NamedTuple):

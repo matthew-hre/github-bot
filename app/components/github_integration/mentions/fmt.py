@@ -58,7 +58,7 @@ def get_entity_emoji(entity: Entity) -> discord.Emoji | None:
             else "open"
         )  # fmt: skip
     elif isinstance(entity, Discussion):
-        emoji_name = "discussion_answered" if entity.answered else "issue_draft"
+        emoji_name = "discussion_answered" if entity.answered_by else "issue_draft"
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)

@@ -15,7 +15,13 @@ query getDiscussion($number: Int!, $org: String!, $repo: String!) {
       }
       created_at: createdAt
       html_url: url
-      answered: isAnswered
+      answer {
+        user: author {
+          login
+          html_url: url
+          avatar_url: avatarUrl
+        }
+      }
     }
   }
 }
@@ -27,4 +33,5 @@ async def get_discussion(org: str, name: str, number: int) -> Discussion:
         DISCUSSION_QUERY, variables={"number": number, "org": org, "repo": name}
     )
     data = resp["repository"]["discussion"]
+    data["answered_by"] = (answer := data.pop("answer")) and answer["user"]
     return Discussion(**data)
