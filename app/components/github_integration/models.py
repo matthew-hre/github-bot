@@ -73,7 +73,7 @@ class Issue(Entity):
 
     @field_validator("labels", mode="before")
     @classmethod
-    def capitalize(cls, value: list[IssuePropLabelsItemsOneof1]) -> list[str]:
+    def extract_name(cls, value: list[IssuePropLabelsItemsOneof1]) -> list[str]:
         return [cast("str", label.name) for label in value]
 
 
