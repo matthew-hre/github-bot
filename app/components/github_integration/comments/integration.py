@@ -46,11 +46,11 @@ def comment_to_embed(comment: Comment) -> discord.Embed:
         if (emoji := get_entity_emoji(comment.entity))
         else comment.entity.title
     )
-    formatted_reactions = comment.reactions and (
+    formatted_reactions = comment.reactions and [
         f"{REACTION_EMOJIS[reaction]} ×{count}"  # noqa: RUF001
         for reaction, count in comment.reactions
         if count
-    )
+    ]
     embed = (
         discord.Embed(
             description=comment.body,
