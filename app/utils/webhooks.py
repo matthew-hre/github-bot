@@ -6,7 +6,7 @@ import re
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, overload
 
 import discord
 import httpx
@@ -525,6 +525,48 @@ class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
         snowflake, _ = _find_snowflake(subtext, "@")
         return snowflake
 
+    @classmethod
+    async def from_message(
+        cls, message: discord.Message, *, webhook_name: str = "Ghostty Moderator"
+    ) -> Self | MovedMessageLookupFailed:
+        if message.webhook_id is None or isinstance(
+            message.channel,
+            # These types can't even have a webhook.
+            discord.DMChannel | discord.GroupChannel | discord.PartialMessageable,
+        ):
+            return MovedMessageLookupFailed.NOT_MOVED
+
+        if isinstance(message.channel, discord.Thread):
+            thread = message.channel
+            if (channel := thread.parent) is None:
+                return MovedMessageLookupFailed.NOT_FOUND
+        else:
+            channel = message.channel
+            thread = discord.utils.MISSING
+
+        for webhook in await channel.webhooks():
+            if webhook.id == message.webhook_id:
+                break
+        else:
+            return MovedMessageLookupFailed.NOT_MOVED
+        if webhook.name != webhook_name:
+            # More heuristics to determine if a webhook message is a moved
+            # message.
+            return MovedMessageLookupFailed.NOT_MOVED
+
+        try:
+            return cls(await webhook.fetch_message(message.id, thread=thread))
+        except discord.Forbidden:
+            return MovedMessageLookupFailed.NOT_FOUND
+        except (ValueError, discord.NotFound):
+            # NOTE: while it may seem like this function should be returning
+            # `NotFound` on `discord.NotFound`, that exception is thrown when
+            # the *webhook* couldn't find the associated message, rather than
+            # when the message doesn't exist. Since all moved messages are sent
+            # by the webhook, this branch symbolizes a message that isn't
+            # a moved message.
+            return MovedMessageLookupFailed.NOT_MOVED
+
     async def get_original_author(self) -> discord.Member:
         if self._original_author is not None:
             # Use the cached author.
@@ -614,7 +656,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
         poll = message.poll
 
     if include_move_marks and isinstance(
-        moved_message := await get_moved_message(message), MovedMessage
+        moved_message := await MovedMessage.from_message(message), MovedMessage
     ):
         # Append the new move mark to the existing subtext.
         split_subtext = SplitSubtext(moved_message)
@@ -691,43 +733,3 @@ def format_or_file(
 class MovedMessageLookupFailed(Enum):
     NOT_FOUND = -1
     NOT_MOVED = -2
-
-
-async def get_moved_message(
-    message: discord.Message, *, webhook_name: str = "Ghostty Moderator"
-) -> MovedMessage | MovedMessageLookupFailed:
-    if message.webhook_id is None or isinstance(
-        message.channel,
-        # These types can't even have a webhook.
-        discord.DMChannel | discord.GroupChannel | discord.PartialMessageable,
-    ):
-        return MovedMessageLookupFailed.NOT_MOVED
-
-    if isinstance(message.channel, discord.Thread):
-        thread = message.channel
-        if (channel := thread.parent) is None:
-            return MovedMessageLookupFailed.NOT_FOUND
-    else:
-        channel = message.channel
-        thread = discord.utils.MISSING
-
-    for webhook in await channel.webhooks():
-        if webhook.id == message.webhook_id:
-            break
-    else:
-        return MovedMessageLookupFailed.NOT_MOVED
-    if webhook.name != webhook_name:
-        # More heuristics to determine if a webhook message is a moved message.
-        return MovedMessageLookupFailed.NOT_MOVED
-
-    try:
-        return MovedMessage(await webhook.fetch_message(message.id, thread=thread))
-    except discord.Forbidden:
-        return MovedMessageLookupFailed.NOT_FOUND
-    except (ValueError, discord.NotFound):
-        # NOTE: while it may seem like this function should be returning
-        # `NotFound` on `discord.NotFound`, that exception is thrown when the
-        # *webhook* couldn't find the associated message, rather than when the
-        # message doesn't exist. Since all moved messages are sent by the
-        # webhook, this branch symbolizes a message that isn't a moved message.
-        return MovedMessageLookupFailed.NOT_MOVED

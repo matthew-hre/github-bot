@@ -6,8 +6,8 @@ import discord
 from app.setup import bot, config
 from app.utils import (
     GuildTextChannel,
+    MovedMessage,
     MovedMessageLookupFailed,
-    get_moved_message,
     get_or_create_webhook,
     is_dm,
     is_helper,
@@ -216,7 +216,7 @@ async def delete_moved_message(
     assert not is_dm(interaction.user)
 
     if message.created_at < MOVED_MESSAGE_MODIFICATION_CUTOFF or (
-        (moved_message := await get_moved_message(message))
+        (moved_message := await MovedMessage.from_message(message))
         is MovedMessageLookupFailed.NOT_FOUND
     ):
         await interaction.response.send_message(
