@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     import discord
 
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
-GITHUB_URL = "https://github.com"
 EMOJI_NAMES = frozenset({
     "discussion_answered",
     "issue_closed_completed",
@@ -68,7 +67,7 @@ def get_entity_emoji(entity: Entity) -> discord.Emoji | None:
 
 
 def _format_user_link(login: str) -> str:
-    return f"[`{login}`](<{GITHUB_URL}/{login}>)"
+    return f"[`{login}`](<https://github.com/{login}>)"
 
 
 def _format_entity_detail(entity: Entity) -> str:
@@ -102,11 +101,11 @@ def _format_mention(entity: Entity) -> str:
     # https://github.com/owner/repo/issues/12
     # -> https://github.com  owner  repo  issues  12
     #    0                   1      2     3       4
-    _, owner, name, *_ = entity.html_url.rsplit("/", 4)
+    domain, owner, name, *_ = entity.html_url.rsplit("/", 4)
     fmt_ts = partial(dynamic_timestamp, entity.created_at)
     subtext = (
         f"-# by {_format_user_link(entity.user.name)}"
-        f" in [`{owner}/{name}`](<{GITHUB_URL}/{owner}/{name}>)"
+        f" in [`{owner}/{name}`](<{domain}/{owner}/{name}>)"
         f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
     )
     entity_detail = _format_entity_detail(entity)
