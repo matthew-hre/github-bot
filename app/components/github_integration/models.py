@@ -69,12 +69,12 @@ class Entity(BaseModel):
 class Issue(Entity):
     closed: Annotated[bool, Field(alias="state"), BeforeValidator(state_validator)]
     state_reason: Literal["completed", "reopened", "not_planned", "duplicate"] | None
-    labels: list[str]
+    labels: tuple[str, ...]  # a tuple so that the model is hashable
 
     @field_validator("labels", mode="before")
     @classmethod
-    def extract_name(cls, value: list[IssuePropLabelsItemsOneof1]) -> list[str]:
-        return [cast("str", label.name) for label in value]
+    def extract_name(cls, value: list[IssuePropLabelsItemsOneof1]) -> tuple[str, ...]:
+        return tuple(cast("str", label.name) for label in value)
 
 
 class PullRequest(Entity):
