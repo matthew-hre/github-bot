@@ -58,12 +58,41 @@ def get_entity_emoji(entity: Entity) -> discord.Emoji | None:
             else "open"
         )  # fmt: skip
     elif isinstance(entity, Discussion):
-        emoji_name = "discussion_answered" if entity.answered else "issue_draft"
+        emoji_name = "discussion_answered" if entity.answered_by else "issue_draft"
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)
 
     return entity_emojis.get(emoji_name)
+
+
+def _format_user_link(login: str) -> str:
+    return f"[`{login}`](<https://github.com/{login}>)"
+
+
+def _format_entity_detail(entity: Entity) -> str:
+    if isinstance(entity, Issue):
+        if not entity.labels:
+            return ""
+        if len(entity.labels) > 3:
+            labels = entity.labels[:3]
+            omission_note = f", and {len(entity.labels) - 3} more"
+        else:
+            labels, omission_note = entity.labels, ""
+        body = f"labels: {', '.join(f'`{label}`' for label in labels)}{omission_note}"
+    elif isinstance(entity, PullRequest):
+        body = (
+            f"diff size: `+{entity.additions}` `-{entity.deletions}`"
+            f" ({entity.changed_files} files changed)"
+        )
+    elif isinstance(entity, Discussion):
+        if not entity.answered_by:
+            return ""
+        body = f"answered by {_format_user_link(entity.answered_by.name)}"
+    else:
+        msg = f"Unknown entity type: {type(entity)}"
+        raise TypeError(msg)
+    return f"-# {body}\n"
 
 
 def _format_mention(entity: Entity) -> str:
@@ -73,16 +102,16 @@ def _format_mention(entity: Entity) -> str:
     # -> https://github.com  owner  repo  issues  12
     #    0                   1      2     3       4
     domain, owner, name, *_ = entity.html_url.rsplit("/", 4)
-    author = entity.user.name
     fmt_ts = partial(dynamic_timestamp, entity.created_at)
     subtext = (
-        f"-# by [`{author}`](<{domain}/{author}>)"
+        f"-# by {_format_user_link(entity.user.name)}"
         f" in [`{owner}/{name}`](<{domain}/{owner}/{name}>)"
         f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
     )
+    entity_detail = _format_entity_detail(entity)
 
     emoji = get_entity_emoji(entity) or "❓"
-    return f"{emoji} {headline}\n{subtext}"
+    return f"{emoji} {headline}\n{subtext}{entity_detail}"
 
 
 async def entity_message(message: discord.Message) -> tuple[str, int]:
