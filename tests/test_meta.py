@@ -115,7 +115,8 @@ VS16_SUPPRESS_COMMENT = "# test: allow-vs16"
 
 
 def check_dir_for_vs16(path: Path) -> None:
-    error_locations: list[tuple[Path, int]] = []
+    unsuppressed: list[tuple[Path, int]] = []
+    unnecessary: list[tuple[Path, int]] = []
     for file in path.rglob("*.py"):
         if (
             not (lines := file.read_text().splitlines())
@@ -124,14 +125,26 @@ def check_dir_for_vs16(path: Path) -> None:
             continue
         for line_no, line in enumerate(lines, 1):
             if VS16 in line and VS16_SUPPRESS_COMMENT not in line:
-                error_locations.append((file, line_no))
+                unsuppressed.append((file, line_no))
+            elif VS16_SUPPRESS_COMMENT in line and VS16 not in line:
+                unnecessary.append((file, line_no))
 
-    if error_locations:
-        raise AssertionError(
-            f"unsuppressed VS16 found in {len(error_locations)} lines:\n"
-            + "\n".join(f"- {file}:{line_no}" for file, line_no in error_locations)
+    msg = ""
+    if unsuppressed:
+        n = len(unsuppressed)
+        msg += (
+            f"unsuppressed VS16 found in {n} line{'s' * (n != 1)}:\n"
+            + "\n".join(f"- {file}:{line_no}" for file, line_no in unsuppressed)
             + "\nsee the module docstring of this test for more information"
         )
+    if unnecessary:
+        n = len(unnecessary)
+        msg += (
+            f"unnecessary `test: allow-vs16` found in {n} line{'s' * (n != 1)}:\n"
+            + "\n".join(f"- {file}:{line_no}" for file, line_no in unnecessary)
+        )
+    if msg:
+        raise AssertionError(msg)
 
 
 @pytest.mark.parametrize("folder", ["app", "tests"])
