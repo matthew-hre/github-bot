@@ -6,7 +6,7 @@ on:
 
 env:
   PY_COLORS: 1
-  UV_VERSION: 0.6.1
+  UV_VERSION: 0.7.16
 
 name: Checks
 jobs:
