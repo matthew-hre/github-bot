@@ -98,7 +98,7 @@ async def on_message(message: discord.Message) -> None:
         reply_with_code(message),  # Look for GitHub code links and reply with contents
         reply_with_comments(message),  # Check for entity comments and reply with embeds
         check_for_old_posts(message),  # Check for bumps of old help posts and lock them
-        handle_xkcd_mentions(message),  # Reply to xkcd mentions with the URL
+        handle_xkcd_mentions(message),  # Reply to xkcd mentions with comic embeds
         check_for_edit_response(message),  # Check for responses in active edit threads
     ]
 
