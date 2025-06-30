@@ -295,7 +295,7 @@ class Ghostping(discord.ui.View):
 
 
 class HelpPostTitle(discord.ui.Modal, title="Turn into #help post"):
-    title_: discord.ui.TextInput[Self] = discord.ui.TextInput(
+    title_ = discord.ui.TextInput[Self](
         label="#help post title", style=discord.TextStyle.short, max_length=100
     )
 
@@ -487,7 +487,7 @@ class ChooseMessageAction(discord.ui.View):
 
 
 class EditMessage(discord.ui.Modal, title="Edit Message"):
-    new_text: discord.ui.TextInput[Self] = discord.ui.TextInput(
+    new_text = discord.ui.TextInput[Self](
         label="New message content",
         style=discord.TextStyle.long,
         default=discord.utils.MISSING,
