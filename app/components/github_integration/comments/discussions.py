@@ -42,18 +42,18 @@ query getDiscussionComment($id: ID!) {
 
 def _encode_discussion_comment_id(comment_id: int) -> str:
     # Step one: encode it as a 32-bit integer in msgpack.
-    # Discussion comment ids seem to always be large enough to need 32 bits,
-    # but small enough to always fit in 32 bits.
+    # Discussion comment ids seem to always be large enough to need 32 bits, but small
+    # enough to always fit in 32 bits.
     packed = b"\x93\x00\x00\xce" + comment_id.to_bytes(4, "big")
     #            ^   ^   ^    ^    ^
     #            |   |   |    |    The integer itself, in big-endian.
     #            |   |   |    `- Start 32-bit int.
     #            | This is 0 (positive fixint).
-    # This is 0b10010011. fixarrays start with 0b1001XXXX, where XXXX is the
-    # length of the array as a four-bit unsigned integer.
+    # This is 0b10010011. fixarrays start with 0b1001XXXX, where XXXX is the length of
+    # the array as a four-bit unsigned integer.
 
     # Step two: base-64 encode it, prefix it, and decode it to a `str`.
-    return (b"DC_" + urlsafe_b64encode(packed)).decode()
+    return "DC_" + urlsafe_b64encode(packed).decode()
 
 
 async def get_discussion_comment(entity_gist: EntityGist, comment_id: int) -> Comment:

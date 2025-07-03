@@ -64,9 +64,9 @@ def comment_to_embed(comment: Comment) -> discord.Embed:
     )
     if formatted_reactions:
         embed.add_field(
-            # Discord collapses multiple spaces, so a figure space (which is
-            # one of the ones which don't seem to be collapsed) has to be used
-            # instead of multiple adjacent spaces.
+            # Discord collapses multiple spaces, so a figure space (which is one of the
+            # ones which don't seem to be collapsed) has to be used instead of multiple
+            # adjacent spaces.
             name="",
             value="-# " + f" {_FIGURE_SPACE} ".join(formatted_reactions),
         )

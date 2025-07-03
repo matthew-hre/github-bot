@@ -76,8 +76,8 @@ class BotStatus:
 
     def export(self) -> dict[str, str | SimpleNamespace]:
         """
-        Make sure the bot has finished initializing before calling this, using
-        the `initialized` property.
+        Make sure the bot has finished initializing before calling this, using the
+        `initialized` property.
         """
         assert self.last_login_time is not None
         assert self.last_sitemap_refresh is not None

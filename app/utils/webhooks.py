@@ -23,8 +23,8 @@ _EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 _REACTION_REGEX = re.compile(r"([^\s×]+) ×(\d+)", re.ASCII)  # noqa: RUF001
 _SNOWFLAKE_REGEX = re.compile(r"<(\D{0,2})(\d+)>", re.ASCII)
 
-# A list of image formats supported by Discord, in the form of their file
-# extension (including the leading dot).
+# A list of image formats supported by Discord, in the form of their file extension
+# (including the leading dot).
 SUPPORTED_IMAGE_FORMATS = frozenset({".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"})
 
 # Non-system-message types taken from the description of
@@ -71,8 +71,8 @@ def _unattachable_embed(unattachable_elem: str, **kwargs: Any) -> discord.Embed:
 
 def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     """
-    Convert custom emojis to concealed hyperlinks.  Set `force` to True to
-    convert emojis in the current guild too.
+    Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
+    emojis in the current guild too.
     """
     guild = get_ghostty_guild()
 
@@ -183,8 +183,8 @@ async def _format_forward(
             embed.set_image(url="attachment://" + images[0].filename)
         else:
             image = image_only_embeds[0].image
-            # Try both, as embeds which have not yet been sent to Discord will
-            # not have a proxy_url.
+            # Try both, as embeds which have not yet been sent to Discord will not have
+            # a proxy_url.
             embed.set_image(url=image.proxy_url or image.url)
             embeds.remove(image_only_embeds[0])
     if embeds or len(files) > (1 if images else 0):
@@ -229,10 +229,10 @@ def _format_missing_reference(
 def _format_interaction(message: discord.Message) -> str:
     if not message.interaction_metadata:
         return message.content
-    # HACK: Message.interaction is deprecated, and discord.py disables any
-    # warning filter resulting in a bunch of warnings spammed in the logs even
-    # if it is ignored. There is no other way to get the name, and
-    # Message._interaction is not marked deprecated. Delectable.
+    # HACK: Message.interaction is deprecated, and discord.py disables any warning
+    # filter resulting in a bunch of warnings spammed in the logs even if it is ignored.
+    # There is no other way to get the name, and Message._interaction is not marked
+    # deprecated. Delectable.
     if hasattr(message, "_interaction") and (interaction := message._interaction):  # pyright: ignore [reportPrivateUsage] # noqa: SLF001
         prefix = "/" * (message.type is not discord.MessageType.context_menu_command)
         name = f"`{prefix}{interaction.name}`"
@@ -273,9 +273,8 @@ def _format_emoji(emoji: str | discord.PartialEmoji | discord.Emoji) -> str:
 
 
 class _Subtext:
-    # NOTE: when changing the subtext's format in ways that are not
-    # backward-compatible, don't forget to bump the cut-off time in
-    # app/components/message_filter.py!
+    # NOTE: when changing the subtext's format in ways that are not backward-compatible,
+    # don't forget to bump the cut-off time in app/components/message_filter.py!
     reactions: str
     timestamp: str
     author: str
@@ -354,9 +353,8 @@ class _Subtext:
 
 class SplitSubtext:
     def __init__(self, message: MovedMessage) -> None:
-        # Since we know that we definitely have a moved message here (due to
-        # the restriction on `message`'s type), the last line must be the
-        # subtext.
+        # Since we know that we definitely have a moved message here (due to the
+        # restriction on `message`'s type), the last line must be the subtext.
         *lines, self._subtext = message.content.splitlines()
         if not lines:
             self.content, self.reactions = "", {}
@@ -373,10 +371,10 @@ class SplitSubtext:
         d: dict[str, int] = {}
         for s in reaction_line.removeprefix("-# ").split("   "):
             if not (match := _REACTION_REGEX.fullmatch(s)):
-                # If any of the reactions don't match, we don't have an actual
-                # reaction line; return an empty dictionary to ignore that line
-                # as it may just be a similarly-formatted line present in the
-                # actual message content itself.
+                # If any of the reactions don't match, we don't have an actual reaction
+                # line; return an empty dictionary to ignore that line as it may just be
+                # a similarly-formatted line present in the actual message content
+                # itself.
                 return {}
             emoji, count = match.groups()
             d[emoji] = int(count)
@@ -424,11 +422,11 @@ def message_can_be_moved(message: discord.Message) -> bool:
 
 def _find_snowflake(content: str, type_: str) -> tuple[int, int] | tuple[None, None]:
     """
-    WARNING: this function does not account for Markdown features such as code
-    blocks that may disarm a snowflake.
+    WARNING: this function does not account for Markdown features such as code blocks
+    that may disarm a snowflake.
     """
-    # NOTE: while this function could just return tuple[int, int] | None, that
-    # makes it less convenient to destructure the return value.
+    # NOTE: while this function could just return tuple[int, int] | None, that makes it
+    # less convenient to destructure the return value.
     snowflake = _SNOWFLAKE_REGEX.search(content)
     if snowflake is None or snowflake[1] != type_:
         return None, None
@@ -440,9 +438,8 @@ class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
         self, message: discord.WebhookMessage, *, author: discord.Member | None = None
     ) -> None:
         """
-        If the subtext does not contain an author, ValueError is thrown.
-        Providing `author` may save a web request when using
-        get_original_author().
+        If the subtext does not contain an author, ValueError is thrown. Providing
+        `author` may save a web request when using get_original_author().
         """
         super().__init__(message)
         id_ = self._extract_author_id(message.content)
@@ -459,10 +456,10 @@ class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
 
     @staticmethod
     def _extract_author_id(content: str) -> int | None:
-        # HACK: as far as I know, Discord does not provide any way to attach
-        # a hidden number to a webhook message, nor does it provide a way to
-        # link a webhook message to a user. Thus, this information is extracted
-        # from the subtext of moved messages.
+        # HACK: as far as I know, Discord does not provide any way to attach a hidden
+        # number to a webhook message, nor does it provide a way to link a webhook
+        # message to a user. Thus, this information is extracted from the subtext of
+        # moved messages.
         try:
             subtext = content.splitlines()[-1]
         except IndexError:
@@ -470,21 +467,19 @@ class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
         # Heuristics to determine if a message is really a moved message.
         if not subtext.startswith("-# "):
             return None
-        # One other thing that could be checked is whether content.splitlines()
-        # is at least two elements long; that would backfire when moved media
-        # or forwards is passed through this function, however, as those moved
-        # messages don't contain anything except the subtext in their
-        # `Message.content`.
+        # One other thing that could be checked is whether content.splitlines() is at
+        # least two elements long; that would backfire when moved media or forwards is
+        # passed through this function, however, as those moved messages don't contain
+        # anything except the subtext in their `Message.content`.
 
-        # If we have a channel mention, the executor is present; discard that
-        # part so that the executor is not accidentally picked as the author.
+        # If we have a channel mention, the executor is present; discard that part so
+        # that the executor is not accidentally picked as the author.
         _, pos = _find_snowflake(subtext, "#")
         if pos is not None:
             subtext = subtext[:pos]
 
-        # The first user mention in the subtext is the author. If it is not
-        # present, _find_snowflake() would return None; pass that right back to
-        # the caller.
+        # The first user mention in the subtext is the author. If it is not present,
+        # _find_snowflake() would return None; pass that right back to the caller.
         snowflake, _ = _find_snowflake(subtext, "@")
         return snowflake
 
@@ -513,8 +508,7 @@ class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
         else:
             return MovedMessageLookupFailed.NOT_MOVED
         if webhook.name != webhook_name:
-            # More heuristics to determine if a webhook message is a moved
-            # message.
+            # More heuristics to determine if a webhook message is a moved message.
             return MovedMessageLookupFailed.NOT_MOVED
 
         try:
@@ -522,12 +516,11 @@ class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
         except discord.Forbidden:
             return MovedMessageLookupFailed.NOT_FOUND
         except (ValueError, discord.NotFound):
-            # NOTE: while it may seem like this function should be returning
-            # `NotFound` on `discord.NotFound`, that exception is thrown when
-            # the *webhook* couldn't find the associated message, rather than
-            # when the message doesn't exist. Since all moved messages are sent
-            # by the webhook, this branch symbolizes a message that isn't
-            # a moved message.
+            # NOTE: while it may seem like this function should be returning `NotFound`
+            # on `discord.NotFound`, that exception is thrown when the *webhook*
+            # couldn't find the associated message, rather than when the message doesn't
+            # exist. Since all moved messages are sent by the webhook, this branch
+            # symbolizes a message that isn't a moved message.
             return MovedMessageLookupFailed.NOT_MOVED
 
     async def get_original_author(self) -> discord.Member:
@@ -536,8 +529,8 @@ class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
             return self._original_author
         assert self.guild is not None
         if (author := self.guild.get_member(self.original_author_id)) is None:
-            # discord.py doesn't have the member in its user cache, so we need
-            # a web request to Discord to get the author.
+            # discord.py doesn't have the member in its user cache, so we need a web
+            # request to Discord to get the author.
             author = await self.guild.fetch_member(self.original_author_id)
         # Cache the author.
         self._original_author = author
@@ -578,8 +571,8 @@ async def move_message_via_webhook(  # noqa: PLR0913
     include_move_marks: bool = True,
 ) -> MovedMessage | discord.WebhookMessage:
     """
-    WARNING: it is the caller's responsibility to check message_can_be_moved()
-    and to display an informative warning message.
+    WARNING: it is the caller's responsibility to check message_can_be_moved() and to
+    display an informative warning message.
     """
     assert message_can_be_moved(message)
 
@@ -601,9 +594,8 @@ async def move_message_via_webhook(  # noqa: PLR0913
 
     if (
         message.poll is None
-        # Discord does not like polls with a negative duration. Polls created
-        # by a webhook cannot be ended manually, so simply discard polls which
-        # have ended.
+        # Discord does not like polls with a negative duration. Polls created by
+        # a webhook cannot be ended manually, so simply discard polls which have ended.
         or message.poll.expires_at is None
         or dt.datetime.now(tz=dt.UTC) >= message.poll.expires_at
     ):
@@ -633,9 +625,8 @@ async def move_message_via_webhook(  # noqa: PLR0913
         if not content.strip():
             content = "-# Content attached"
         elif "•" in content:
-            # Ensure the move mark stays at the end, so that appending to
-            # the move mark later in SplitSubtext.update() doesn't make the
-            # result incorrect.
+            # Ensure the move mark stays at the end, so that appending to the move mark
+            # later in SplitSubtext.update() doesn't make the result incorrect.
             subtext, _, move_mark = content.rpartition(" • ")
             content = f"{subtext} • Content attached • {move_mark}"
         else:
@@ -655,14 +646,13 @@ async def move_message_via_webhook(  # noqa: PLR0913
     )
     await message.delete()
 
-    # Even though `message` is definitely from a guild, not all messages have
-    # a Member as its author. A notable example is WebhookMessage, whose author
-    # is the webhook, which is a User and not a Member. This means that we
-    # cannot assert message.author to be a Member since that would fail when
-    # moving a moved message.
+    # Even though `message` is definitely from a guild, not all messages have a Member
+    # as its author. A notable example is WebhookMessage, whose author is the webhook,
+    # which is a User and not a Member. This means that we cannot assert message.author
+    # to be a Member since that would fail when moving a moved message.
     author = message.author if isinstance(message.author, discord.Member) else None
-    # This never throws as the subtext has the author present if including move
-    # marks (see above).
+    # This never throws as the subtext has the author present if including move marks
+    # (see above).
     return MovedMessage(msg, author=author) if include_move_marks else msg
 
 

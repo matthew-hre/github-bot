@@ -36,45 +36,42 @@ MOVED_MESSAGE_MODIFICATION_CUTOFF = dt.datetime(
 
 EDIT_METHOD_PROMPT = "What would you like to do?"
 MESSAGE_EDIT_HELP = (
-    "*Edit via modal* displays a text box that allows you to edit the "
-    "contents of your message easily and conveniently. However, Discord's "
-    "text box is only intended for plain text, not Discord messages. There is "
-    "no Markdown syntax highlighting in this text box, and user or channel "
-    "mentions are incredibly difficult to insert or edit. The text box also "
-    "covers the entire UI, which makes referencing other messages annoying.\n"
+    "*Edit via modal* displays a text box that allows you to edit the contents of your "
+    "message easily and conveniently. However, Discord's text box is only intended for "
+    "plain text, not Discord messages. There is no Markdown syntax highlighting in "
+    "this text box, and user or channel mentions are incredibly difficult to insert or "
+    "edit. The text box also covers the entire UI, which makes referencing other "
+    "messages annoying.\n"
     "\n"
-    "*Edit in thread* creates a new private thread, adds you to it, and sends "
-    "the message's contents, prompting you to copy it and send an edited "
-    "version. This approach is very flexible, as you are using Discord's own "
-    "message box to send the edited version of the message. Unfortunately, "
-    "since this creates a whole new thread and requires you to copy the "
-    "message, it is considerably more cumbersome to use, and requires "
-    "considerably more context switching. This is especially annoying on "
-    "mobile.\n"
+    "*Edit in thread* creates a new private thread, adds you to it, and sends the "
+    "message's contents, prompting you to copy it and send an edited version. This "
+    "approach is very flexible, as you are using Discord's own message box to send the "
+    "edited version of the message. Unfortunately, since this creates a whole new "
+    "thread and requires you to copy the message, it is considerably more cumbersome "
+    "to use, and requires considerably more context switching. This is especially "
+    "annoying on mobile.\n"
     "\n"
-    "**The recommendation** is hence to use *Edit via modal* for editing "
-    "small to medium length messages with minimal Markdown and when you are "
-    "not touching emojis or channel/user mentions, and *Edit in thread* in "
-    "all other cases."
+    "**The recommendation** is hence to use *Edit via modal* for editing small to "
+    "medium length messages with minimal Markdown and when you are not touching emojis "
+    "or channel/user mentions, and *Edit in thread* in all other cases."
 )
 ALREADY_EDITING = (
-    "You are already editing a message in a thread! You can only edit one "
-    "message in a thread at a time, to prevent abuse. Please finish editing "
-    "the message at <#{thread_id}> first, or use the modal."
+    "You are already editing a message in a thread! You can only edit one message in "
+    "a thread at a time, to prevent abuse. Please finish editing the message at "
+    "<#{thread_id}> first, or use the modal."
 )
 NO_THREAD_PERMS = (
     "⚠️ I don't have the required permissions to create private "  # test: allow-vs16
-    "threads; please contact a moderator! In the meantime, use the modal "
-    "instead."
+    "threads; please contact a moderator! In the meantime, use the modal instead."
 )
 TOO_MANY_THREADS = (
     "⚠️ There are too many active threads in this server! Use the "  # test: allow-vs16
     "modal instead, or try again later."
 )
 NO_CONTENT_TO_EDIT = (
-    "{}, your message does not currently have any content. Sending a message "
-    "would add the specified content to the message. Any attachments you "
-    "upload are also added to your message."
+    "{}, your message does not currently have any content. Sending a message would add "
+    "the specified content to the message. Any attachments you upload are also added "
+    "to your message."
 )
 EDIT_IN_THREAD_HINT = (
     "Please send a message containing the message's new content.\n"
@@ -84,9 +81,9 @@ EDIT_IN_THREAD_HINT = (
 )
 NEW_CONTENT_TOO_LONG = (
     "⚠️ Your message is too long! Please try again.\n"  # test: allow-vs16
-    "-# **Hint:** the maximum number of characters you can enter is "
-    "**{limit}** to account for the subtext, while your message is {length} "
-    "characters long, which is **{difference} too many**."
+    "-# **Hint:** the maximum number of characters you can enter is **{limit}** to "
+    "account for the subtext, while your message is {length} characters long, which is "
+    "**{difference} too many**."
 )
 TOO_MANY_ATTACHMENTS = (
     "⚠️ Your message contains too many attachments! Please remove "  # test: allow-vs16
@@ -97,17 +94,16 @@ ATTACHMENTS_TOO_LARGE = (
     "⚠️ Some of your attachments are too large! The following "  # test: allow-vs16
     "attachments exceed the limit of 64 MiB:\n"
     "{offenders}\n"
-    "Please try again without those attachments, or press *Skip* to continue "
-    "without the offending attachments."
+    "Please try again without those attachments, or press *Skip* to continue without "
+    "the offending attachments."
 )
 ALL_ATTACHMENTS_TOO_LARGE = (
     "⚠️ All of your attachments are too large! The limit for the "  # test: allow-vs16
     "size of attachments is 64 MiB. Please try again with smaller attachments."
 )
 NO_ATTACHMENTS_LEFT = (
-    "Every attachment was selected, but your message only contains "
-    "attachments, which would make the message empty. Would you like to "
-    "delete your message instead?"
+    "Every attachment was selected, but your message only contains attachments, which "
+    "would make the message empty. Would you like to delete your message instead?"
 )
 ATTACHMENTS_ONLY = (
     "Your new message only contains attachments! Doing so will result in your "
@@ -127,12 +123,12 @@ class ThreadState:
     last_update: dt.datetime
 
 
-# A dictionary mapping edit thread IDs to their state. An ID is used instead of
-# the thread itself because there is a thread available already at all places
-# this is used, and because it isn't obvious how threads are hashed.
+# A dictionary mapping edit thread IDs to their state. An ID is used instead of the
+# thread itself because there is a thread available already at all places this is used,
+# and because it isn't obvious how threads are hashed.
 edit_threads: dict[int, ThreadState] = {}
-# A dictionary mapping edit thread creator IDs to the ID of the thread they are
-# editing in. IDs are used for the same reason as above.
+# A dictionary mapping edit thread creator IDs to the ID of the thread they are editing
+# in. IDs are used for the same reason as above.
 edit_thread_creators: dict[int, int] = {}
 
 
@@ -140,19 +136,18 @@ async def _apply_edit_from_thread(
     moved_message: MovedMessage, message: discord.Message, new_content: str
 ) -> None:
     channel = moved_message.channel
-    # Suppress NotFound in case the user attempts to commit an edit to
-    # a message that was deleted in the meantime.
+    # Suppress NotFound in case the user attempts to commit an edit to a message that
+    # was deleted in the meantime.
     with suppress(discord.NotFound):
         await moved_message.edit(
             content=new_content,
             attachments=[
-                # It is possible that our message to edit is stale if the user
-                # removed an attachment from the message after they started
-                # editing it. Thus, re-fetch the message before grabbing its
-                # attachments to avoid an HTTPException from missing
-                # attachments. It is not stored to a variable beforehand
-                # because fetch_message() returns a Message which can't be used
-                # to edit a webhook message, so we use the old MovedMessage to
+                # It is possible that our message to edit is stale if the user removed
+                # an attachment from the message after they started editing it. Thus,
+                # re-fetch the message before grabbing its attachments to avoid an
+                # HTTPException from missing attachments. It is not stored to a variable
+                # beforehand because fetch_message() returns a Message which can't be
+                # used to edit a webhook message, so we use the old MovedMessage to
                 # perform the edit itself.
                 *(await channel.fetch_message(moved_message.id)).attachments,
                 *(await MessageData.scrape(message)).files,
@@ -164,9 +159,9 @@ async def _apply_edit_from_thread(
 async def _remove_edit_thread(
     thread: discord.Thread, author: Account, *, action: str
 ) -> None:
-    # Suppress NotFound and KeyError to prevent an exception thrown if the user
-    # attempts to remove the edit thread through multiple means (such as the
-    # cancel button and sending an edited message) at the same time.
+    # Suppress NotFound and KeyError to prevent an exception thrown if the user attempts
+    # to remove the edit thread through multiple means (such as the cancel button and
+    # sending an edited message) at the same time.
     with suppress(discord.NotFound, KeyError):
         await thread.delete(reason=f"{author.name} {action} a moved message")
         del edit_threads[thread.id]
@@ -176,25 +171,24 @@ async def _remove_edit_thread(
 async def _remove_edit_thread_after_timeout(
     thread: discord.Thread, author: Account
 ) -> None:
-    # Start off with a last update check so that recursive calls to this
-    # function don't need to pass the remaining time around.
+    # Start off with a last update check so that recursive calls to this function don't
+    # need to pass the remaining time around.
     elapsed = dt.datetime.now(tz=dt.UTC) - edit_threads[thread.id].last_update
     time_to_warning = dt.timedelta(minutes=10) - elapsed
-    # Keep sleeping until we have a zero or negative time to the warning. This
-    # has to be a while loop because other coroutines may have touched the last
-    # update time of this edit thread while we were sleeping.
+    # Keep sleeping until we have a zero or negative time to the warning. This has to be
+    # a while loop because other coroutines may have touched the last update time of
+    # this edit thread while we were sleeping.
     while time_to_warning > dt.timedelta():
         await asyncio.sleep(time_to_warning.total_seconds())
         if thread.id not in edit_threads:
-            # The user finished or canceled editing of the thread while we were
-            # asleep.
+            # The user finished or canceled editing of the thread while we were asleep.
             return
-        # Re-calculate how much of the timeout has been elapsed to account for
-        # the last thread update time once again.
+        # Re-calculate how much of the timeout has been elapsed to account for the last
+        # thread update time once again.
         elapsed = dt.datetime.now(tz=dt.UTC) - edit_threads[thread.id].last_update
         time_to_warning = dt.timedelta(minutes=10) - elapsed
-    # At this point, we have definitely waited ten minutes from the last thread
-    # update, so send a warning to the user.
+    # At this point, we have definitely waited ten minutes from the last thread update,
+    # so send a warning to the user.
     remaining = dt.timedelta(minutes=5)
     await thread.send(
         EDITING_TIMEOUT_ALMOST_REACHED.format(
@@ -207,21 +201,20 @@ async def _remove_edit_thread_after_timeout(
     )
     await asyncio.sleep(remaining.total_seconds())
     if thread.id not in edit_threads:
-        # The user finished or canceled editing of the thread while we were
-        # asleep.
+        # The user finished or canceled editing of the thread while we were asleep.
         return
-    # We once again need to re-calculate how much of the timeout has been
-    # elapsed to account for the last thread update time. This is especially
-    # important this time around since it's how the "Continue Editing" button
-    # signals to us that the user opted to continue.
+    # We once again need to re-calculate how much of the timeout has been elapsed to
+    # account for the last thread update time. This is especially important this time
+    # around since it's how the "Continue Editing" button signals to us that the user
+    # opted to continue.
     elapsed = dt.datetime.now(tz=dt.UTC) - edit_threads[thread.id].last_update
     if elapsed >= dt.timedelta(minutes=15):
-        # Fifteen minutes (time_to_warning's delta + remaining) have passed, so
-        # we shall delete the thread now.
+        # Fifteen minutes (time_to_warning's delta + remaining) have passed, so we shall
+        # delete the thread now.
         await _remove_edit_thread(thread, author, action="abandoned editing of")
         return
-    # Restart the wait time. The start of this function will deal with the
-    # remaining time left to sleep.
+    # Restart the wait time. The start of this function will deal with the remaining
+    # time left to sleep.
     await _remove_edit_thread_after_timeout(thread, author)
 
 
@@ -248,8 +241,8 @@ class SelectChannel(discord.ui.View):
         if channel.id == self.message.channel.id:
             await interaction.response.edit_message(
                 content=(
-                    "You can't move a message to the same channel."
-                    " Pick a different channel."
+                    "You can't move a message to the same channel. "
+                    "Pick a different channel."
                 )
             )
             return
@@ -285,8 +278,8 @@ class Ghostping(discord.ui.View):
         button.disabled = True
         await interaction.response.edit_message(
             content=(
-                f"Moved the message to {self._channel.mention}"
-                f" and ghostpinged {self._author.mention}."
+                f"Moved the message to {self._channel.mention} "
+                f"and ghostpinged {self._author.mention}."
             ),
             view=self,
             allowed_mentions=discord.AllowedMentions.none(),
@@ -334,9 +327,8 @@ class ChooseMessageAction(discord.ui.View):
         self._message = message
         self._split_subtext = SplitSubtext(message)
         self._attachment_button_added = False
-        # Adding the thread button might also add the attachment button so that
-        # the attachment button can be placed in between the thread and help
-        # buttons.
+        # Adding the thread button might also add the attachment button so that the
+        # attachment button can be placed in between the thread and help buttons.
         self._add_thread_button()
         if not self._attachment_button_added:
             self._add_attachment_button()
@@ -366,10 +358,10 @@ class ChooseMessageAction(discord.ui.View):
             case 1 if is_attachment_only(
                 self._message, preprocessed_content=self._split_subtext.content
             ):
-                # Don't allow removing the attachment of a message with only
-                # one attachment, as that would make the message empty. This is
-                # in line with Discord's UI (it does not show the remove button
-                # on the attachment if there is only one).
+                # Don't allow removing the attachment of a message with only one
+                # attachment, as that would make the message empty. This is in line with
+                # Discord's UI (it does not show the remove button on the attachment if
+                # there is only one).
                 pass
             case 1:
                 self.attachment_button = discord.ui.Button(
@@ -409,12 +401,12 @@ class ChooseMessageAction(discord.ui.View):
         self.thread_button = discord.ui.Button(label="Edit in thread", emoji="🧵")
         self.thread_button.callback = self.edit_in_thread
         self.add_item(self.thread_button)
-        # Add the attachment button here so that it goes in between the thread
-        # and help buttons. __init__() guards against this to avoid adding
-        # a second attachment button too.
+        # Add the attachment button here so that it goes in between the thread and help
+        # buttons. __init__() guards against this to avoid adding a second attachment
+        # button too.
         self._add_attachment_button()
-        # Add the help button conditionally as the help text does not make
-        # sense without the thread button's presence.
+        # Add the help button conditionally as the help text does not make sense without
+        # the thread button's presence.
         self.help_button = discord.ui.Button(
             label="Help",
             emoji="ℹ️",  # test: allow-vs16 # noqa: RUF001
@@ -428,9 +420,9 @@ class ChooseMessageAction(discord.ui.View):
         if (
             existing_thread := edit_thread_creators.get(interaction.user.id)
         ) is not None:
-            # While the better solution would be to disable this button up
-            # front and show this message through other means (such as
-            # a tooltip), Discord doesn't let you do that :(.
+            # While the better solution would be to disable this button up front and
+            # show this message through other means (such as a tooltip), Discord doesn't
+            # let you do that :(.
             self.thread_button.disabled = True
             await interaction.response.edit_message(
                 content=ALREADY_EDITING.format(thread_id=existing_thread), view=self
@@ -454,8 +446,8 @@ class ChooseMessageAction(discord.ui.View):
             self.thread_button.disabled = True
             await interaction.response.edit_message(content=TOO_MANY_THREADS, view=self)
             return
-        # Notify the user as soon as possible to prevent the need to defer() to
-        # avoid issues on days when the API is slower.
+        # Notify the user as soon as possible to prevent the need to defer() to avoid
+        # issues on days when the API is slower.
         await interaction.response.edit_message(
             content=f"Created a thread: {thread.mention}.", view=None
         )
@@ -554,19 +546,18 @@ class CancelEditing(discord.ui.View):
     async def cancel_editing(
         self, interaction: discord.Interaction, _button: discord.ui.Button[Self]
     ) -> None:
-        # For some reason, depending on how long deleting the thread takes, the
-        # user still sees "Something went wrong." momentarily before the thread
-        # is deleted; it's probably dependent on internet speeds. Hence, defer
-        # the response to increase the error timeout from five seconds to five
-        # minutes so that the user never sees "Something went wrong." before
-        # the thread is gone and the user is moved out of the thread.
+        # For some reason, depending on how long deleting the thread takes, the user
+        # still sees "Something went wrong." momentarily before the thread is deleted;
+        # it's probably dependent on internet speeds. Hence, defer the response to
+        # increase the error timeout from five seconds to five minutes so that the user
+        # never sees "Something went wrong." before the thread is gone and the user is
+        # moved out of the thread.
         await interaction.response.defer()
         await _remove_edit_thread(
             self._thread, interaction.user, action="canceled editing of"
         )
-        # We can't actually followup on the deferred response here because
-        # doing so would result in NotFound being thrown since the thread was
-        # just deleted above.
+        # We can't actually followup on the deferred response here because doing so
+        # would result in NotFound being thrown since the thread was just deleted above.
 
 
 class ContinueEditing(discord.ui.View):
@@ -586,8 +577,8 @@ class ContinueEditing(discord.ui.View):
     async def cancel_editing(
         self, interaction: discord.Interaction, _button: discord.ui.Button[Self]
     ) -> None:
-        # See the comments in CancelEditing.cancel_editing() for the reasoning
-        # behind deferring here.
+        # See the comments in CancelEditing.cancel_editing() for the reasoning behind
+        # deferring here.
         await interaction.response.defer()
         await _remove_edit_thread(
             self._thread, interaction.user, action="canceled editing of"
@@ -664,8 +655,8 @@ async def move_message(
     interaction: discord.Interaction, message: discord.Message
 ) -> None:
     """
-    Adds a context menu item to a message to move it to a different channel.
-    This is used as a moderation tool to make discussion on-topic.
+    Adds a context menu item to a message to move it to a different channel. This is
+    used as a moderation tool to make discussion on-topic.
     """
     assert not is_dm(interaction.user)
 
@@ -697,8 +688,8 @@ async def turn_into_help_post(
     interaction: discord.Interaction, message: discord.Message
 ) -> None:
     """
-    An extension of the move_message function that creates a #help post and then
-    moves the message to that channel.
+    An extension of the move_message function that creates a #help post and then moves
+    the message to that channel.
     """
     assert not is_dm(interaction.user)
 
@@ -754,9 +745,8 @@ async def delete_moved_message(
 
 async def check_for_edit_response(message: discord.Message) -> None:
     if not (
-        # While the channel_type check covers this isinstance() check, Pyright
-        # needs this isinstance() check to know that the type is definitely
-        # a Thread.
+        # While the channel_type check covers this isinstance() check, Pyright needs
+        # this isinstance() check to know that the type is definitely a Thread.
         isinstance(message.channel, discord.Thread)
         and message.channel.type is discord.ChannelType.private_thread
         and message.channel.id in edit_threads
@@ -791,19 +781,17 @@ async def check_for_edit_response(message: discord.Message) -> None:
             )
         )
         return
-    # While an alternative would be to make MessageData store the names of all
-    # skipped attachments, that would mean that all other attachments would
-    # have to be downloaded as well for no reason, so replicate the attachment
-    # size check here to avoid downloading anything if even a single attachment
-    # is too large.
+    # While an alternative would be to make MessageData store the names of all skipped
+    # attachments, that would mean that all other attachments would have to be
+    # downloaded as well for no reason, so replicate the attachment size check here to
+    # avoid downloading anything if even a single attachment is too large.
     if too_large := [a for a in message.attachments if a.size > MAX_ATTACHMENT_SIZE]:
         if len(too_large) == len(message.attachments):
             await message.reply(ALL_ATTACHMENTS_TOO_LARGE)
             return
         offenders = "\n".join(
-            # HACK: replace all backticks with reverse primes to avoid
-            # incorrect rendering of file names that preemptively end the
-            # Markdown inline code.
+            # HACK: replace all backticks with reverse primes to avoid incorrect
+            # rendering of file names that preemptively end the Markdown inline code.
             f"* `{truncate((a.title or a.filename).replace('`', '\u2035'), 100)}`"
             for a in too_large
         )

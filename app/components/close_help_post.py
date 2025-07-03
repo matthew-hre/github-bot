@@ -14,6 +14,10 @@ INVALID_REQUEST_DATA = 400
 # https://discord.com/developers/docs/topics/opcodes-and-status-codes#json
 INVALID_FORM_BODY = 50035
 
+POST_TITLE_TOO_LONG = (
+    "I couldn't change the post title as it was over 100 characters after modification."
+)
+
 
 async def mention_entity(entity_id: int) -> str:
     msg, _ = await entity_message(
@@ -137,13 +141,12 @@ async def close_post(
         if e.status != INVALID_REQUEST_DATA or e.code != INVALID_FORM_BODY:
             raise
 
-        # HACK: there does not appear to be any way to get the actual error
-        # without parsing the returned string or using a private field. This is
-        # likely a limitation of discord.py, as the Discord API documentation
-        # mentions:
-        #     Some of these errors may include additional details in the form
-        #     of Error Messages provided by an errors object.
-        # in https://discord.com/developers/docs/topics/opcodes-and-status-codes#json
+        # HACK: there does not appear to be any way to get the actual error without
+        # parsing the returned string or using a private field. This is likely
+        # a limitation of discord.py, as the Discord API documentation mentions:
+        #     Some of these errors may include additional details in the form of Error
+        #     Messages provided by an errors object.
+        # in https://discord.com/developers/docs/topics/opcodes-and-status-codes#json.
         # Both approaches are going to be tried... here be dragons.
         try:
             returned_error = cast("str", e._errors["name"]["_errors"][0]["message"])  # pyright: ignore [reportOptionalSubscript, reportPrivateUsage] # noqa: SLF001
@@ -153,10 +156,7 @@ async def close_post(
         if "or fewer in length" not in returned_error.casefold():
             raise  # The error wasn't that the post title was too long.
 
-        followup = (
-            "I couldn't change the post title as it was over 100 characters"
-            " after modification."
-        )
+        followup = POST_TITLE_TOO_LONG
 
         delim = ";" if ":" in title_prefix else ":"
         title_prefix = title_prefix.strip("[]").lower()

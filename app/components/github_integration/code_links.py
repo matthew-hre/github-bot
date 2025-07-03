@@ -133,8 +133,8 @@ async def snippet_message(
     blobs = list(map(_format_snippet, snippets))
 
     if len(blobs) == 1 and len(blobs[0]) > 2000:
-        # When there is only a single blob which goes over the limit, upload it
-        # as a file instead.
+        # When there is only a single blob which goes over the limit, upload it as
+        # a file instead.
         fp = BytesIO(snippets[0].body.encode())
         file = discord.File(fp, filename=Path(snippets[0].path).name)
         return (_format_snippet(snippets[0], include_body=False), [file]), 1

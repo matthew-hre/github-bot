@@ -82,12 +82,12 @@ def test_format_emoji_is_usable(*, is_usable: bool, output: str) -> None:
         ("", "", (None, None)),
         ("hi", "", (None, None)),
         ("", "@", (None, None)),
-        # *Technically* not a false positive, but Discord won't treat it as
-        # special, so it's a false positive in the context that this function
-        # is used in. This would have to be handled by the caller, and won't be
-        # as this is deemed "too difficult" for a corner case that wouldn't
-        # even materialize in practice because the subtext will never contain
-        # code blocks with snowflakes contained within.
+        # *Technically* not a false positive, but Discord won't treat it as special, so
+        # it's a false positive in the context that this function is used in. This would
+        # have to be handled by the caller, and won't be as this is deemed "too
+        # difficult" for a corner case that wouldn't even materialize in practice
+        # because the subtext will never contain code blocks with snowflakes contained
+        # within.
         ("`<@192849172497>`", "@", (192849172497, 1)),
         ("```<@192849172497>```", "@", (192849172497, 3)),
     ],
@@ -162,6 +162,6 @@ def test_find_snowflake(
     ],
 )
 def test_get_moved_message_author_id(content: str, result: int | None) -> None:
-    # NOTE: casting a SimpleNamespace to MovedMessage seems to break the code
-    # in ExtensibleMessage, so we shall access _extract_author_id() directly.
+    # NOTE: casting a SimpleNamespace to MovedMessage seems to break the code in
+    # ExtensibleMessage, so we shall access _extract_author_id() directly.
     assert MovedMessage._extract_author_id(content) == result  # noqa: SLF001
