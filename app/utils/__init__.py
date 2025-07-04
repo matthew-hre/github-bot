@@ -13,7 +13,7 @@ from .hooks import (
     create_edit_hook,
     remove_view_after_timeout,
 )
-from .message_data import MAX_ATTACHMENT_SIZE, ExtensibleMessage, MessageData
+from .message_data import MAX_ATTACHMENT_SIZE, ExtensibleMessage, MessageData, get_files
 from .webhooks import (
     NON_SYSTEM_MESSAGE_TYPES,
     SUPPORTED_IMAGE_FORMATS,
@@ -51,6 +51,7 @@ __all__ = (
     "dynamic_timestamp",
     "escape_special",
     "format_or_file",
+    "get_files",
     "get_ghostty_guild",
     "get_or_create_webhook",
     "is_dm",

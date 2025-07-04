@@ -38,16 +38,29 @@ class ExtensibleMessage(discord.Message):
                 setattr(self, attr, getattr(message, attr))
 
 
+async def get_files(
+    attachments: list[discord.Attachment],
+) -> tuple[list[discord.File], int]:
+    """
+    It's usually a better idea to use MessageData.scrape() instead. Only use
+    this function if you do not have a Message.
+    """
+    files = await asyncio.gather(
+        *(a.to_file() for a in attachments if a.size <= MAX_ATTACHMENT_SIZE)
+    )
+    skipped_attachments = len(attachments) - len(files)
+    return files, skipped_attachments
+
+
 class MessageData(ExtensibleMessage):
+    files: list[discord.File]
+    skipped_attachments: int
+
     @classmethod
     async def scrape(cls, message: discord.Message) -> Self:
         # This code cannot go in __init__ as it is async.
         msg_data = cls(message)
-        await msg_data._get_files(message.attachments)
-        return msg_data
-
-    async def _get_files(self, attachments: list[discord.Attachment]) -> None:
-        self.files = await asyncio.gather(
-            *(a.to_file() for a in attachments if a.size <= MAX_ATTACHMENT_SIZE)
+        msg_data.files, msg_data.skipped_attachments = await get_files(
+            message.attachments
         )
-        self.skipped_attachments = len(attachments) - len(self.files)
+        return msg_data

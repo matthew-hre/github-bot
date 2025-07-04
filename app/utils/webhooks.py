@@ -12,7 +12,7 @@ import discord
 import httpx
 
 from app.setup import bot
-from app.utils.message_data import ExtensibleMessage, MessageData
+from app.utils.message_data import ExtensibleMessage, MessageData, get_files
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -59,40 +59,6 @@ async def _get_original_message(message: discord.Message) -> discord.Message | N
         # There *is* a reference, but we can't access it.
         return discord.utils.MISSING
     return await channel.fetch_message(msg_ref.message_id)
-
-
-async def _get_reference(message: discord.Message) -> discord.Message | None:
-    ref = await _get_original_message(message)
-    if ref is None or ref is discord.utils.MISSING:
-        # There was no reference whatsoever.
-        return ref
-    assert message.reference is not None
-    if message.reference.type is not discord.MessageReferenceType.forward:
-        # We don't have a forward, fantastic, we're done here.
-        return ref
-    # And now, we have a forward. Discord doesn't collapse forwarded forwards,
-    # so we shall do it ourselves. This loop should not run for replies, as if
-    # that happens we would end up dereferencing all the way back to the start
-    # of a reply chain, which would be a horrendous idea.
-    message = ref
-    while (ref := await _get_original_message(message)) is not None:
-        if ref is discord.utils.MISSING:
-            # We don't have the forward, but there *should* have been one; this
-            # isn't included in the check above with `is not None` because
-            # otherwise it would return an empty message in the middle of the
-            # forward chain, rather than being converted into an error embed.
-            return discord.utils.MISSING
-        assert message.reference is not None
-        if message.reference.type is not discord.MessageReferenceType.forward:
-            # This check is subtly different from the one at the top. If we
-            # have a reference that's not a forward, we don't want to continue,
-            # of course. *But*, unlike up top where we return the reference, we
-            # want to return the current message itself, as otherwise we would
-            # be returning the reply the last forward is replying to rather than
-            # the last forward itself.
-            return message
-        message = ref
-    return message
 
 
 def _unattachable_embed(unattachable_elem: str, **kwargs: Any) -> discord.Embed:
@@ -164,24 +130,13 @@ async def _format_reply(reply: discord.Message) -> discord.Embed:
         return _unattachable_embed("reply")
     description_prefix = ""
     description = reply.content
-    ref_exists = True
-    try:
-        ref = await _get_reference(reply)
-    except discord.errors.NotFound:
-        ref = discord.utils.MISSING
-        ref_exists = False
-    if ref is not None:
-        assert reply.reference is not None
-        if reply.reference.type is discord.MessageReferenceType.forward:
-            description_prefix = "➜ Forwarded\n"
-            if not ref_exists:
-                description = "> *Forwarded message was deleted.*"
-            elif ref is discord.utils.MISSING:
-                description = "> *Unable to attach forward.*"
-            elif ref.content:
-                description = f"> {ref.content}"
-            else:
-                description = "> *Some forwarded content elided.*"
+    if reply.message_snapshots:
+        description_prefix = "➜ Forwarded\n"
+        # Only include the first message snapshot.
+        if content := reply.message_snapshots[0].content:
+            description = f"> {content}"
+        else:
+            description = "> *Some forwarded content elided.*"
     return (
         discord.Embed(description=f"{description_prefix}{truncate(description, 100)}")
         .set_author(
@@ -200,16 +155,13 @@ async def _format_context_menu_command(reply: discord.Message) -> discord.Embed:
 
 
 async def _format_forward(
-    forward: discord.Message,
+    forward: discord.MessageSnapshot,
 ) -> tuple[list[discord.Embed], list[discord.File]]:
-    if forward is discord.utils.MISSING:
-        return [_unattachable_embed("forward")], []
-
     content = _convert_nitro_emojis(forward.content)
     if len(content) > 4096:
         content = forward.content
 
-    msg_data = await MessageData.scrape(forward)
+    files, skipped_attachments = await get_files(forward.attachments)
     embeds = [
         *(e for e in forward.embeds if not e.url),
         *await asyncio.gather(*map(_get_sticker_embed, forward.stickers)),
@@ -217,18 +169,8 @@ async def _format_forward(
     embed = discord.Embed(description=content, timestamp=forward.created_at)
     embed.set_author(name="➜ Forwarded")
 
-    if hasattr(forward.channel, "name"):
-        # Some channel types don't have a `name` and Pyright can't figure out
-        # that we certainly have a `name` here.
-        assert not isinstance(
-            forward.channel, discord.DMChannel | discord.PartialMessageable
-        )
-        embed.set_footer(text=f"#{forward.channel.name}")
-
     images = [
-        file
-        for file in msg_data.files
-        if Path(file.filename).suffix in SUPPORTED_IMAGE_FORMATS
+        file for file in files if Path(file.filename).suffix in SUPPORTED_IMAGE_FORMATS
     ]
     image_only_embeds = [
         embed
@@ -245,21 +187,26 @@ async def _format_forward(
             # not have a proxy_url.
             embed.set_image(url=image.proxy_url or image.url)
             embeds.remove(image_only_embeds[0])
-    if embeds or len(msg_data.files) > (1 if images else 0):
+    if embeds or len(files) > (1 if images else 0):
         embed.add_field(
             name="", value="-# (other forwarded content is attached)", inline=False
         )
 
-    if msg_data.skipped_attachments:
-        skipped = _Subtext.format_skipped(msg_data.skipped_attachments)
+    if skipped_attachments:
+        skipped = _Subtext.format_skipped(skipped_attachments)
         embed.add_field(name="", value=f"-# {skipped}", inline=False)
 
-    embed.add_field(
-        name="", value=f"-# [**Jump**](<{forward.jump_url}>) 📎", inline=False
-    )
+    if (message := forward.cached_message) is not None:
+        if not isinstance(
+            message.channel, discord.DMChannel | discord.PartialMessageable
+        ):
+            embed.set_footer(text=f"#{message.channel.name}")
+        embed.add_field(
+            name="", value=f"-# [**Jump**](<{message.jump_url}>) 📎", inline=False
+        )
 
     embeds.insert(0, embed)
-    return embeds, msg_data.files
+    return embeds, files
 
 
 def _format_missing_reference(
@@ -293,6 +240,21 @@ def _format_interaction(message: discord.Message) -> str:
         name = "a command"
     user = message.interaction_metadata.user
     return f"-# *{user.mention} used {name}*\n{message.content}"
+
+
+async def _get_reply_embed(message: discord.Message) -> discord.Embed | None:
+    try:
+        ref = await _get_original_message(message)
+    except discord.errors.NotFound:
+        return _format_missing_reference(message)
+    if ref is None:
+        return None
+    assert message.reference is not None
+    if message.reference.type is discord.MessageReferenceType.reply:
+        return await _format_reply(ref)
+    if message.type is discord.MessageType.context_menu_command:
+        return await _format_context_menu_command(ref)
+    return None
 
 
 def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
@@ -628,21 +590,14 @@ async def move_message_via_webhook(  # noqa: PLR0913
         *await asyncio.gather(*map(_get_sticker_embed, message.stickers)),
     ]
 
-    try:
-        ref = await _get_reference(message)
-    except discord.errors.NotFound:
-        embeds.append(_format_missing_reference(message))
-    else:
-        if ref is not None:
-            assert message.reference is not None
-            if message.reference.type is discord.MessageReferenceType.forward:
-                forward_embeds, forward_attachments = await _format_forward(ref)
-                embeds = [*forward_embeds, *embeds]
-                msg_data.files.extend(forward_attachments)
-            elif message.type is discord.MessageType.context_menu_command:
-                embeds.append(await _format_context_menu_command(ref))
-            else:
-                embeds.append(await _format_reply(ref))
+    if message.message_snapshots:
+        # Only include the first message snapshot.
+        snapshot = message.message_snapshots[0]
+        forward_embeds, forward_attachments = await _format_forward(snapshot)
+        embeds = [*forward_embeds, *embeds]
+        msg_data.files.extend(forward_attachments)
+    elif reply_embed := await _get_reply_embed(message):
+        embeds.append(reply_embed)
 
     if (
         message.poll is None
