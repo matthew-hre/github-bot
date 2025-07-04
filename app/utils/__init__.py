@@ -172,8 +172,7 @@ def escape_special(content: str) -> str:
     """
     escaped = discord.utils.escape_mentions(content)
     escaped = discord.utils.escape_markdown(escaped)
-    # escape_mentions() doesn't deal with anything other than username
-    # mentions.
+    # escape_mentions() doesn't deal with anything other than username mentions.
     escaped = escaped.replace("<", r"\<").replace(">", r"\>")
     # Invite links are not embeds and are hence not suppressed by that flag.
     escaped = _INVITE_LINK_REGEX.sub(r"<https://\1>", escaped)

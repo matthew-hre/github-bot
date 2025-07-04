@@ -24,8 +24,8 @@ MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
 VIEW_TIMEOUT = 60.0
 
-# This pattern is intentionally simple; it's only meant to operate on sequences
-# produced by zig-codeblocks which will never appear in any other form.
+# This pattern is intentionally simple; it's only meant to operate on sequences produced
+# by zig-codeblocks which will never appear in any other form.
 SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
 THEME = DEFAULT_THEME.copy()
 del THEME["Comment"]
@@ -240,7 +240,7 @@ async def zig_codeblock_edit_hook(
                 saved_msg = reply
             continue
         if reply is None:
-            # Out of replies, codeblocks still left -> Create new replies
+            # Out of replies, codeblocks still left -> create new replies
             if new_content is new_contents[-1]:
                 # Last new reply
                 msg = await after.channel.send(
@@ -256,7 +256,7 @@ async def zig_codeblock_edit_hook(
                 )
             codeblock_linker.link(after, msg)
         else:
-            # Out of codeblocks, replies still left -> Delete remaining replies
+            # Out of codeblocks, replies still left -> delete remaining replies
             await reply.delete()
     if saved_msg is not None:
         await remove_view_after_timeout(saved_msg, VIEW_TIMEOUT)

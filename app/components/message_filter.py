@@ -8,11 +8,12 @@ from app.setup import config
 from app.utils import format_or_file, try_dm
 
 URL_REGEX = re.compile(
-    r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
+    r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b"
+    r"(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
 )
 MESSAGE_DELETION_TEMPLATE = (
-    "Hey! Your message in {} was deleted because it did not contain {}."
-    " Make sure to include {}, and respond in threads.\n"
+    "Hey! Your message in {} was deleted because it did not contain {}. "
+    "Make sure to include {}, and respond in threads.\n"
 )
 MESSAGE_CONTENT_NOTICE = "Here's the message you tried to send:"
 COPY_TEXT_HINT = (
@@ -54,8 +55,8 @@ async def check_message_filters(message: discord.Message) -> bool:
 
         await message.delete()
 
-        # Don't DM the user if it's a system message
-        # (e.g. "@user started a thread")
+        # Don't DM the user if it's a system message (e.g. "@user started
+        # a thread")
         if message.type not in REGULAR_MESSAGE_TYPES:
             continue
 

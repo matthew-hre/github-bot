@@ -131,8 +131,8 @@ def _format_commit_id(
     shorten_to: int = 7,
 ) -> str:
     # HACK: there does not seem to be any other way to get the HTML URL of the
-    # repository. And for some reason the HTML URL requires `commit` while the
-    # API URL requires `commits` (note the `s`)...
+    # repository. And for some reason the HTML URL requires `commit` while the API URL
+    # requires `commits` (note the `s`)...
     if event.commit_url is None:
         # We tried.
         preserve_repo_url = False
@@ -179,10 +179,10 @@ def _make_author(user: BaseModel | None) -> GitHubUser:
 def _make_reactions(rollup: ReactionRollup | Missing[ReactionRollup]) -> Reactions:
     """Asserts that `rollup` is not Missing."""
     if not isinstance(rollup, ReactionRollup):
-        # While every usage of this function takes Reactions | None, this
-        # function shouldn't even be called if the API doesn't return reactions
-        # for some case, so a TypeError is thrown instead of returning None to
-        # catch any bugs instead of silently removing the reactions.
+        # While every usage of this function takes Reactions | None, this function
+        # shouldn't even be called if the API doesn't return reactions for some case, so
+        # a TypeError is thrown instead of returning None to catch any bugs instead of
+        # silently removing the reactions.
         msg = f"expected type ReactionRollup, found {type(rollup)}"
         raise TypeError(msg)
     return Reactions(**rollup.model_dump())
@@ -213,8 +213,8 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
     return Comment(
         author=_make_author(comment.user),
         body=comment.body,
-        # For some reason, GitHub's API doesn't include them for PR reviews,
-        # despite there being reactions visible in the UI.
+        # For some reason, GitHub's API doesn't include them for PR reviews, despite
+        # there being reactions visible in the UI.
         reactions=None,
         entity=await entity_cache.get(entity_gist),
         entity_gist=entity_gist,
@@ -293,10 +293,9 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
         if not isinstance(formatter, str):
             msg = f"formatter for {event.event} must be a string"
             raise TypeError(msg)
-        # GitHub's UI uses "a review" when a review is requested from a single
-        # person, and "review" when a review is requested from a team. In the
-        # format string, `a_` is placed at the location where the optional
-        # "a " goes.
+        # GitHub's UI uses "a review" when a review is requested from a single person,
+        # and "review" when a review is requested from a team. In the format string,
+        # `a_` is placed at the location where the optional "a " goes.
         body = formatter.format(reviewer=reviewer, a_="a " * (not is_team))
     elif event.event in ENTITY_UPDATE_EVENTS:
         entity = await entity_cache.get(entity_gist)
@@ -326,8 +325,8 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
         )
     else:
         body = f"👻 Unsupported event: `{event.event}`"
-    # The API doesn't return an html_url, gotta construct it manually.
-    # It's fine to say "issues" here, GitHub will resolve the correct type
+    # The API doesn't return an html_url, gotta construct it manually. It's fine to say
+    # "issues" here, GitHub will resolve the correct type
     url = f"https://github.com/{owner}/{repo}/issues/{entity_no}#event-{comment_id}"
     return Comment(
         author=_make_author(event.actor),

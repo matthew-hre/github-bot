@@ -55,8 +55,8 @@ def _get_file(path: str) -> str:
 
 
 def refresh_sitemap() -> None:
-    # Reading vt/, install/, help/, config/,
-    # config/keybind/ subpages by reading nav.json
+    # Reading vt/, install/, help/, config/, config/keybind/ subpages by reading
+    # nav.json
     nav: list[Entry] = json.loads(_get_file("docs/nav.json"))["items"]
     for entry in nav:
         if entry["type"] != "folder":

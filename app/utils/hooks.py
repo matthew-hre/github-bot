@@ -79,10 +79,9 @@ def create_edit_hook(
             return
 
         if not (replies := linker.get(before)):
-            # Some processors use negative values to symbolize special error
-            # values, so this can't be `== 0`. An example of this is the
-            # snippet_message() function in the file
-            # app/components/github_integration/code_links.py.
+            # Some processors use negative values to symbolize special error values, so
+            # this can't be `== 0`. An example of this is the snippet_message() function
+            # in the file app/components/github_integration/code_links.py.
             if old_objects[1] <= 0:
                 # There were no objects before, so treat this as a new message
                 await interactor(after)

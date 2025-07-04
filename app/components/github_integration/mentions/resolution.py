@@ -62,9 +62,9 @@ async def resolve_repo_signatures(
         # Ensure that the correct separator is used.
         if bool(site) == (sep == "#"):
             continue
-        # NOTE: this *must* be after the previous check, as the number can be
-        # an empty string if an incorrect separator was used, which would
-        # result in a ValueError in the call to int().
+        # NOTE: this *must* be after the previous check, as the number can be an empty
+        # string if an incorrect separator was used, which would result in a ValueError
+        # in the call to int().
         owner, repo, number = match["owner"], match["repo"], int(match["number"])
         if site:
             await message.edit(suppress=True)
