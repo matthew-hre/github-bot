@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import discord
 import pytest
 
-from app.utils import Account, is_dm, post_has_tag, post_is_solved
+from app.utils import Account, is_attachment_only, is_dm, post_has_tag, post_is_solved
 
 
 @pytest.mark.parametrize(
@@ -71,4 +71,47 @@ def test_post_is_not_solved(names: list[str]) -> None:
     tags = [discord.ForumTag(name=name) for name in names]
     assert not post_is_solved(
         cast("discord.Thread", SimpleNamespace(applied_tags=tags))
+    )
+
+
+@pytest.mark.parametrize(
+    ("attachments", "content", "preprocessed_content", "embeds", "result"),
+    [
+        ([], "", None, [], False),
+        ([1], "", None, [], True),
+        ([1, 2, 3], "", None, [], True),
+        ([1, 2, 3], "foo", "", [], True),  # The pre-processing removes the content.
+        ([1, 2, 3], "", "foo", [], False),
+        ([], "", "foo", [], False),
+        ([1, 2, 3], "", "", [1, 2], False),
+        ([1, 2, 3], "", "foo", [1, 2], False),
+        ([1, 2, 3], "foo", "bar", [], False),
+        ([1, 2, 3], "foo", "bar", [1, 2], False),
+    ],
+)
+def test_is_attachment_only(
+    *,
+    attachments: list[int],
+    content: str,
+    preprocessed_content: str | None,
+    embeds: list[int],
+    result: bool,
+) -> None:
+    # NOTE: we don't actually care about having real Discord objects here, we
+    # only care about whether they are truthy, so ints are used everywhere.
+    fake_message = SimpleNamespace(
+        attachments=attachments,
+        components=[],
+        content=content,
+        preprocessed_content=preprocessed_content,
+        embeds=embeds,
+        poll=None,
+        stickers=[],
+    )
+    assert (
+        is_attachment_only(
+            cast("discord.Message", fake_message),
+            preprocessed_content=preprocessed_content,
+        )
+        == result
     )
