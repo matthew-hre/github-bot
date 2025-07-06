@@ -125,7 +125,7 @@ def truncate(s: str, length: int, *, suffix: str = "…") -> str:
     return s[: length - len(suffix)] + suffix
 
 
-async def _format_reply(reply: discord.Message) -> discord.Embed:
+def _format_reply(reply: discord.Message) -> discord.Embed:
     if reply is discord.utils.MISSING:
         return _unattachable_embed("reply")
     description_prefix = ""
@@ -148,7 +148,7 @@ async def _format_reply(reply: discord.Message) -> discord.Embed:
 
 
 async def _format_context_menu_command(reply: discord.Message) -> discord.Embed:
-    return (await _format_reply(reply)).set_author(
+    return _format_reply(reply).set_author(
         name=f"⚡ Acting on {reply.author.display_name}'s message",
         icon_url=reply.author.display_avatar,
     )
@@ -251,7 +251,7 @@ async def _get_reply_embed(message: discord.Message) -> discord.Embed | None:
         return None
     assert message.reference is not None
     if message.reference.type is discord.MessageReferenceType.reply:
-        return await _format_reply(ref)
+        return _format_reply(ref)
     if message.type is discord.MessageType.context_menu_command:
         return await _format_context_menu_command(ref)
     return None
