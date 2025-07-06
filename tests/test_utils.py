@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import Mock
@@ -5,7 +6,14 @@ from unittest.mock import Mock
 import discord
 import pytest
 
-from app.utils import Account, is_attachment_only, is_dm, post_has_tag, post_is_solved
+from app.utils import (
+    Account,
+    aenumerate,
+    is_attachment_only,
+    is_dm,
+    post_has_tag,
+    post_is_solved,
+)
 
 
 @pytest.mark.parametrize(
@@ -71,6 +79,31 @@ def test_post_is_not_solved(names: list[str]) -> None:
     tags = [discord.ForumTag(name=name) for name in names]
     assert not post_is_solved(
         cast("discord.Thread", SimpleNamespace(applied_tags=tags))
+    )
+
+
+@pytest.mark.parametrize(
+    "items",
+    [
+        [1, 2, 3, 4, 5],
+        ["spam", "eggs", "bacon", "ham"],
+        [False, True, True],
+        [{"a": 12}, {"b": 14, "c": 23}, {"d": 183, "e": 21}],
+        [..., ..., ...],
+        [None, None],
+        [[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6], [5, 6, 7]],
+        [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 6), (5, 6, 7)],
+    ],
+)
+@pytest.mark.parametrize("start", [0, 1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 102, -99, 41])
+@pytest.mark.asyncio
+async def test_aenumerate[T](items: list[T], start: int) -> None:
+    async def async_iterator() -> AsyncIterator[T]:
+        for item in items:
+            yield item
+
+    assert [x async for x in aenumerate(async_iterator(), start)] == list(
+        enumerate(items, start)
     )
 
 
