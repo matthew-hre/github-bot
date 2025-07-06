@@ -125,7 +125,7 @@ def truncate(s: str, length: int, *, suffix: str = "…") -> str:
     return s[: length - len(suffix)] + suffix
 
 
-async def _format_reply(reply: discord.Message) -> discord.Embed:
+def _format_reply(reply: discord.Message) -> discord.Embed:
     if reply is discord.utils.MISSING:
         return _unattachable_embed("reply")
     description_prefix = ""
@@ -148,7 +148,7 @@ async def _format_reply(reply: discord.Message) -> discord.Embed:
 
 
 async def _format_context_menu_command(reply: discord.Message) -> discord.Embed:
-    return (await _format_reply(reply)).set_author(
+    return _format_reply(reply).set_author(
         name=f"⚡ Acting on {reply.author.display_name}'s message",
         icon_url=reply.author.display_avatar,
     )
@@ -209,14 +209,9 @@ async def _format_forward(
     return embeds, files
 
 
-def _format_missing_reference(
+def _format_missing_reply(
     message: discord.Message,
 ) -> discord.Embed:
-    assert message.reference is not None
-    if message.reference.type is discord.MessageReferenceType.forward:
-        return discord.Embed(description="*Forwarded message was deleted.*").set_author(
-            name="➜ Forwarded"
-        )
     return discord.Embed(description="*Original message was deleted.*").set_author(
         name=(
             "⚡ Message"
@@ -246,12 +241,12 @@ async def _get_reply_embed(message: discord.Message) -> discord.Embed | None:
     try:
         ref = await _get_original_message(message)
     except discord.errors.NotFound:
-        return _format_missing_reference(message)
+        return _format_missing_reply(message)
     if ref is None:
         return None
     assert message.reference is not None
     if message.reference.type is discord.MessageReferenceType.reply:
-        return await _format_reply(ref)
+        return _format_reply(ref)
     if message.type is discord.MessageType.context_menu_command:
         return await _format_context_menu_command(ref)
     return None
@@ -431,6 +426,11 @@ def _find_snowflake(content: str, type_: str) -> tuple[int, int] | tuple[None, N
     if snowflake is None or snowflake[1] != type_:
         return None, None
     return int(snowflake[2]), snowflake.span()[0]
+
+
+class MovedMessageLookupFailed(Enum):
+    NOT_FOUND = -1
+    NOT_MOVED = -2
 
 
 class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
@@ -674,8 +674,3 @@ def format_or_file(
             BytesIO(message.encode()), filename="content.md"
         )
     return full_message, None
-
-
-class MovedMessageLookupFailed(Enum):
-    NOT_FOUND = -1
-    NOT_MOVED = -2
