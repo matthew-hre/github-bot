@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import discord
 import pytest
 
-from app.utils import Account, is_dm, post_has_tag
+from app.utils import Account, is_dm, post_has_tag, post_is_solved
 
 
 @pytest.mark.parametrize(
@@ -38,4 +38,37 @@ def test_post_has_tag(*, tag: str, result: bool) -> None:
     assert (
         post_has_tag(cast("discord.Thread", SimpleNamespace(applied_tags=tags)), tag)
         == result
+    )
+
+
+@pytest.mark.parametrize(
+    "names",
+    [
+        ["solved"],
+        ["solved", "solved", "solved"],
+        ["solved", "duplicate", "linux"],
+        ["Moved to GitHub!", "linux"],
+        ["very stale"],
+        ["too stale to look at", "macos"],
+    ],
+)
+def test_post_is_solved(names: list[str]) -> None:
+    tags = [discord.ForumTag(name=name) for name in names]
+    assert post_is_solved(cast("discord.Thread", SimpleNamespace(applied_tags=tags)))
+
+
+@pytest.mark.parametrize(
+    "names",
+    [
+        ["solving", "linux"],
+        ["help"],
+        ["other", "meta"],
+        ["other", "macos"],
+        ["Moved to GitLab", "windows"],
+    ],
+)
+def test_post_is_not_solved(names: list[str]) -> None:
+    tags = [discord.ForumTag(name=name) for name in names]
+    assert not post_is_solved(
+        cast("discord.Thread", SimpleNamespace(applied_tags=tags))
     )
