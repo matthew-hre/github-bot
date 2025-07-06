@@ -73,8 +73,8 @@ SUPPORTED_EVENTS: dict[str, str | Callable[[IssueEvent], str]] = {
     "demilestoned": "Removed this from the `{event.milestone.title}` milestone",
     "convert_to_draft": "Marked this pull request as draft",
     "ready_for_review": "Marked this pull request as ready for review",
-    "review_requested": "Requested {a_}review from `{reviewer}`",
-    "review_request_removed": "Removed the request for {a_}review from `{reviewer}`",
+    "review_requested": "Requested a review from `{reviewer}`",
+    "review_request_removed": "Removed the request for a review from `{reviewer}`",
     "auto_merge_enabled": "Enabled auto-merge",
     "auto_squash_enabled": "Enabled auto-merge (squash)",
     "auto_merge_disabled": "Disabled auto-merge",
@@ -282,21 +282,16 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
         # Special-cased to handle requests for both users and teams
         if event.requested_reviewer:
             reviewer = event.requested_reviewer.login
-            is_team = False
         else:
             assert event.requested_team
             # Throwing in the org name to make it clear that it's a team
             org_name = event.requested_team.html_url.split("/", 5)[4]
             reviewer = f"{org_name}/{event.requested_team.name}"
-            is_team = True
         formatter = SUPPORTED_EVENTS[event.event]
         if not isinstance(formatter, str):
             msg = f"formatter for {event.event} must be a string"
             raise TypeError(msg)
-        # GitHub's UI uses "a review" when a review is requested from a single person,
-        # and "review" when a review is requested from a team. In the format string,
-        # `a_` is placed at the location where the optional "a " goes.
-        body = formatter.format(reviewer=reviewer, a_="a " * (not is_team))
+        body = formatter.format(reviewer=reviewer)
     elif event.event in ENTITY_UPDATE_EVENTS:
         entity = await entity_cache.get(entity_gist)
         body = f"{event.event.capitalize()} the {entity.kind.lower()}"
