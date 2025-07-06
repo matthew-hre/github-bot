@@ -433,6 +433,11 @@ def _find_snowflake(content: str, type_: str) -> tuple[int, int] | tuple[None, N
     return int(snowflake[2]), snowflake.span()[0]
 
 
+class MovedMessageLookupFailed(Enum):
+    NOT_FOUND = -1
+    NOT_MOVED = -2
+
+
 class MovedMessage(ExtensibleMessage, discord.WebhookMessage):
     def __init__(
         self, message: discord.WebhookMessage, *, author: discord.Member | None = None
@@ -674,8 +679,3 @@ def format_or_file(
             BytesIO(message.encode()), filename="content.md"
         )
     return full_message, None
-
-
-class MovedMessageLookupFailed(Enum):
-    NOT_FOUND = -1
-    NOT_MOVED = -2
