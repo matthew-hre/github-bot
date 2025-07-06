@@ -209,14 +209,9 @@ async def _format_forward(
     return embeds, files
 
 
-def _format_missing_reference(
+def _format_missing_reply(
     message: discord.Message,
 ) -> discord.Embed:
-    assert message.reference is not None
-    if message.reference.type is discord.MessageReferenceType.forward:
-        return discord.Embed(description="*Forwarded message was deleted.*").set_author(
-            name="➜ Forwarded"
-        )
     return discord.Embed(description="*Original message was deleted.*").set_author(
         name=(
             "⚡ Message"
@@ -246,7 +241,7 @@ async def _get_reply_embed(message: discord.Message) -> discord.Embed | None:
     try:
         ref = await _get_original_message(message)
     except discord.errors.NotFound:
-        return _format_missing_reference(message)
+        return _format_missing_reply(message)
     if ref is None:
         return None
     assert message.reference is not None
