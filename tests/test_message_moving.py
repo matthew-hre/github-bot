@@ -34,7 +34,7 @@ def test_format_unicode_partialemoji(emoji: str) -> None:
         ("fooBaRb__az_loR_em", False, 1328977544984268890),
     ],
 )
-def test_format_partial_emoji(*, name: str, animated: bool, id_: int) -> None:
+def test_format_partial_emoji(name: str, animated: bool, id_: int) -> None:
     url = f"https://cdn.discordapp.com/emojis/{id_}.{'gif' if animated else 'png'}"
     assert (
         _format_emoji(discord.PartialEmoji(name=name, animated=animated, id=id_))
@@ -45,7 +45,7 @@ def test_format_partial_emoji(*, name: str, animated: bool, id_: int) -> None:
 @pytest.mark.parametrize(
     ("is_usable", "output"), [(True, "<foo>"), (False, "[foo](<bar>)")]
 )
-def test_format_emoji_is_usable(*, is_usable: bool, output: str) -> None:
+def test_format_emoji_is_usable(is_usable: bool, output: str) -> None:
     fake_emoji = Mock(
         discord.Emoji,
         is_usable=Mock(return_value=is_usable),

@@ -187,7 +187,7 @@ def is_attachment_only(
 ) -> bool:
     if preprocessed_content is None:
         preprocessed_content = message.content
-    return not any((
+    return bool(message.attachments) and not any((
         message.components,
         preprocessed_content,
         message.embeds,
