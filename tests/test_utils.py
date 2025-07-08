@@ -11,6 +11,7 @@ from app.utils import (
     Account,
     aenumerate,
     dynamic_timestamp,
+    get_ghostty_guild,
     is_attachment_only,
     is_dm,
     is_helper,
@@ -216,6 +217,28 @@ def test_is_attachment_only(
         )
         == result
     )
+
+
+@pytest.mark.parametrize(
+    ("names", "result"),
+    [
+        (["Ghostty 👻", "Rootbeer", "Ghostty Bot Testing"], "Ghostty 👻"),
+        (["Ghost tea", "Casper Fanclub", "WezTerm"], None),
+        (
+            ["Rust Programming Language", "Ghostty Community", "Ghostty"],
+            "Ghostty Community",
+        ),
+    ],
+)
+def test_get_ghostty_guild(
+    names: list[str], result: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_guilds = [SimpleNamespace(name=name) for name in names]
+    monkeypatch.setattr("app.utils.webhooks.bot", SimpleNamespace(guilds=fake_guilds))
+    try:
+        assert get_ghostty_guild() == SimpleNamespace(name=result)
+    except ValueError:
+        assert result is None
 
 
 @pytest.mark.parametrize(
