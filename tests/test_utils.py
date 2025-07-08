@@ -13,6 +13,7 @@ from app.utils import (
     dynamic_timestamp,
     is_attachment_only,
     is_dm,
+    is_helper,
     is_mod,
     post_has_tag,
     post_is_solved,
@@ -57,6 +58,37 @@ def test_is_not_mod(
     fake_member = SimpleNamespace(get_role=lambda role: role if role == id_ else None)
     assert id_ != bot_env.MOD_ROLE_ID
     assert not is_mod(cast("discord.Member", fake_member))
+
+
+def test_is_helper(monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace) -> None:
+    monkeypatch.setattr("app.utils.config", bot_env)
+    fake_member = SimpleNamespace(
+        get_role=lambda role: role if role == bot_env.HELPER_ROLE_ID else None
+    )
+    assert is_helper(cast("discord.Member", fake_member))
+
+
+@pytest.mark.parametrize(
+    "id_",
+    [
+        82980394892387980,
+        1253687810294082,
+        5627980395172,
+        173980942184,
+        0,
+        -1,
+        178409128412498124,
+        9999999999999999999999999,
+        10**50,
+    ],
+)
+def test_is_not_helper(
+    id_: int, monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace
+) -> None:
+    monkeypatch.setattr("app.utils.config", bot_env)
+    fake_member = SimpleNamespace(get_role=lambda role: role if role == id_ else None)
+    assert id_ != bot_env.HELPER_ROLE_ID
+    assert not is_helper(cast("discord.Member", fake_member))
 
 
 @pytest.mark.parametrize(
