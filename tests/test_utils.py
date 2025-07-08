@@ -15,6 +15,7 @@ from app.utils import (
     is_dm,
     post_has_tag,
     post_is_solved,
+    truncate,
 )
 
 
@@ -150,6 +151,21 @@ def test_is_attachment_only(
         )
         == result
     )
+
+
+@pytest.mark.parametrize(
+    ("s", "length", "suffix", "result"),
+    [
+        ("aaaaaaaaaaaaaaa", 10, "", "aaaaaaaaaa"),
+        ("the quick brown fox", 4, "!", "the!"),
+        ("aaaaaaaaaaaaaaa", 10, "…", "aaaaaaaaa…"),
+        ("", 10, "…", ""),
+        ("aaaaaaaa", 10, "bbbbb", "aaaaaaaa"),
+        ("aaaaaaaaaaaaaaa", 10, "...", "aaaaaaa..."),
+    ],
+)
+def test_truncate(s: str, length: int, suffix: str, result: str) -> None:
+    assert truncate(s, length, suffix=suffix) == result
 
 
 @pytest.mark.parametrize(
