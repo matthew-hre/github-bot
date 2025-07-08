@@ -13,6 +13,7 @@ from app.utils import (
     dynamic_timestamp,
     is_attachment_only,
     is_dm,
+    is_mod,
     post_has_tag,
     post_is_solved,
     truncate,
@@ -24,6 +25,38 @@ from app.utils import (
 )
 def test_is_dm(*, type_: type[Account], result: bool) -> None:
     assert is_dm(Mock(type_)) == result
+
+
+def test_is_mod(monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace) -> None:
+    monkeypatch.setattr("app.utils.config", bot_env)
+    fake_member = SimpleNamespace(
+        get_role=lambda role: role if role == bot_env.MOD_ROLE_ID else None
+    )
+    assert is_mod(cast("discord.Member", fake_member))
+
+
+@pytest.mark.parametrize(
+    "id_",
+    [
+        1234124125125,
+        12846791824,
+        12749801924,
+        -1,
+        0,
+        1274687918204,
+        19267480912409,
+        2**200,
+        9999999999999999999999999,
+        1756274809124124,
+    ],
+)
+def test_is_not_mod(
+    id_: int, monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace
+) -> None:
+    monkeypatch.setattr("app.utils.config", bot_env)
+    fake_member = SimpleNamespace(get_role=lambda role: role if role == id_ else None)
+    assert id_ != bot_env.MOD_ROLE_ID
+    assert not is_mod(cast("discord.Member", fake_member))
 
 
 @pytest.mark.parametrize(
