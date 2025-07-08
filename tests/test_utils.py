@@ -1,3 +1,4 @@
+import datetime as dt
 from collections.abc import AsyncIterator
 from types import SimpleNamespace
 from typing import cast
@@ -9,6 +10,7 @@ import pytest
 from app.utils import (
     Account,
     aenumerate,
+    dynamic_timestamp,
     is_attachment_only,
     is_dm,
     post_has_tag,
@@ -148,3 +150,20 @@ def test_is_attachment_only(
         )
         == result
     )
+
+
+@pytest.mark.parametrize(
+    ("dt", "fmt", "result"),
+    [
+        (dt.datetime(2012, 4, 12, 15, 10, 14, tzinfo=dt.UTC), None, "<t:1334243414>"),
+        (dt.datetime(2018, 1, 20, 3, 11, 33, tzinfo=dt.UTC), "R", "<t:1516417893:R>"),
+        (dt.datetime(1, 1, 1, 1, 1, 1, tzinfo=dt.UTC), "a", "<t:-62135593139:a>"),
+        (
+            dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=dt.UTC),
+            "Q",
+            "<t:253402300799:Q>",
+        ),
+    ],
+)
+def test_dynamic_timestamp(dt: dt.datetime, fmt: str | None, result: str) -> None:
+    assert dynamic_timestamp(dt, fmt) == result
