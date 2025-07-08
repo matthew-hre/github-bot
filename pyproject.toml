@@ -54,6 +54,9 @@ pylint.max-branches = 20
 pylint.max-returns = 15
 isort.known-local-folder = ["app"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["FBT"]
+
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownLambdaType = false

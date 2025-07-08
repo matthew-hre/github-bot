@@ -25,7 +25,7 @@ from app.utils import (
 @pytest.mark.parametrize(
     ("type_", "result"), [(discord.Member, False), (discord.User, True)]
 )
-def test_is_dm(*, type_: type[Account], result: bool) -> None:
+def test_is_dm(type_: type[Account], result: bool) -> None:
     assert is_dm(Mock(type_)) == result
 
 
@@ -107,7 +107,7 @@ def test_is_not_helper(
         ("windows", False),
     ],
 )
-def test_post_has_tag(*, tag: str, result: bool) -> None:
+def test_post_has_tag(tag: str, result: bool) -> None:
     tags = [
         discord.ForumTag(name=name)
         for name in ("foo", "bar", "Lorem", "ipSUM", "NOT_ISSUE", "macos", "linux")
@@ -192,7 +192,6 @@ async def test_aenumerate[T](items: list[T], start: int) -> None:
     ],
 )
 def test_is_attachment_only(
-    *,
     attachments: list[int],
     content: str,
     preprocessed_content: str | None,
