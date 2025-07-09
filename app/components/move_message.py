@@ -712,7 +712,7 @@ async def turn_into_help_post(
 
 @bot.tree.context_menu(name="Moved message actions")
 @discord.app_commands.guild_only()
-async def delete_moved_message(
+async def moved_message_actions(
     interaction: discord.Interaction, message: discord.Message
 ) -> None:
     assert not is_dm(interaction.user)
