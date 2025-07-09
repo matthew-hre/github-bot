@@ -16,6 +16,7 @@ from app.utils import (
     MovedMessage,
     MovedMessageLookupFailed,
     SplitSubtext,
+    convert_nitro_emojis,
     dynamic_timestamp,
     get_or_create_webhook,
     is_attachment_only,
@@ -136,6 +137,8 @@ async def _apply_edit_from_thread(
     moved_message: MovedMessage, message: discord.Message, new_content: str
 ) -> None:
     channel = moved_message.channel
+    if len(converted_content := convert_nitro_emojis(new_content)) <= 2000:
+        new_content = converted_content
     # Suppress NotFound in case the user attempts to commit an edit to a message that
     # was deleted in the meantime.
     with suppress(discord.NotFound):
@@ -494,8 +497,10 @@ class EditMessage(discord.ui.Modal, title="Edit Message"):
         self._message = message
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
+        content = f"{self.new_text.value}\n{self._split_subtext.subtext}"
+        converted_content = convert_nitro_emojis(content)
         await self._message.edit(
-            content=f"{self.new_text.value}\n{self._split_subtext.subtext}",
+            content=converted_content if len(converted_content) <= 2000 else content,
             allowed_mentions=discord.AllowedMentions.none(),
         )
         await interaction.response.send_message("Message edited.", ephemeral=True)

@@ -69,7 +69,7 @@ def _unattachable_embed(unattachable_elem: str, **kwargs: Any) -> discord.Embed:
     )
 
 
-def _convert_nitro_emojis(content: str, *, force: bool = False) -> str:
+def convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     """
     Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
     emojis in the current guild too.
@@ -157,7 +157,7 @@ async def _format_context_menu_command(reply: discord.Message) -> discord.Embed:
 async def _format_forward(
     forward: discord.MessageSnapshot,
 ) -> tuple[list[discord.Embed], list[discord.File]]:
-    content = _convert_nitro_emojis(forward.content)
+    content = convert_nitro_emojis(forward.content)
     if len(content) > 4096:
         content = forward.content
 
@@ -618,7 +618,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
     content, file = format_or_file(
         _format_interaction(message),
         template=f"{{}}\n{subtext}",
-        transform=_convert_nitro_emojis,
+        transform=convert_nitro_emojis,
     )
     if file:
         msg_data.files.append(file)
