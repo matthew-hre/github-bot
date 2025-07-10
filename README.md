@@ -343,7 +343,7 @@ has multiple attachments, a "Remove attachments" button is shown which provides
 the user with a selection menu that allows them to select which attachments are
 to be removed.
 
-<img src="TODO" alt="Moved message editing example" width="xx%">
+https://github.com/user-attachments/assets/8c8ed1cf-db00-414f-937f-43e565ae9d15
 
 [bot-repo]: https://github.com/ghostty-org/discord-bot
 [discord-docs]: https://discord.com/developers/applications
