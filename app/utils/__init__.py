@@ -9,6 +9,7 @@ import discord
 from .cache import TTRCache
 from .hooks import (
     MessageLinker,
+    ProcessedMessage,
     create_delete_hook,
     create_edit_hook,
     remove_view_after_timeout,
@@ -45,6 +46,7 @@ __all__ = (
     "MessageLinker",
     "MovedMessage",
     "MovedMessageLookupFailed",
+    "ProcessedMessage",
     "SplitSubtext",
     "TTRCache",
     "convert_nitro_emojis",
