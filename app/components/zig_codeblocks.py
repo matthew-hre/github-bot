@@ -96,15 +96,11 @@ async def codeblock_processor(message: discord.Message) -> ProcessedMessage:
             )
         )
 
-    codeblocks = list(extract_codeblocks(message.content))
-    if (
-        codeblocks
-        and len(message.content) <= 2000
-        and any(block.lang == "zig" for block in codeblocks)
-    ):
+    zig_codeblocks = [c for c in extract_codeblocks(message.content) if c.lang == "zig"]
+    if zig_codeblocks and len(message.content) <= 2000:
         highlighted_codeblocks = [
             CodeBlock("ansi", apply_discord_wa(highlight_zig_code(c.body, THEME)))
-            for c in codeblocks
+            for c in zig_codeblocks
         ]
         max_length = 2000 - (len(FILE_HIGHLIGHT_NOTE) - 1 if attachments else 0)
         while len(code := "\n\n".join(map(str, highlighted_codeblocks))) > max_length:
