@@ -146,7 +146,7 @@ def create_delete_hook(
             else:
                 # We don't need to do any unlinking here because reply.delete() triggers
                 # on_message_delete which runs the current hook again, and since replies
-                # are bot messages, linker.unlink_from_reply() handles unlinking for us.
+                # are bot messages, linker.unlink(original) above handles it for us.
                 await reply.delete()
         linker.unfreeze(message)
 
