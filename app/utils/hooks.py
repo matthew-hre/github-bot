@@ -113,7 +113,7 @@ def create_edit_hook(
 
         # Some processors use negative values to symbolize special error values, so this
         # can't be `== 0`. An example of this is the snippet_message() function in the
-        # file app/components/github_integration/code_links.py.
+        # file app/components/github_integration/code_links.py
         if new_output.item_count <= 0 and not linker.is_frozen(before):
             # All objects were edited out
             linker.unlink(before)
