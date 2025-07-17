@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import re
+import string
 from io import BytesIO
-from typing import Self
+from random import choices
+from typing import TYPE_CHECKING, Self
 
 import discord
 from zig_codeblocks import (
@@ -15,9 +19,12 @@ from app.utils import ItemActions, MessageLinker, remove_view_after_timeout
 from app.utils.hooks import ProcessedMessage, create_delete_hook, create_edit_hook
 from app.utils.webhooks import get_or_create_webhook, move_message_via_webhook
 
+if TYPE_CHECKING:
+    from collections.abc import Collection
+
 MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
-FILE_HIGHLIGHT_NOTE = 'On desktop, click "View whole file" to see the highlighting.'
+FILE_HIGHLIGHT_NOTE = '\nOn desktop, click "View whole file" to see the highlighting.'
 
 # This pattern is intentionally simple; it's only meant to operate on sequences produced
 # by zig-codeblocks which will never appear in any other form.
@@ -80,7 +87,7 @@ class CodeblockActions(ItemActions):
         )
 
 
-async def codeblock_processor(message: discord.Message) -> ProcessedMessage:
+async def _collect_attachments(message: discord.Message) -> list[discord.File]:
     attachments: list[discord.File] = []
     for att in message.attachments:
         if not att.filename.endswith(".zig") or att.size > MAX_ZIG_FILE_SIZE:
@@ -95,32 +102,78 @@ async def codeblock_processor(message: discord.Message) -> ProcessedMessage:
                 att.filename + ".ansi",
             )
         )
+    return attachments
 
-    zig_codeblocks = [c for c in extract_codeblocks(message.content) if c.lang == "zig"]
-    if zig_codeblocks and len(message.content) <= 2000:
-        highlighted_codeblocks = [
-            CodeBlock("ansi", apply_discord_wa(highlight_zig_code(c.body, THEME)))
-            for c in zig_codeblocks
-        ]
-        max_length = 2000 - (len(FILE_HIGHLIGHT_NOTE) - 1 if attachments else 0)
-        while len(code := "\n\n".join(map(str, highlighted_codeblocks))) > max_length:
-            file = discord.File(
-                BytesIO(highlighted_codeblocks.pop().body.encode()),
-                filename=f"{len(highlighted_codeblocks)}.ansi",
-            )
-            attachments.append(file)
-        if attachments:
-            code += f"\n{FILE_HIGHLIGHT_NOTE}"
-        return ProcessedMessage(
-            content=code,
-            files=attachments,
-            item_count=len(highlighted_codeblocks) + len(attachments),
-        )
+
+def _tallest_codeblock_to_file(codeblocks: list[CodeBlock]) -> discord.File:
+    tallest_codeblock = max(
+        codeblocks,
+        key=lambda cb: (len(cb.body.splitlines()), len(cb.body)),
+    )
+    codeblocks.remove(tallest_codeblock)
+    return discord.File(
+        BytesIO(tallest_codeblock.body.encode()),
+        filename=f"{''.join(choices(string.ascii_letters, k=6))}.ansi",
+    )
+
+
+def _add_user_notes(
+    content: str, omitted_codeblocks: int, attachments: Collection[discord.File]
+) -> str:
+    omission_note = "\n-# {} codeblock{} omitted"
     if attachments:
+        content += FILE_HIGHLIGHT_NOTE
+
+    if omitted_codeblocks:
+        omission_note = omission_note.format(
+            omitted_codeblocks, " was" if omitted_codeblocks == 1 else "s were"
+        )
+        truncation_size = 2000 - len(omission_note) - 1  # -1 for the ellipsis
+        if attachments:
+            content = content.removesuffix(FILE_HIGHLIGHT_NOTE)
+            truncation_size -= len(FILE_HIGHLIGHT_NOTE)
+            omission_note = f"{FILE_HIGHLIGHT_NOTE}{omission_note}"
+        content = f"{content[:truncation_size]}…{omission_note}"
+
+    return content
+
+
+async def codeblock_processor(message: discord.Message) -> ProcessedMessage:
+    attachments = await _collect_attachments(message)
+    zig_codeblocks = [c for c in extract_codeblocks(message.content) if c.lang == "zig"]
+
+    if not zig_codeblocks:
+        if not attachments:
+            return ProcessedMessage(item_count=0)
         return ProcessedMessage(
             content=FILE_HIGHLIGHT_NOTE, files=attachments, item_count=len(attachments)
         )
-    return ProcessedMessage(item_count=0)
+
+    highlighted_codeblocks = [
+        CodeBlock("ansi", apply_discord_wa(highlight_zig_code(c.body, THEME)))
+        for c in zig_codeblocks
+    ]
+    max_length = 2000 - (len(FILE_HIGHLIGHT_NOTE) if attachments else 0)
+    omitted_codeblocks = 0
+    while len(code := "".join(map(str, highlighted_codeblocks))) > max_length:
+        file = _tallest_codeblock_to_file(highlighted_codeblocks)
+        if len(attachments) < 10:
+            attachments.append(file)
+            continue
+
+        if not omitted_codeblocks:
+            if max_length == 2000:
+                # We definitely have attachments at this point
+                max_length -= len(FILE_HIGHLIGHT_NOTE)
+            max_length -= 30  # expected omission note size (conservative)
+        omitted_codeblocks += 1
+
+    code = _add_user_notes(code, omitted_codeblocks, attachments)
+    return ProcessedMessage(
+        content=code,
+        files=attachments,
+        item_count=len(highlighted_codeblocks) + len(attachments),
+    )
 
 
 async def check_for_zig_code(message: discord.Message) -> None:
