@@ -19,12 +19,12 @@ POST_TITLE_TOO_LONG = (
 )
 
 
-async def mention_entity(entity_id: int) -> str:
+async def mention_entity(entity_id: int) -> str | None:
     msg, _ = await entity_message(
         # Forging a message to use the entity mention logic
         cast("discord.Message", SimpleNamespace(content=f"#{entity_id}"))
     )
-    return msg
+    return msg or None
 
 
 class Close(app_commands.Group):
@@ -49,11 +49,16 @@ class Close(app_commands.Group):
     @app_commands.command(name="moved", description="Mark post as moved to GitHub.")
     @app_commands.describe(entity_id="New GitHub entity number")
     async def moved(self, interaction: discord.Interaction, entity_id: int) -> None:
+        if not (additional_reply := await mention_entity(entity_id)):
+            await interaction.response.send_message(
+                f"Entity #{entity_id} does not exist.", ephemeral=True
+            )
+            return
         await close_post(
             interaction,
             "moved",
             title_prefix=f"[MOVED: #{entity_id}]",
-            additional_reply=await mention_entity(entity_id),
+            additional_reply=additional_reply,
         )
 
     @app_commands.command(name="duplicate", description="Mark post as duplicate.")
@@ -70,7 +75,11 @@ class Close(app_commands.Group):
         if len(str_id) < 10:
             # GitHub entity number
             title_prefix = f"[DUPLICATE: #{id_}]"
-            additional_reply = await mention_entity(int(id_))
+            if not (additional_reply := await mention_entity(int(id_))):
+                await interaction.response.send_message(
+                    f"Entity #{id_} does not exist.", ephemeral=True
+                )
+                return
         else:
             # Help post ID
             title_prefix = None
