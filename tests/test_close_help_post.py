@@ -73,4 +73,20 @@ async def test_mention_entity(
 
     msg_content = await mention_entity(entity_id)
 
+    assert msg_content is not None
     assert f"{kind} [#{entity_id}]" in msg_content
+
+
+@pytest.mark.parametrize("entity_id", [-13, 1023, 8192])
+@pytest.mark.asyncio
+async def test_mention_missing_entity(
+    entity_id: int, monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace
+) -> None:
+    mentions_subpkg_path = "app.components.github_integration.mentions"
+    monkeypatch.setattr(f"{mentions_subpkg_path}.resolution.config", bot_env)
+    monkeypatch.setattr(f"{mentions_subpkg_path}.cache.gh", gh_env)
+    monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
+
+    msg_content = await mention_entity(entity_id)
+
+    assert msg_content is None
