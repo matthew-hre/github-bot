@@ -7,13 +7,14 @@ import httpx
 from pydantic import BaseModel
 
 from app.utils import (
-    DeleteMessage,
+    ItemActions,
     MessageLinker,
     TTRCache,
     create_delete_hook,
     create_edit_hook,
     remove_view_after_timeout,
 )
+from app.utils.hooks import ProcessedMessage
 
 XKCD_REGEX = re.compile(r"\bxkcd#(\d+)", re.IGNORECASE)
 XKCD_URL = "https://xkcd.com/{}"
@@ -57,15 +58,13 @@ xkcd_mention_cache = XKCDMentionCache(hours=12)
 xkcd_mention_linker = MessageLinker()
 
 
-class DeleteButton(DeleteMessage):
+class XKCDActions(ItemActions):
     linker = xkcd_mention_linker
     action_singular = "linked this xkcd comic"
     action_plural = "linked these xkcd comics"
 
 
-async def xkcd_mention_message(
-    message: discord.Message,
-) -> tuple[list[discord.Embed], int]:
+async def xkcd_mention_message(message: discord.Message) -> ProcessedMessage:
     embeds = []
     matches = list(dict.fromkeys(m[1] for m in XKCD_REGEX.finditer(message.content)))
     omitted = None
@@ -78,18 +77,20 @@ async def xkcd_mention_message(
     embeds = await asyncio.gather(*(xkcd_mention_cache.get(int(m)) for m in matches))
     if omitted:
         embeds.append(omitted)
-    return embeds, len(embeds)
+    return ProcessedMessage(embeds=embeds, item_count=len(embeds))
 
 
 async def handle_xkcd_mentions(message: discord.Message) -> None:
     if message.author.bot:
         return
-    embeds, count = await xkcd_mention_message(message)
-    if count < 1:
+    output = await xkcd_mention_message(message)
+    if output.item_count < 1:
         return
     try:
         sent_message = await message.reply(
-            embeds=embeds, mention_author=False, view=DeleteButton(message, count)
+            embeds=output.embeds,
+            mention_author=False,
+            view=XKCDActions(message, output.item_count),
         )
     except discord.HTTPException:
         return
@@ -103,5 +104,5 @@ xkcd_mention_edit_hook = create_edit_hook(
     linker=xkcd_mention_linker,
     message_processor=xkcd_mention_message,
     interactor=handle_xkcd_mentions,
-    view_type=DeleteButton,
+    view_type=XKCDActions,
 )

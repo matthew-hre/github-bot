@@ -1,28 +1,31 @@
+from __future__ import annotations
+
 import re
+import string
 from io import BytesIO
-from itertools import zip_longest
-from typing import Self
+from random import choices
+from typing import TYPE_CHECKING, Self
 
 import discord
 from zig_codeblocks import (
     DEFAULT_THEME,
+    CodeBlock,
     extract_codeblocks,
     highlight_zig_code,
     process_markdown,
 )
 
-from app.utils import (
-    MessageLinker,
-    get_or_create_webhook,
-    is_dm,
-    is_mod,
-    move_message_via_webhook,
-    remove_view_after_timeout,
-)
+from app.utils import ItemActions, MessageLinker, remove_view_after_timeout
+from app.utils.hooks import ProcessedMessage, create_delete_hook, create_edit_hook
+from app.utils.webhooks import get_or_create_webhook, move_message_via_webhook
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
-VIEW_TIMEOUT = 60.0
+FILE_HIGHLIGHT_NOTE = '\nOn desktop, click "View whole file" to see the highlighting.'
+OMISSION_NOTE = "\n-# {} codeblock{} omitted"
 
 # This pattern is intentionally simple; it's only meant to operate on sequences produced
 # by zig-codeblocks which will never appear in any other form.
@@ -34,81 +37,39 @@ codeblock_linker = MessageLinker()
 frozen_messages = set[discord.Message]()
 
 
-def process_discord_markdown(source: str | bytes, *, only_code: bool = False) -> str:
-    return (
-        process_markdown(source, THEME, only_code=only_code)
-        # From Qwerasd:
-        #   Oh is it a safeguard against catastrophic backtracking?
-        #   [...]
-        #   I got distracted and checked the Discord source and this is the logic,
-        #   highlighting is disabled under these circumstances:
-        #   * The src contains 15 or more consecutive slashes
-        #   * The src contains a line with 1000 or more characters
-        #   * The src contains more than 30 slashes with anything in between as long as
-        #     it's not a line that isn't in the form ^\s*\/\/.* and contains a character
-        #     other than /
-        # These replace calls are an attempt to work around these limitations.
-        .replace("///", "\x1b[0m///")
-        .replace("// ", "\x1b[0m// ")
-    )
+def apply_discord_wa(source: str) -> str:
+    # From Qwerasd:
+    #   Oh is it a safeguard against catastrophic backtracking?
+    #   [...]
+    #   I got distracted and checked the Discord source and this is the logic,
+    #   highlighting is disabled under these circumstances:
+    #   * The src contains 15 or more consecutive slashes
+    #   * The src contains a line with 1000 or more characters
+    #   * The src contains more than 30 slashes with anything in between as long as
+    #     it's not a line that isn't in the form ^\s*\/\/.* and contains a character
+    #     other than /
+    # These replace calls are an attempt to work around these limitations.
+    return source.replace("///", "\x1b[0m///").replace("// ", "\x1b[0m// ")
 
 
-class ZigCodeblockActions(discord.ui.View):
-    def __init__(self, message: discord.Message) -> None:
-        super().__init__()
-        self._message = message
-        self._replaced_message_content = process_discord_markdown(message.content)
-        self.replace.disabled = (
-            len(codeblock_linker.get(message)) > 1
-            or len(self._replaced_message_content) > 2000
-            or len(message.attachments) > 0
-        )
+class CodeblockActions(ItemActions):
+    linker = codeblock_linker
+    action_singular = "sent this code block"
+    action_plural = "sent these code blocks"
 
-    async def _reject_early(
-        self, interaction: discord.Interaction, message: str
-    ) -> bool:
-        assert not is_dm(interaction.user)
-        if interaction.user.id == self._message.author.id or is_mod(interaction.user):
-            return False
-        await interaction.response.send_message(message, ephemeral=True)
-        return True
-
-    @discord.ui.button(label="Delete", emoji="❌")
-    async def dismiss(
-        self,
-        interaction: discord.Interaction,
-        _: discord.ui.Button[Self],
-    ) -> None:
-        if await self._reject_early(interaction, "You can't dismiss this message."):
-            return
-        for reply in codeblock_linker.get(self._message):
-            await reply.delete()
-
-    @discord.ui.button(label="Freeze", emoji="❄️")  # test: allow-vs16
-    async def freeze(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button[Self],
-    ) -> None:
-        if await self._reject_early(interaction, "You can't freeze this message."):
-            return
-
-        frozen_messages.add(self._message)
-        button.disabled = True
-        await interaction.response.edit_message(view=self)
-        await interaction.followup.send(
-            "Message frozen. I will no longer react to"
-            " what happens to your original message.",
-            ephemeral=True,
-        )
+    def __init__(self, message: discord.Message, item_count: int) -> None:
+        super().__init__(message, item_count)
+        replaced_content = apply_discord_wa(process_markdown(message.content, THEME))
+        if message.attachments or len(replaced_content) > 2000:
+            self.replace.disabled = True
+        else:
+            self._replaced_message_content = replaced_content
 
     @discord.ui.button(label="Replace my message", emoji="🔄")
     async def replace(
-        self,
-        interaction: discord.Interaction,
-        _: discord.ui.Button[Self],
+        self, interaction: discord.Interaction, _: discord.ui.Button[Self]
     ) -> None:
-        if await self._reject_early(interaction, "You can't use this action."):
+        if await self._reject_early(interaction, "replace"):
             return
 
         assert interaction.message
@@ -121,22 +82,20 @@ class ZigCodeblockActions(discord.ui.View):
         assert isinstance(webhook_channel, discord.TextChannel | discord.ForumChannel)
 
         webhook = await get_or_create_webhook(webhook_channel)
-        self._message.content = self._replaced_message_content
+        self.message.content = self._replaced_message_content
         await move_message_via_webhook(
-            webhook, self._message, thread=thread, include_move_marks=False
+            webhook, self.message, thread=thread, include_move_marks=False
         )
 
 
-async def _prepare_reply(
-    message: discord.Message,
-) -> tuple[list[str], list[discord.File]]:
+async def _collect_attachments(message: discord.Message) -> list[discord.File]:
     attachments: list[discord.File] = []
     for att in message.attachments:
         if not att.filename.endswith(".zig") or att.size > MAX_ZIG_FILE_SIZE:
             continue
         content = (await att.read())[:MAX_CONTENT]
         if content.count(b"\n") <= 5 and len(content) <= 1900:
-            message.content = f"```zig\n{content.decode()}```\n{message.content}"
+            message.content = f"{CodeBlock('zig', content.decode())}\n{message.content}"
             continue
         attachments.append(
             discord.File(
@@ -144,175 +103,104 @@ async def _prepare_reply(
                 att.filename + ".ansi",
             )
         )
+    return attachments
 
-    codeblocks = list(extract_codeblocks(message.content))
-    file_highlight_note = 'On desktop, click "View whole file" to see the highlighting.'
-    if codeblocks and any(block.lang == "zig" for block in codeblocks):
-        zig_code = process_discord_markdown(message.content, only_code=True)
-        zig_code += f"\n{file_highlight_note}" if attachments else ""
-        return _split_codeblocks(zig_code), attachments
+
+def _tallest_codeblock_to_file(codeblocks: list[CodeBlock]) -> discord.File:
+    tallest_codeblock = max(
+        codeblocks,
+        key=lambda cb: (len(cb.body.splitlines()), len(cb.body)),
+    )
+    codeblocks.remove(tallest_codeblock)
+    return discord.File(
+        BytesIO(tallest_codeblock.body.encode()),
+        filename=f"{''.join(choices(string.ascii_letters, k=6))}.ansi",
+    )
+
+
+def _add_user_notes(
+    content: str, omitted_codeblocks: int, attachments: Collection[discord.File]
+) -> str:
     if attachments:
-        return [file_highlight_note], attachments
-    return [], []
+        content += FILE_HIGHLIGHT_NOTE
+
+    if omitted_codeblocks:
+        user_note = OMISSION_NOTE.format(
+            omitted_codeblocks, " was" if omitted_codeblocks == 1 else "s were"
+        )
+        truncation_size = 2000 - len(user_note) - 1  # -1 for the ellipsis
+        if attachments:
+            content = content.removesuffix(FILE_HIGHLIGHT_NOTE)
+            truncation_size -= len(FILE_HIGHLIGHT_NOTE)
+            user_note = f"{FILE_HIGHLIGHT_NOTE}{user_note}"
+        content = f"{content[:truncation_size]}…{user_note}"
+
+    return content
+
+
+async def codeblock_processor(message: discord.Message) -> ProcessedMessage:
+    attachments = await _collect_attachments(message)
+    zig_codeblocks = [c for c in extract_codeblocks(message.content) if c.lang == "zig"]
+
+    if not zig_codeblocks:
+        if not attachments:
+            return ProcessedMessage(item_count=0)
+        return ProcessedMessage(
+            content=FILE_HIGHLIGHT_NOTE, files=attachments, item_count=len(attachments)
+        )
+
+    highlighted_codeblocks = [
+        CodeBlock("ansi", apply_discord_wa(highlight_zig_code(c.body, THEME)))
+        for c in zig_codeblocks
+    ]
+    max_length = 2000 - (len(FILE_HIGHLIGHT_NOTE) if attachments else 0)
+    omitted_codeblocks = 0
+    while len(code := "".join(map(str, highlighted_codeblocks))) > max_length:
+        file = _tallest_codeblock_to_file(highlighted_codeblocks)
+
+        if len(attachments) < 10:
+            if not attachments:
+                # We now have an attachment so the note is gonna be displayed
+                max_length -= len(FILE_HIGHLIGHT_NOTE)
+            attachments.append(file)
+            continue
+
+        if not omitted_codeblocks:
+            # Expected final omission note size (conservative)
+            max_length -= len(OMISSION_NOTE) + 5
+
+        omitted_codeblocks += 1
+
+    code = _add_user_notes(code, omitted_codeblocks, attachments)
+    return ProcessedMessage(
+        content=code,
+        files=attachments,
+        item_count=len(highlighted_codeblocks) + len(attachments),
+    )
 
 
 async def check_for_zig_code(message: discord.Message) -> None:
     if message.author.bot:
         return
-    msg_contents, files = await _prepare_reply(message)
-    if not (msg_contents or files):
+    output = await codeblock_processor(message)
+    if not output.item_count:
         return
-
-    if len(msg_contents) == 1:
-        reply = await message.reply(
-            msg_contents[0],
-            view=ZigCodeblockActions(message),
-            files=files,
-            mention_author=False,
-        )
-        codeblock_linker.link(message, reply)
-        await remove_view_after_timeout(reply, VIEW_TIMEOUT)
-        return
-
-    first_msg = await message.reply(msg_contents[0], mention_author=False)
-    codeblock_linker.link(message, first_msg)
-
-    for msg_content in msg_contents[1:-1]:
-        msg = await message.channel.send(msg_content)
-        codeblock_linker.link(message, msg)
-
-    final_msg = await message.channel.send(
-        msg_contents[-1], view=ZigCodeblockActions(message), files=files
+    reply = await message.reply(
+        output.content,
+        view=CodeblockActions(message, output.item_count),
+        files=output.files,
+        mention_author=False,
     )
-    codeblock_linker.link(message, final_msg)
-    await remove_view_after_timeout(final_msg, VIEW_TIMEOUT)
+    codeblock_linker.link(message, reply)
+    await remove_view_after_timeout(reply, 60)
 
 
-async def zig_codeblock_edit_hook(
-    before: discord.Message, after: discord.Message
-) -> None:
-    if before.content == after.content and before.attachments == after.attachments:
-        return
+zig_codeblock_delete_hook = create_delete_hook(linker=codeblock_linker)
 
-    old_contents, old_files = await _prepare_reply(before)
-    new_contents, new_files = await _prepare_reply(after)
-    if old_contents == new_contents and old_files == new_files:
-        return
-
-    if not (replies := codeblock_linker.get(before)):
-        if not (old_contents or before in frozen_messages):
-            # There was no code before, so treat this as a new message.
-            # Note: No new attachments can appear, their count can only decrease.
-            await check_for_zig_code(after)
-        # The message was removed from the M2C map at some point
-        return
-
-    if not (new_contents or new_files or before in frozen_messages):
-        # All code was edited out
-        codeblock_linker.unlink(before)
-        for reply in replies:
-            await reply.delete()
-        return
-
-    if codeblock_linker.unlink_if_expired(replies[0]):
-        frozen_messages.discard(before)
-        return
-
-    if before in frozen_messages:
-        return
-
-    saved_msg: discord.Message | None = None
-    for reply, new_content in zip_longest(replies, new_contents, fillvalue=None):
-        if not (reply is None or new_content is None):
-            if new_content is new_contents[-1] and len(replies) >= len(new_contents):
-                view = ZigCodeblockActions(after)
-                files = new_files
-            else:
-                view = None
-                files = discord.utils.MISSING
-            await reply.edit(
-                content=new_content,
-                view=view,
-                attachments=files,
-                allowed_mentions=discord.AllowedMentions.none(),
-            )
-            if view is not None:
-                saved_msg = reply
-            continue
-        if reply is None:
-            # Out of replies, codeblocks still left -> create new replies
-            if new_content is new_contents[-1]:
-                # Last new reply
-                msg = await after.channel.send(
-                    new_content,
-                    view=ZigCodeblockActions(after),
-                    allowed_mentions=discord.AllowedMentions.none(),
-                )
-                saved_msg = msg
-            else:
-                # Not the last new reply
-                msg = await after.channel.send(
-                    new_content, allowed_mentions=discord.AllowedMentions.none()
-                )
-            codeblock_linker.link(after, msg)
-        else:
-            # Out of codeblocks, replies still left -> delete remaining replies
-            await reply.delete()
-    if saved_msg is not None:
-        await remove_view_after_timeout(saved_msg, VIEW_TIMEOUT)
-
-
-async def zig_codeblock_delete_hook(message: discord.Message) -> None:
-    if message.author.bot and (
-        original := codeblock_linker.get_original_message(message)
-    ):
-        frozen_messages.discard(original)
-        replies = codeblock_linker.get(original)
-        replies.remove(message)
-        if not replies:
-            codeblock_linker.unlink(original)
-    elif (replies := codeblock_linker.get(message)) and message not in frozen_messages:
-        for reply in replies:
-            await reply.delete()
-        codeblock_linker.unlink(message)
-    frozen_messages.discard(message)
-
-
-def _split_codeblocks(code: str) -> list[str]:
-    if len(code) <= 2000:
-        return [code]
-
-    def copy_last_style_to_new_part() -> None:
-        if SGR_PATTERN.fullmatch(part[1]):
-            part[2] = f"{part.pop(1)}{part[2]}"
-
-    lines = code.splitlines()
-    parts: list[str] = []
-    part: list[str] = []
-
-    while lines:
-        # Keep throwing in lines until under the limit
-        if len("\n".join(part)) + len(lines[0]) + 4 < 2000:  # 4 = len("\n```")
-            part.append(lines.pop(0))
-            continue
-
-        # Making sure we're not ending a part in a code block boundary
-        if part[-1].startswith("```"):
-            lines.insert(0, part.pop())
-            if part[-1] == "```ansi":
-                lines.insert(0, part.pop())
-
-        copy_last_style_to_new_part()
-        parts.append(joined := "\n".join((*part, "```")))
-        part = ["```ansi"]
-
-        # Apply last style from previous part to new part
-        if styles := SGR_PATTERN.findall(joined):
-            part.append(styles.pop())
-
-    # Add unfinished part
-    if part:
-        copy_last_style_to_new_part()
-        parts.append("\n".join(part))
-
-    return parts
+zig_codeblock_edit_hook = create_edit_hook(
+    linker=codeblock_linker,
+    message_processor=codeblock_processor,
+    interactor=check_for_zig_code,
+    view_type=CodeblockActions,
+    view_timeout=60,
+)
