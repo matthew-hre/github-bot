@@ -50,6 +50,7 @@ class MessageLinker:
         for msg in tuple(self._refs):
             if msg.created_at < self.expiry_threshold:
                 self.unlink(msg)
+                self.unfreeze(msg)
 
     def link(self, original: discord.Message, reply: discord.Message) -> None:
         self._free_dangling_links()
