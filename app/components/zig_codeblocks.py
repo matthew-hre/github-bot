@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 MAX_CONTENT = 51_200  # 50 KiB
 MAX_ZIG_FILE_SIZE = 8_388_608  # 8 MiB
 FILE_HIGHLIGHT_NOTE = '\nOn desktop, click "View whole file" to see the highlighting.'
+OMISSION_NOTE = "\n-# {} codeblock{} omitted"
 
 # This pattern is intentionally simple; it's only meant to operate on sequences produced
 # by zig-codeblocks which will never appear in any other form.
@@ -120,20 +121,19 @@ def _tallest_codeblock_to_file(codeblocks: list[CodeBlock]) -> discord.File:
 def _add_user_notes(
     content: str, omitted_codeblocks: int, attachments: Collection[discord.File]
 ) -> str:
-    omission_note = "\n-# {} codeblock{} omitted"
     if attachments:
         content += FILE_HIGHLIGHT_NOTE
 
     if omitted_codeblocks:
-        omission_note = omission_note.format(
+        user_note = OMISSION_NOTE.format(
             omitted_codeblocks, " was" if omitted_codeblocks == 1 else "s were"
         )
-        truncation_size = 2000 - len(omission_note) - 1  # -1 for the ellipsis
+        truncation_size = 2000 - len(user_note) - 1  # -1 for the ellipsis
         if attachments:
             content = content.removesuffix(FILE_HIGHLIGHT_NOTE)
             truncation_size -= len(FILE_HIGHLIGHT_NOTE)
-            omission_note = f"{FILE_HIGHLIGHT_NOTE}{omission_note}"
-        content = f"{content[:truncation_size]}…{omission_note}"
+            user_note = f"{FILE_HIGHLIGHT_NOTE}{user_note}"
+        content = f"{content[:truncation_size]}…{user_note}"
 
     return content
 
@@ -165,7 +165,8 @@ async def codeblock_processor(message: discord.Message) -> ProcessedMessage:
             if max_length == 2000:
                 # We definitely have attachments at this point
                 max_length -= len(FILE_HIGHLIGHT_NOTE)
-            max_length -= 30  # expected omission note size (conservative)
+            # Expected final omission note size (conservative)
+            max_length -= len(OMISSION_NOTE) + 5
         omitted_codeblocks += 1
 
     code = _add_user_notes(code, omitted_codeblocks, attachments)
