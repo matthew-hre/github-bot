@@ -157,16 +157,18 @@ async def codeblock_processor(message: discord.Message) -> ProcessedMessage:
     omitted_codeblocks = 0
     while len(code := "".join(map(str, highlighted_codeblocks))) > max_length:
         file = _tallest_codeblock_to_file(highlighted_codeblocks)
+
         if len(attachments) < 10:
+            if not attachments:
+                # We now have an attachment so the note is gonna be displayed
+                max_length -= len(FILE_HIGHLIGHT_NOTE)
             attachments.append(file)
             continue
 
         if not omitted_codeblocks:
-            if max_length == 2000:
-                # We definitely have attachments at this point
-                max_length -= len(FILE_HIGHLIGHT_NOTE)
             # Expected final omission note size (conservative)
             max_length -= len(OMISSION_NOTE) + 5
+
         omitted_codeblocks += 1
 
     code = _add_user_notes(code, omitted_codeblocks, attachments)
