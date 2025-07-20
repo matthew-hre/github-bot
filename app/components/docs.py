@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, NotRequired, Self, TypedDict, cast
 import discord
 from discord.app_commands import Choice, autocomplete
 
+from app.common.message_moving import get_or_create_webhook
 from app.components.status import bot_status
 from app.setup import bot, config, gh
-from app.utils import get_or_create_webhook
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

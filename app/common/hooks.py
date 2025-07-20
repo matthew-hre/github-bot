@@ -3,8 +3,11 @@ import datetime as dt
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
+from typing import Self
 
 import discord
+
+from app.utils import is_dm, is_mod
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -73,6 +76,57 @@ class MessageLinker:
 
     def is_expired(self, message: discord.Message) -> bool:
         return message.created_at < self.expiry_threshold
+
+
+class ItemActions(discord.ui.View):
+    linker: MessageLinker
+    action_singular: str
+    action_plural: str
+
+    def __init__(self, message: discord.Message, item_count: int) -> None:
+        super().__init__()
+        self.message = message
+        self.item_count = item_count
+
+    async def _reject_early(
+        self, interaction: discord.Interaction, action: str
+    ) -> bool:
+        assert not is_dm(interaction.user)
+        if interaction.user.id == self.message.author.id or is_mod(interaction.user):
+            return False
+        await interaction.response.send_message(
+            "Only the person who "
+            + (self.action_singular if self.item_count == 1 else self.action_plural)
+            + f" can {action} this message.",
+            ephemeral=True,
+        )
+        return True
+
+    @discord.ui.button(label="Delete", emoji="❌")
+    async def delete(
+        self, interaction: discord.Interaction, _: discord.ui.Button[Self]
+    ) -> None:
+        if await self._reject_early(interaction, "remove"):
+            return
+        assert interaction.message
+        await interaction.message.delete()
+
+    @discord.ui.button(label="Freeze", emoji="❄️")  # test: allow-vs16
+    async def freeze(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button[Self],
+    ) -> None:
+        if await self._reject_early(interaction, "freeze"):
+            return
+        self.linker.freeze(self.message)
+        button.disabled = True
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(
+            "Message frozen. I will no longer react to"
+            " what happens to your original message.",
+            ephemeral=True,
+        )
 
 
 def create_edit_hook(

@@ -2,73 +2,34 @@ from __future__ import annotations
 
 import re
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any
 
 import discord
 
-from .cache import TTRCache
-from .hooks import (
-    MessageLinker,
-    ProcessedMessage,
-    create_delete_hook,
-    create_edit_hook,
-    remove_view_after_timeout,
-)
 from .message_data import MAX_ATTACHMENT_SIZE, ExtensibleMessage, MessageData, get_files
-from .webhooks import (
-    NON_SYSTEM_MESSAGE_TYPES,
-    SUPPORTED_IMAGE_FORMATS,
-    GuildTextChannel,
-    MovedMessage,
-    MovedMessageLookupFailed,
-    SplitSubtext,
-    convert_nitro_emojis,
-    dynamic_timestamp,
-    format_or_file,
-    get_ghostty_guild,
-    get_or_create_webhook,
-    message_can_be_moved,
-    move_message_via_webhook,
-    truncate,
-)
 from app.setup import config
 
 __all__ = (
     "MAX_ATTACHMENT_SIZE",
-    "NON_SYSTEM_MESSAGE_TYPES",
-    "SUPPORTED_IMAGE_FORMATS",
     "Account",
-    "DeleteInstead",
     "ExtensibleMessage",
-    "GuildTextChannel",
-    "ItemActions",
     "MessageData",
-    "MessageLinker",
-    "MovedMessage",
-    "MovedMessageLookupFailed",
-    "ProcessedMessage",
-    "SplitSubtext",
-    "TTRCache",
-    "convert_nitro_emojis",
-    "create_delete_hook",
-    "create_edit_hook",
+    "aenumerate",
     "dynamic_timestamp",
     "escape_special",
-    "format_or_file",
     "get_files",
-    "get_ghostty_guild",
-    "get_or_create_webhook",
+    "is_attachment_only",
     "is_dm",
     "is_helper",
     "is_mod",
-    "message_can_be_moved",
-    "move_message_via_webhook",
-    "remove_view_after_timeout",
+    "post_has_tag",
+    "post_is_solved",
     "truncate",
     "try_dm",
 )
 
 if TYPE_CHECKING:
+    import datetime as dt
     from collections.abc import AsyncIterator
 
     from typing_extensions import TypeIs
@@ -78,73 +39,19 @@ _INVITE_LINK_REGEX = re.compile(r"\b(?:https?://)?(discord\.gg/[^\s]+)\b")
 _ORDERED_LIST_REGEX = re.compile(r"^(\d+)\. (.*)")
 
 type Account = discord.User | discord.Member
+# Not a PEP 695 type alias because of runtime isinstance() checks
+GuildTextChannel = discord.TextChannel | discord.Thread
 
 
-class ItemActions(discord.ui.View):
-    linker: MessageLinker
-    action_singular: str
-    action_plural: str
-
-    def __init__(self, message: discord.Message, item_count: int) -> None:
-        super().__init__()
-        self.message = message
-        self.item_count = item_count
-
-    async def _reject_early(
-        self, interaction: discord.Interaction, action: str
-    ) -> bool:
-        assert not is_dm(interaction.user)
-        if interaction.user.id == self.message.author.id or is_mod(interaction.user):
-            return False
-        await interaction.response.send_message(
-            "Only the person who "
-            + (self.action_singular if self.item_count == 1 else self.action_plural)
-            + f" can {action} this message.",
-            ephemeral=True,
-        )
-        return True
-
-    @discord.ui.button(label="Delete", emoji="❌")
-    async def delete(
-        self, interaction: discord.Interaction, _: discord.ui.Button[Self]
-    ) -> None:
-        if await self._reject_early(interaction, "remove"):
-            return
-        assert interaction.message
-        await interaction.message.delete()
-
-    @discord.ui.button(label="Freeze", emoji="❄️")  # test: allow-vs16
-    async def freeze(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button[Self],
-    ) -> None:
-        if await self._reject_early(interaction, "freeze"):
-            return
-        self.linker.freeze(self.message)
-        button.disabled = True
-        await interaction.response.edit_message(view=self)
-        await interaction.followup.send(
-            "Message frozen. I will no longer react to"
-            " what happens to your original message.",
-            ephemeral=True,
-        )
+def truncate(s: str, length: int, *, suffix: str = "…") -> str:
+    if len(s) <= length:
+        return s
+    return s[: length - len(suffix)] + suffix
 
 
-class DeleteInstead(discord.ui.View):
-    def __init__(self, message: discord.Message) -> None:
-        super().__init__()
-        self.message = message
-
-    @discord.ui.button(label="Delete instead", emoji="❌")
-    async def delete(
-        self,
-        interaction: discord.Interaction,
-        button: discord.ui.Button[Self],
-    ) -> None:
-        button.disabled = True
-        await self.message.delete()
-        await interaction.response.edit_message(view=self)
+def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
+    fmt = f":{fmt}" if fmt is not None else ""
+    return f"<t:{int(dt.timestamp())}{fmt}>"
 
 
 def is_dm(account: Account) -> TypeIs[discord.User]:

@@ -6,15 +6,15 @@ import discord
 import httpx
 from pydantic import BaseModel
 
-from app.utils import (
+from app.common.cache import TTRCache
+from app.common.hooks import (
     ItemActions,
     MessageLinker,
-    TTRCache,
+    ProcessedMessage,
     create_delete_hook,
     create_edit_hook,
     remove_view_after_timeout,
 )
-from app.utils.hooks import ProcessedMessage
 
 XKCD_REGEX = re.compile(r"\bxkcd#(\d+)", re.IGNORECASE)
 XKCD_URL = "https://xkcd.com/{}"

@@ -4,8 +4,9 @@ from typing import NamedTuple, cast
 
 import discord
 
+from app.common.message_moving import format_or_file
 from app.setup import config
-from app.utils import format_or_file, try_dm
+from app.utils import try_dm
 
 URL_REGEX = re.compile(
     r"https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b"

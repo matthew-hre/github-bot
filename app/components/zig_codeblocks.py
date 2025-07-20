@@ -15,9 +15,15 @@ from zig_codeblocks import (
     process_markdown,
 )
 
-from app.utils import ItemActions, MessageLinker, remove_view_after_timeout
-from app.utils.hooks import ProcessedMessage, create_delete_hook, create_edit_hook
-from app.utils.webhooks import get_or_create_webhook, move_message_via_webhook
+from app.common.hooks import (
+    ItemActions,
+    MessageLinker,
+    ProcessedMessage,
+    create_delete_hook,
+    create_edit_hook,
+    remove_view_after_timeout,
+)
+from app.common.message_moving import get_or_create_webhook, move_message_via_webhook
 
 if TYPE_CHECKING:
     from collections.abc import Collection

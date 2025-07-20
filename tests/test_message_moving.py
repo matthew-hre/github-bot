@@ -1,11 +1,17 @@
 # pyright: reportPrivateUsage=false
 
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import discord
 import pytest
 
-from app.utils.webhooks import MovedMessage, _find_snowflake, _format_emoji
+from app.common.message_moving import (
+    MovedMessage,
+    _find_snowflake,
+    _format_emoji,
+    get_ghostty_guild,
+)
 
 # A random list of Unicode emojis that default to the emoji presentation.
 UNICODE_EMOJIS = "📨🌼🎬⌛🧆🦯🤩👤🥈🏑🌊🤲👦🛝🍏🥫🐙👰🇫🤏🚋🏽🐾🌄🔛🐸🤣🐎💿👃🔘🍋🚈👘🚹"
@@ -165,3 +171,27 @@ def test_get_moved_message_author_id(content: str, result: int | None) -> None:
     # NOTE: casting a SimpleNamespace to MovedMessage seems to break the code in
     # ExtensibleMessage, so we shall access _extract_author_id() directly.
     assert MovedMessage._extract_author_id(content) == result  # noqa: SLF001
+
+
+@pytest.mark.parametrize(
+    ("names", "result"),
+    [
+        (["Ghostty 👻", "Rootbeer", "Ghostty Bot Testing"], "Ghostty 👻"),
+        (["Ghost tea", "Casper Fanclub", "WezTerm"], None),
+        (
+            ["Rust Programming Language", "Ghostty Community", "Ghostty"],
+            "Ghostty Community",
+        ),
+    ],
+)
+def test_get_ghostty_guild(
+    names: list[str], result: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_guilds = [SimpleNamespace(name=name) for name in names]
+    monkeypatch.setattr(
+        "app.common.message_moving.bot", SimpleNamespace(guilds=fake_guilds)
+    )
+    try:
+        assert get_ghostty_guild() == SimpleNamespace(name=result)
+    except ValueError:
+        assert result is None

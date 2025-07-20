@@ -17,6 +17,7 @@ from githubkit.versions.latest.models import (
 )
 from zig_codeblocks import extract_codeblocks
 
+from app.common.cache import TTRCache
 from app.components.github_integration.comments.discussions import (
     get_discussion_comment,
 )
@@ -28,7 +29,7 @@ from app.components.github_integration.models import (
     Reactions,
 )
 from app.setup import gh
-from app.utils import TTRCache, escape_special
+from app.utils import escape_special
 
 if TYPE_CHECKING:
     import datetime as dt
