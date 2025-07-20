@@ -82,6 +82,8 @@ def _format_entity_detail(entity: Entity) -> str:
             labels, omission_note = entity.labels, ""
         body = f"labels: {', '.join(f'`{label}`' for label in labels)}{omission_note}"
     elif isinstance(entity, PullRequest):
+        if not (entity.additions or entity.deletions or entity.changed_files):
+            return ""  # Diff size unavailable
         body = (
             f"diff size: `+{entity.additions}` `-{entity.deletions}`"
             f" ({entity.changed_files} files changed)"
