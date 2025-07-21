@@ -1,3 +1,7 @@
+[private]
+default:
+    @just --list
+
 # Run ruff, pyright, pytest, and taplo in check mode
 ci:
     uv run ruff format --preview --check
