@@ -14,4 +14,4 @@ ci:
 autofix:
     uv run ruff check --fix
     uv run ruff format --preview
-    uv run taplo fmt --check pyproject.toml
+    uv run taplo fmt pyproject.toml
