@@ -150,7 +150,8 @@ This bot runs on Python 3.12+ and is managed with [uv]. To get started:
    ```
    or, if you have [just] installed:
    ```console
-   $ just
+   $ just autofix
+   $ just ci
    ```
 
 
