@@ -1,9 +1,9 @@
 from githubkit.exception import RequestFailed
 
 from .discussions import get_discussion
+from app.common.cache import TTRCache
 from app.components.github_integration.models import Entity, Issue, PullRequest
 from app.setup import gh
-from app.utils import TTRCache
 
 type CacheKey = tuple[str, str, int]
 

@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING
 import discord
 
 from .fetching import get_comments
-from app.components.github_integration.mentions.fmt import get_entity_emoji
-from app.utils import (
+from app.common.hooks import (
     ItemActions,
     MessageLinker,
+    ProcessedMessage,
     create_delete_hook,
     create_edit_hook,
     remove_view_after_timeout,
 )
-from app.utils.hooks import ProcessedMessage
+from app.components.github_integration.mentions.fmt import get_entity_emoji
 
 if TYPE_CHECKING:
     from app.components.github_integration.models import Comment

@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING, cast
 
 from .cache import Entity, Issue, PullRequest, entity_cache
 from .resolution import resolve_repo_signatures
+from app.common.hooks import ProcessedMessage
+from app.common.message_moving import get_ghostty_guild
 from app.components.github_integration.models import Discussion
 from app.setup import bot, config
-from app.utils import dynamic_timestamp, escape_special, get_ghostty_guild
-from app.utils.hooks import ProcessedMessage
+from app.utils import dynamic_timestamp, escape_special
 
 if TYPE_CHECKING:
     import discord

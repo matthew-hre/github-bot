@@ -12,12 +12,11 @@ import discord
 import httpx
 
 from app.setup import bot
+from app.utils import GuildTextChannel, dynamic_timestamp, truncate
 from app.utils.message_data import ExtensibleMessage, MessageData, get_files
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-GuildTextChannel = discord.TextChannel | discord.Thread
 
 _EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 _REACTION_REGEX = re.compile(r"([^\s×]+) ×(\d+)", re.ASCII)  # noqa: RUF001
@@ -117,12 +116,6 @@ async def _get_sticker_embed(sticker: discord.StickerItem) -> discord.Embed:
             embed.set_footer(text=footer)
             return embed
     return _unattachable_embed("sticker", title=sticker.name, description=description)
-
-
-def truncate(s: str, length: int, *, suffix: str = "…") -> str:
-    if len(s) <= length:
-        return s
-    return s[: length - len(suffix)] + suffix
 
 
 def _format_reply(reply: discord.Message) -> discord.Embed:
@@ -250,11 +243,6 @@ async def _get_reply_embed(message: discord.Message) -> discord.Embed | None:
     if message.type is discord.MessageType.context_menu_command:
         return await _format_context_menu_command(ref)
     return None
-
-
-def dynamic_timestamp(dt: dt.datetime, fmt: str | None = None) -> str:
-    fmt = f":{fmt}" if fmt is not None else ""
-    return f"<t:{int(dt.timestamp())}{fmt}>"
 
 
 def _format_emoji(emoji: str | discord.PartialEmoji | discord.Emoji) -> str:

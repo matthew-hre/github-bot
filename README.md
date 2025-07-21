@@ -148,6 +148,10 @@ This bot runs on Python 3.12+ and is managed with [uv]. To get started:
    $ uv run taplo fmt pyproject.toml
    $ uv run pytest
    ```
+   or, if you have [just] installed:
+   ```console
+   $ just
+   ```
 
 
 # Project structure
@@ -349,6 +353,7 @@ https://github.com/user-attachments/assets/8c8ed1cf-db00-414f-937f-43e565ae9d15
 [discord-docs]: https://discord.com/developers/applications
 [discord-invite]: https://discord.gg/ghostty
 [gh-new-token]: https://github.com/settings/tokens/new
+[just]: https://just.systems/
 [main-repo]: https://github.com/ghostty-org/ghostty
 [uv]: https://docs.astral.sh/uv/
 [website-repo]: https://github.com/ghostty-org/website

@@ -6,25 +6,26 @@ from typing import Self, cast
 
 import discord
 
-from app.setup import bot, config
-from app.utils import (
-    MAX_ATTACHMENT_SIZE,
-    Account,
-    DeleteInstead,
-    GuildTextChannel,
-    MessageData,
+from app.common.message_moving import (
     MovedMessage,
     MovedMessageLookupFailed,
     SplitSubtext,
     convert_nitro_emojis,
-    dynamic_timestamp,
     get_or_create_webhook,
+    message_can_be_moved,
+    move_message_via_webhook,
+)
+from app.setup import bot, config
+from app.utils import (
+    MAX_ATTACHMENT_SIZE,
+    Account,
+    GuildTextChannel,
+    MessageData,
+    dynamic_timestamp,
     is_attachment_only,
     is_dm,
     is_helper,
     is_mod,
-    message_can_be_moved,
-    move_message_via_webhook,
     truncate,
 )
 
@@ -115,6 +116,22 @@ EDITING_TIMEOUT_ALMOST_REACHED = (
     "{in_five_minutes} if it remains inactive."
 )
 UPLOADING = "⌛ Uploading attachments (this may take some time)…"
+
+
+class DeleteInstead(discord.ui.View):
+    def __init__(self, message: discord.Message) -> None:
+        super().__init__()
+        self.message = message
+
+    @discord.ui.button(label="Delete instead", emoji="❌")
+    async def delete(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button[Self],
+    ) -> None:
+        button.disabled = True
+        await self.message.delete()
+        await interaction.response.edit_message(view=self)
 
 
 @dataclass
