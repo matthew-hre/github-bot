@@ -57,6 +57,9 @@ isort.known-local-folder = ["app"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["FBT"]
 
+[tool.ruff.lint.flake8-import-conventions.aliases]
+discord = "dc"
+
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownLambdaType = false
