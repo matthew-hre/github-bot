@@ -2,9 +2,9 @@ import os
 
 import pytest
 
-from tests.fixtures import bot_env, safe_environ
+from tests.fixtures import bot_env, delete_hook, linker, safe_environ
 
-__all__ = ("bot_env",)
+__all__ = ("bot_env", "delete_hook", "linker")
 
 
 def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
