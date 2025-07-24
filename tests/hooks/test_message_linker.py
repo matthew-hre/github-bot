@@ -58,5 +58,7 @@ def test_free_dangling_links(linker: MessageLinker) -> None:
 
     for msg in expected_to_stay:
         assert msg in linker._refs
+        assert linker.is_frozen(msg)
     for msg in expected_to_go:
         assert msg not in linker._refs
+        assert not linker.is_frozen(msg)
