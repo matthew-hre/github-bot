@@ -66,7 +66,7 @@ class CodeblockActions(ItemActions):
     def __init__(self, message: dc.Message, item_count: int) -> None:
         super().__init__(message, item_count)
         replaced_content = apply_discord_wa(process_markdown(message.content, THEME))
-        if message.attachments or len(replaced_content) > 2000:
+        if len(replaced_content) > 2000:
             self.replace.disabled = True
         else:
             self._replaced_message_content = replaced_content
