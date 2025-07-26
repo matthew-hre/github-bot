@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     import discord as dc
 
-    type DeleteHook = Callable[[dc.Message], Awaitable[None]]
+type DeleteHook = Callable[[dc.Message], Awaitable[None]]
 
 NUM_PAT = re.compile(r"\b\d+\b")
 
