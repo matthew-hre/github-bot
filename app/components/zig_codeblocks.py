@@ -36,10 +36,9 @@ OMISSION_NOTE = "\n-# {} codeblock{} omitted"
 # This pattern is intentionally simple; it's only meant to operate on sequences produced
 # by zig-codeblocks which will never appear in any other form.
 SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
-# Pattern is from zig-codeblocks, but capture groups are removed
-CODE_BLOCK_PATTERN = re.compile(
-    r"(?s)(```(?:(?:[A-Za-z0-9\-_\+\.#]+)(?:\r?\n)+(?:[^\r\n].*?)|(?:.*?))```)"
-)
+# Pattern is inspired by zig-codeblocks,
+# but capture groups are removed and only ANSI code is matched
+CODE_BLOCK_PATTERN = re.compile(r"(?si)(```(?:(?:ansi\W*)(?:\r?\n)+(?:[^\r\n].*?))```)")
 THEME = DEFAULT_THEME.copy()
 del THEME["Comment"]
 
