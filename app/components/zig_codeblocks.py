@@ -36,9 +36,6 @@ OMISSION_NOTE = "\n-# {} codeblock{} omitted"
 # This pattern is intentionally simple; it's only meant to operate on sequences produced
 # by zig-codeblocks which will never appear in any other form.
 SGR_PATTERN = re.compile(r"\x1b\[[0-9;]+m")
-# Pattern is inspired by zig-codeblocks,
-# but capture groups are removed and only ANSI code is matched
-CODE_BLOCK_PATTERN = re.compile(r"(?si)(```(?:(?:ansi\W*)(?:\r?\n)+(?:[^\r\n].*?))```)")
 THEME = DEFAULT_THEME.copy()
 del THEME["Comment"]
 
@@ -63,13 +60,11 @@ def apply_discord_wa(source: str) -> str:
 
 def _apply_discord_wa_in_only_codeblock(source: str) -> str:
     # Resolves #274
-    processed_blocks: list[str] = []
-    for block in CODE_BLOCK_PATTERN.split(source):
-        if CODE_BLOCK_PATTERN.match(block):
-            processed_blocks.append(apply_discord_wa(block))
-        else:
-            processed_blocks.append(block)
-    return "".join(processed_blocks)
+    code_blocks = extract_codeblocks(source)
+    for block in code_blocks:
+        if block.lang == "ansi":
+            source = source.replace(block.body, apply_discord_wa(block.body))
+    return source
 
 
 class CodeblockActions(ItemActions):
