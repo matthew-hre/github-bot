@@ -1,3 +1,4 @@
+import asyncio
 import re
 import string
 import urllib.parse
@@ -21,6 +22,7 @@ from app.common.hooks import (
 )
 from app.components.zig_codeblocks import THEME
 from app.setup import gh
+from app.utils import suppress_embeds_after_delay
 
 CODE_LINK_PATTERN = re.compile(
     r"https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s]+)/blob/([^/\s]+)/([^\?#\s]+)"
@@ -170,7 +172,10 @@ async def reply_with_code(message: dc.Message) -> None:
         view=CodeLinkActions(message, output.item_count),
     )
     code_linker.link(message, sent_message)
-    await remove_view_after_delay(sent_message)
+    await asyncio.gather(
+        suppress_embeds_after_delay(message),
+        remove_view_after_delay(sent_message),
+    )
 
 
 code_link_delete_hook = create_delete_hook(linker=code_linker)
