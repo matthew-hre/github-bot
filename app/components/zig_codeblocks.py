@@ -58,6 +58,18 @@ def apply_discord_wa(source: str) -> str:
     return source.replace("///", "\x1b[0m///").replace("// ", "\x1b[0m// ")
 
 
+def _apply_discord_wa_in_ansi_codeblocks(source: str) -> str:
+    # Resolves #274
+    code_blocks = extract_codeblocks(source)
+    # Remove duplicates
+    code_blocks = [cb for i, cb in enumerate(code_blocks) if cb not in code_blocks[:i]]
+    for block in code_blocks:
+        if block.lang == "ansi":
+            body = str(block)
+            source = source.replace(body, apply_discord_wa(body))
+    return source
+
+
 class CodeblockActions(ItemActions):
     linker = codeblock_linker
     action_singular = "sent this code block"
@@ -65,7 +77,9 @@ class CodeblockActions(ItemActions):
 
     def __init__(self, message: dc.Message, item_count: int) -> None:
         super().__init__(message, item_count)
-        replaced_content = apply_discord_wa(process_markdown(message.content, THEME))
+        replaced_content = _apply_discord_wa_in_ansi_codeblocks(
+            process_markdown(message.content, THEME)
+        )
         if len(replaced_content) > 2000:
             self.replace.disabled = True
         else:
