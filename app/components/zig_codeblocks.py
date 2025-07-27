@@ -21,7 +21,7 @@ from app.common.hooks import (
     ProcessedMessage,
     create_delete_hook,
     create_edit_hook,
-    remove_view_after_timeout,
+    remove_view_after_delay,
 )
 from app.common.message_moving import get_or_create_webhook, move_message_via_webhook
 
@@ -196,7 +196,7 @@ async def check_for_zig_code(message: dc.Message) -> None:
         mention_author=False,
     )
     codeblock_linker.link(message, reply)
-    await remove_view_after_timeout(reply, 60)
+    await remove_view_after_delay(reply, 60)
 
 
 zig_codeblock_delete_hook = create_delete_hook(linker=codeblock_linker)

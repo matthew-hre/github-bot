@@ -13,7 +13,7 @@ from app.common.hooks import (
     ProcessedMessage,
     create_delete_hook,
     create_edit_hook,
-    remove_view_after_timeout,
+    remove_view_after_delay,
 )
 
 XKCD_REGEX = re.compile(r"\bxkcd#(\d+)", re.IGNORECASE)
@@ -95,7 +95,7 @@ async def handle_xkcd_mentions(message: dc.Message) -> None:
     except dc.HTTPException:
         return
     xkcd_mention_linker.link(message, sent_message)
-    await remove_view_after_timeout(sent_message)
+    await remove_view_after_delay(sent_message)
 
 
 xkcd_mention_delete_hook = create_delete_hook(linker=xkcd_mention_linker)

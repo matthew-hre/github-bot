@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import re
+from contextlib import suppress
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any
 
@@ -24,6 +26,7 @@ __all__ = (
     "is_mod",
     "post_has_tag",
     "post_is_solved",
+    "suppress_embeds_after_delay",
     "truncate",
     "try_dm",
 )
@@ -127,3 +130,9 @@ def is_attachment_only(
         message.poll,
         message.stickers,
     ))
+
+
+async def suppress_embeds_after_delay(message: dc.Message, delay: float = 5.0) -> None:
+    await asyncio.sleep(delay)
+    with suppress(dc.NotFound, dc.HTTPException):
+        await message.edit(suppress=True)
