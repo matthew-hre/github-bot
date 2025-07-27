@@ -43,7 +43,7 @@ codeblock_linker = MessageLinker()
 frozen_messages = set[dc.Message]()
 
 
-def apply_discord_wa(source: str) -> str:
+def _apply_discord_wa(source: str) -> str:
     # From Qwerasd:
     #   Oh is it a safeguard against catastrophic backtracking?
     #   [...]
@@ -60,13 +60,10 @@ def apply_discord_wa(source: str) -> str:
 
 def _apply_discord_wa_in_ansi_codeblocks(source: str) -> str:
     # Resolves #274
-    code_blocks = extract_codeblocks(source)
-    # Remove duplicates
-    code_blocks = [cb for i, cb in enumerate(code_blocks) if cb not in code_blocks[:i]]
-    for block in code_blocks:
+    for block in set(extract_codeblocks(source)):
         if block.lang == "ansi":
             body = str(block)
-            source = source.replace(body, apply_discord_wa(body))
+            source = source.replace(body, _apply_discord_wa(body))
     return source
 
 
@@ -168,7 +165,7 @@ async def codeblock_processor(message: dc.Message) -> ProcessedMessage:
         )
 
     highlighted_codeblocks = [
-        CodeBlock("ansi", apply_discord_wa(highlight_zig_code(c.body, THEME)))
+        CodeBlock("ansi", _apply_discord_wa(highlight_zig_code(c.body, THEME)))
         for c in zig_codeblocks
     ]
     max_length = 2000 - (len(FILE_HIGHLIGHT_NOTE) if attachments else 0)
