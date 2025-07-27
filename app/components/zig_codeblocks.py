@@ -61,9 +61,17 @@ def apply_discord_wa(source: str) -> str:
 def _apply_discord_wa_in_only_codeblock(source: str) -> str:
     # Resolves #274
     code_blocks = extract_codeblocks(source)
+    code_blocks = [  # Remove duplicates
+        v1
+        for i, v1 in enumerate(code_blocks)
+        if not any(
+            (v1.body == v2.body) and (v1.lang == v2.lang) for v2 in code_blocks[:i]
+        )
+    ]
     for block in code_blocks:
         if block.lang == "ansi":
-            source = source.replace(block.body, apply_discord_wa(block.body))
+            body = f"```{block.lang}\n{block.body}```"
+            source = source.replace(body, apply_discord_wa(body))
     return source
 
 
