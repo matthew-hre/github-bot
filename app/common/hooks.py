@@ -18,11 +18,8 @@ class ProcessedMessage:
     embeds: list[dc.Embed] = field(default_factory=list[dc.Embed])
 
 
-async def remove_view_after_timeout(
-    message: dc.Message,
-    timeout: float = 30.0,  # noqa: ASYNC109
-) -> None:
-    await asyncio.sleep(timeout)
+async def remove_view_after_delay(message: dc.Message, delay: float = 30.0) -> None:
+    await asyncio.sleep(delay)
     with suppress(dc.NotFound, dc.HTTPException):
         await message.edit(view=None)
 
@@ -177,7 +174,7 @@ def create_edit_hook(
             view=view_type(after, new_output.item_count),
             allowed_mentions=dc.AllowedMentions.none(),
         )
-        await remove_view_after_timeout(reply, view_timeout)
+        await remove_view_after_delay(reply, view_timeout)
 
     return edit_hook
 

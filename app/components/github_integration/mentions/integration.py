@@ -6,7 +6,7 @@ from app.common.hooks import (
     MessageLinker,
     create_delete_hook,
     create_edit_hook,
-    remove_view_after_timeout,
+    remove_view_after_delay,
 )
 from app.utils import (
     is_dm,
@@ -50,7 +50,7 @@ async def reply_with_entities(message: dc.Message) -> None:
         view=MentionActions(message, output.item_count),
     )
     mention_linker.link(message, sent_message)
-    await remove_view_after_timeout(sent_message)
+    await remove_view_after_delay(sent_message)
 
 
 entity_mention_delete_hook = create_delete_hook(linker=mention_linker)

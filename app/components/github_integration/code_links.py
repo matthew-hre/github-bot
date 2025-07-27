@@ -17,7 +17,7 @@ from app.common.hooks import (
     ProcessedMessage,
     create_delete_hook,
     create_edit_hook,
-    remove_view_after_timeout,
+    remove_view_after_delay,
 )
 from app.components.zig_codeblocks import THEME
 from app.setup import gh
@@ -170,7 +170,7 @@ async def reply_with_code(message: dc.Message) -> None:
         view=CodeLinkActions(message, output.item_count),
     )
     code_linker.link(message, sent_message)
-    await remove_view_after_timeout(sent_message)
+    await remove_view_after_delay(sent_message)
 
 
 code_link_delete_hook = create_delete_hook(linker=code_linker)

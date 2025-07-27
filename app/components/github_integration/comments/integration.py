@@ -11,7 +11,7 @@ from app.common.hooks import (
     ProcessedMessage,
     create_delete_hook,
     create_edit_hook,
-    remove_view_after_timeout,
+    remove_view_after_delay,
 )
 from app.components.github_integration.mentions.fmt import get_entity_emoji
 
@@ -96,7 +96,7 @@ async def reply_with_comments(message: dc.Message) -> None:
     )
     await message.edit(suppress=True)
     comment_linker.link(message, sent_message)
-    await remove_view_after_timeout(sent_message)
+    await remove_view_after_delay(sent_message)
 
 
 async def comment_processor(msg: dc.Message) -> ProcessedMessage:
