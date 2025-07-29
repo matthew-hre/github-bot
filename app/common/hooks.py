@@ -3,6 +3,7 @@ import datetime as dt
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Self
 
 import discord as dc
@@ -28,6 +29,10 @@ class MessageLinker:
     def __init__(self) -> None:
         self._refs: dict[dc.Message, dc.Message] = {}
         self._frozen = set[dc.Message]()
+
+    @property
+    def refs(self) -> MappingProxyType[dc.Message, dc.Message]:
+        return MappingProxyType(self._refs)
 
     @property
     def expiry_threshold(self) -> dt.datetime:

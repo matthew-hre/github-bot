@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 import datetime as dt
@@ -37,7 +36,7 @@ async def test_message_expired(linker: MessageLinker, edit_hook: EditHook) -> No
 
     assert linker.is_expired(msg)
     assert not edit_hook.message_processor.called
-    assert not linker._refs
+    assert not linker.refs
 
 
 @pytest.mark.asyncio
@@ -123,7 +122,7 @@ async def test_items_edited_out(linker: MessageLinker, edit_hook: EditHook) -> N
 
     await edit_hook(msg, msg2)
 
-    assert not linker._refs
+    assert not linker.refs
     assert reply.delete.called
 
 
