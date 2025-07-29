@@ -100,14 +100,11 @@ def _format_entity_detail(entity: Entity) -> str:
 def _format_mention(entity: Entity) -> str:
     headline = ENTITY_TEMPLATE.format(entity=entity, title=escape_special(entity.title))
 
-    # https://github.com/owner/repo/issues/12
-    # -> https://github.com  owner  repo  issues  12
-    #    0                   1      2     3       4
-    domain, owner, name, *_ = entity.html_url.rsplit("/", 4)
+    owner, name = entity.owner, entity.repo_name
     fmt_ts = partial(dynamic_timestamp, entity.created_at)
     subtext = (
         f"-# by {_format_user_link(entity.user.name)}"
-        f" in [`{owner}/{name}`](<{domain}/{owner}/{name}>)"
+        f" in [`{owner}/{name}`](<https://github.com/{owner}/{name}>)"
         f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
     )
     entity_detail = _format_entity_detail(entity)

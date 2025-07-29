@@ -49,11 +49,7 @@ async def update_recent_mentions() -> None:
 
     # Check which entities changed
     for entity in tuple(entity_to_message_map):
-        # https://github.com/owner/repo/issues/12
-        # -> https://github.com  owner  repo  issues  12
-        #    0                   1      2     3       4
-        _, owner, name, *_ = entity.html_url.rsplit("/", 4)
-        key = (owner, name, entity.number)
+        key = (entity.owner, entity.repo_name, entity.number)
         await entity_cache.fetch(key)
         refreshed_entity = await entity_cache.get(key)
         if entity == refreshed_entity:
