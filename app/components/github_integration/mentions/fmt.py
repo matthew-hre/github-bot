@@ -116,16 +116,16 @@ def _format_mention(entity: Entity) -> str:
     return f"{emoji} {headline}\n{subtext}{entity_detail}"
 
 
-async def entity_message(message: dc.Message) -> ProcessedMessage:
+async def extract_entities(message: dc.Message) -> list[Entity]:
     matches = list(dict.fromkeys([r async for r in resolve_repo_signatures(message)]))
+    cache_hits = await asyncio.gather(
+        *(entity_cache.get(m) for m in matches), return_exceptions=True
+    )
+    return [entity for entity in cache_hits if not isinstance(entity, BaseException)]
 
-    entities = [
-        _format_mention(entity)
-        for entity in await asyncio.gather(
-            *(entity_cache.get(m) for m in matches), return_exceptions=True
-        )
-        if not isinstance(entity, BaseException)
-    ]
+
+async def entity_message(message: dc.Message) -> ProcessedMessage:
+    entities = [_format_mention(entity) for entity in await extract_entities(message)]
 
     if len("\n".join(entities)) > 2000:
         while len("\n".join(entities)) > 1970:  # Accounting for omission note
