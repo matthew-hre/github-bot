@@ -1,8 +1,12 @@
 import asyncio
+from collections import defaultdict
+from itertools import chain
 
 import discord as dc
+from discord.ext import tasks
 
-from .fmt import entity_message
+from .cache import entity_cache
+from .fmt import entity_message, extract_entities
 from app.common.hooks import (
     ItemActions,
     MessageLinker,
@@ -11,6 +15,7 @@ from app.common.hooks import (
     remove_view_after_delay,
 )
 from app.components.github_integration.mentions.resolution import ENTITY_REGEX
+from app.components.github_integration.models import Entity
 from app.utils import (
     is_dm,
     suppress_embeds_after_delay,
@@ -29,6 +34,40 @@ class MentionActions(ItemActions):
     linker = mention_linker
     action_singular = "mentioned this entity"
     action_plural = "mentioned these entities"
+
+
+@tasks.loop(hours=1)
+async def update_recent_mentions() -> None:
+    mention_linker.free_dangling_links()
+    entity_to_message_map = defaultdict[Entity, list[dc.Message]](list)
+
+    # Gather all currently actively mentioned entities
+    for msg in mention_linker.refs:
+        entities = await extract_entities(msg)
+        for entity in entities:
+            entity_to_message_map[entity].append(msg)
+
+    # Check which entities changed
+    for entity in tuple(entity_to_message_map):
+        # https://github.com/owner/repo/issues/12
+        # -> https://github.com  owner  repo  issues  12
+        #    0                   1      2     3       4
+        _, owner, name, *_ = entity.html_url.rsplit("/", 4)
+        key = (owner, name, entity.number)
+        await entity_cache.fetch(key)
+        refreshed_entity = await entity_cache.get(key)
+        if entity == refreshed_entity:
+            entity_to_message_map.pop(entity)
+
+    # Deduplicate remaining messages
+    messages_to_update = set(chain.from_iterable(entity_to_message_map.values()))
+
+    for msg in messages_to_update:
+        reply = mention_linker.get(msg)
+        assert reply is not None
+
+        new_output = await entity_message(msg)
+        await reply.edit(content=new_output.content)
 
 
 async def reply_with_entities(message: dc.Message) -> None:

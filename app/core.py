@@ -24,6 +24,9 @@ from app.components.github_integration import (
     reply_with_comments,
     reply_with_entities,
 )
+from app.components.github_integration.mentions.integration import (
+    update_recent_mentions,
+)
 from app.components.lock_old_posts import check_for_old_posts
 from app.components.message_filter import check_message_filters
 from app.components.move_message import check_for_edit_response
@@ -50,6 +53,8 @@ async def on_ready() -> None:
         autoclose_solved_posts.start()
     if not randomize_activity_status.is_running():
         randomize_activity_status.start()
+    if not update_recent_mentions.is_running():
+        update_recent_mentions.start()
     bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
     print(f"Bot logged on as {bot.user}!")
 
