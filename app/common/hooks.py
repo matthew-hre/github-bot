@@ -50,7 +50,7 @@ class MessageLinker:
     def get(self, original: dc.Message) -> dc.Message | None:
         return self._refs.get(original)
 
-    def _free_dangling_links(self) -> None:
+    def free_dangling_links(self) -> None:
         # Saving keys to a tuple to avoid a "changed size during iteration" error
         for msg in tuple(self._refs):
             if msg.created_at < self.expiry_threshold:
@@ -58,7 +58,7 @@ class MessageLinker:
                 self.unfreeze(msg)
 
     def link(self, original: dc.Message, reply: dc.Message) -> None:
-        self._free_dangling_links()
+        self.free_dangling_links()
         if original in self._refs:
             msg = f"message {original.id} already has a reply linked"
             raise ValueError(msg)
