@@ -44,17 +44,16 @@ from app.components.zig_codeblocks import (
 from app.setup import bot, config
 from app.utils import is_dm, is_mod, try_dm
 
+TASKS = (autoclose_solved_posts, randomize_activity_status, update_recent_mentions)
+
 
 @bot.event
 async def on_ready() -> None:
     refresh_sitemap()
     await load_emojis()
-    if not autoclose_solved_posts.is_running():
-        autoclose_solved_posts.start()
-    if not randomize_activity_status.is_running():
-        randomize_activity_status.start()
-    if not update_recent_mentions.is_running():
-        update_recent_mentions.start()
+    for task in TASKS:
+        if not task.is_running():
+            task.start()
     bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
     print(f"Bot logged on as {bot.user}!")
 
