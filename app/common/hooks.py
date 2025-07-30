@@ -3,6 +3,7 @@ import datetime as dt
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Self
 
 import discord as dc
@@ -30,6 +31,10 @@ class MessageLinker:
         self._frozen = set[dc.Message]()
 
     @property
+    def refs(self) -> MappingProxyType[dc.Message, dc.Message]:
+        return MappingProxyType(self._refs)
+
+    @property
     def expiry_threshold(self) -> dt.datetime:
         return dt.datetime.now(tz=dt.UTC) - dt.timedelta(hours=24)
 
@@ -45,7 +50,7 @@ class MessageLinker:
     def get(self, original: dc.Message) -> dc.Message | None:
         return self._refs.get(original)
 
-    def _free_dangling_links(self) -> None:
+    def free_dangling_links(self) -> None:
         # Saving keys to a tuple to avoid a "changed size during iteration" error
         for msg in tuple(self._refs):
             if msg.created_at < self.expiry_threshold:
@@ -53,7 +58,7 @@ class MessageLinker:
                 self.unfreeze(msg)
 
     def link(self, original: dc.Message, reply: dc.Message) -> None:
-        self._free_dangling_links()
+        self.free_dangling_links()
         if original in self._refs:
             msg = f"message {original.id} already has a reply linked"
             raise ValueError(msg)

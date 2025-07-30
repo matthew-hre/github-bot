@@ -59,6 +59,18 @@ class Entity(BaseModel):
     user: GitHubUser
     created_at: dt.datetime
 
+    def _owner_and_repo(self) -> tuple[str, str]:
+        owner, repo, _ = self.html_url.removeprefix("https://github.com/").split("/", 2)
+        return owner, repo
+
+    @property
+    def owner(self) -> str:
+        return self._owner_and_repo()[0]
+
+    @property
+    def repo_name(self) -> str:
+        return self._owner_and_repo()[1]
+
     @property
     def kind(self) -> str:
         if not (name := type(self).__name__):

@@ -7,7 +7,7 @@ import discord as dc
 from githubkit.exception import RequestFailed
 from zig_codeblocks import extract_codeblocks
 
-from .cache import TTRCache
+from .cache import EntitySignature, TTRCache
 from app.setup import config, gh
 
 ENTITY_REGEX = re.compile(
@@ -55,7 +55,7 @@ async def find_repo_owner(name: str) -> str:
 
 async def resolve_repo_signatures(
     message: dc.Message,
-) -> AsyncIterator[tuple[str, str, int]]:
+) -> AsyncIterator[EntitySignature]:
     valid_signatures = 0
     for match in ENTITY_REGEX.finditer(remove_codeblocks(message.content)):
         site, sep = match["site"], match["sep"]

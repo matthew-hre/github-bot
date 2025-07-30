@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 import datetime as dt
@@ -27,7 +26,7 @@ async def test_original_delete(linker: MessageLinker, delete_hook: DeleteHook) -
     await delete_hook(msg)
 
     assert reply.delete.called
-    assert not linker._refs
+    assert not linker.refs
 
 
 @pytest.mark.asyncio
@@ -41,7 +40,7 @@ async def test_original_delete_frozen(
 
     await delete_hook(msg)
 
-    assert linker._refs
+    assert linker.refs
     assert not reply.delete.called
     assert not linker.is_frozen(msg)
 
@@ -72,7 +71,7 @@ async def test_original_delete_expired(
     await delete_hook(msg)
 
     assert not reply.delete.called
-    assert not linker._refs
+    assert not linker.refs
 
 
 @pytest.mark.asyncio
@@ -84,7 +83,7 @@ async def test_reply_delete(linker: MessageLinker, delete_hook: DeleteHook) -> N
 
     await delete_hook(reply)
 
-    assert not linker._refs
+    assert not linker.refs
     assert not linker.is_frozen(msg)
 
 

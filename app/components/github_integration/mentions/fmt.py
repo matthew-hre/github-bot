@@ -100,14 +100,11 @@ def _format_entity_detail(entity: Entity) -> str:
 def _format_mention(entity: Entity) -> str:
     headline = ENTITY_TEMPLATE.format(entity=entity, title=escape_special(entity.title))
 
-    # https://github.com/owner/repo/issues/12
-    # -> https://github.com  owner  repo  issues  12
-    #    0                   1      2     3       4
-    domain, owner, name, *_ = entity.html_url.rsplit("/", 4)
+    owner, name = entity.owner, entity.repo_name
     fmt_ts = partial(dynamic_timestamp, entity.created_at)
     subtext = (
         f"-# by {_format_user_link(entity.user.name)}"
-        f" in [`{owner}/{name}`](<{domain}/{owner}/{name}>)"
+        f" in [`{owner}/{name}`](<https://github.com/{owner}/{name}>)"
         f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
     )
     entity_detail = _format_entity_detail(entity)
@@ -116,16 +113,16 @@ def _format_mention(entity: Entity) -> str:
     return f"{emoji} {headline}\n{subtext}{entity_detail}"
 
 
-async def entity_message(message: dc.Message) -> ProcessedMessage:
+async def extract_entities(message: dc.Message) -> list[Entity]:
     matches = list(dict.fromkeys([r async for r in resolve_repo_signatures(message)]))
+    cache_hits = await asyncio.gather(
+        *(entity_cache.get(m) for m in matches), return_exceptions=True
+    )
+    return [entity for entity in cache_hits if not isinstance(entity, BaseException)]
 
-    entities = [
-        _format_mention(entity)
-        for entity in await asyncio.gather(
-            *(entity_cache.get(m) for m in matches), return_exceptions=True
-        )
-        if not isinstance(entity, BaseException)
-    ]
+
+async def entity_message(message: dc.Message) -> ProcessedMessage:
+    entities = [_format_mention(entity) for entity in await extract_entities(message)]
 
     if len("\n".join(entities)) > 2000:
         while len("\n".join(entities)) > 1970:  # Accounting for omission note
