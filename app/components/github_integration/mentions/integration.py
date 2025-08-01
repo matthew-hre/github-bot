@@ -18,6 +18,7 @@ from app.components.github_integration.mentions.resolution import ENTITY_REGEX
 from app.components.github_integration.models import Entity
 from app.utils import (
     is_dm,
+    safe_edit,
     suppress_embeds_after_delay,
     try_dm,
 )
@@ -43,9 +44,10 @@ async def update_recent_mentions() -> None:
 
     # Gather all currently actively mentioned entities
     for msg in mention_linker.refs:
-        entities = await extract_entities(msg)
-        for entity in entities:
-            entity_to_message_map[entity].append(msg)
+        with safe_edit:
+            entities = await extract_entities(msg)
+            for entity in entities:
+                entity_to_message_map[entity].append(msg)
 
     # Check which entities changed
     for entity in tuple(entity_to_message_map):
@@ -63,7 +65,11 @@ async def update_recent_mentions() -> None:
         assert reply is not None
 
         new_output = await entity_message(msg)
-        await reply.edit(content=new_output.content)
+
+        with safe_edit:
+            await reply.edit(
+                content=new_output.content, allowed_mentions=dc.AllowedMentions.none()
+            )
 
 
 async def reply_with_entities(message: dc.Message) -> None:
