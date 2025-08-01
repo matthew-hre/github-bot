@@ -26,6 +26,7 @@ from app.utils import (
     is_dm,
     is_helper,
     is_mod,
+    safe_edit,
     truncate,
 )
 
@@ -156,7 +157,7 @@ async def _apply_edit_from_thread(
         new_content = converted_content
     # Suppress NotFound in case the user attempts to commit an edit to a message that
     # was deleted in the meantime.
-    with suppress(dc.NotFound):
+    with safe_edit:
         await moved_message.edit(
             content=new_content,
             attachments=[
