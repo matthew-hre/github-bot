@@ -26,6 +26,7 @@ __all__ = (
     "is_mod",
     "post_has_tag",
     "post_is_solved",
+    "safe_edit",
     "suppress_embeds_after_delay",
     "truncate",
     "try_dm",
@@ -37,13 +38,14 @@ if TYPE_CHECKING:
 
     from typing_extensions import TypeIs
 
-
 _INVITE_LINK_REGEX = re.compile(r"\b(?:https?://)?(discord\.gg/[^\s]+)\b")
 _ORDERED_LIST_REGEX = re.compile(r"^(\d+)\. (.*)")
 
 type Account = dc.User | dc.Member
 # Not a PEP 695 type alias because of runtime isinstance() checks
 GuildTextChannel = dc.TextChannel | dc.Thread
+
+safe_edit = suppress(dc.NotFound, dc.HTTPException)
 
 
 def truncate(s: str, length: int, *, suffix: str = "…") -> str:
@@ -134,5 +136,5 @@ def is_attachment_only(
 
 async def suppress_embeds_after_delay(message: dc.Message, delay: float = 5.0) -> None:
     await asyncio.sleep(delay)
-    with suppress(dc.NotFound, dc.HTTPException):
+    with safe_edit:
         await message.edit(suppress=True)

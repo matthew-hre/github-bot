@@ -1,14 +1,13 @@
 import asyncio
 import datetime as dt
 from collections.abc import Awaitable, Callable
-from contextlib import suppress
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Self
 
 import discord as dc
 
-from app.utils import is_dm, is_mod
+from app.utils import is_dm, is_mod, safe_edit
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -21,7 +20,7 @@ class ProcessedMessage:
 
 async def remove_view_after_delay(message: dc.Message, delay: float = 30.0) -> None:
     await asyncio.sleep(delay)
-    with suppress(dc.NotFound, dc.HTTPException):
+    with safe_edit:
         await message.edit(view=None)
 
 
