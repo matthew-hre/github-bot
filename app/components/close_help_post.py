@@ -94,6 +94,10 @@ class Close(app_commands.Group):
     async def wontfix(self, interaction: dc.Interaction) -> None:
         await close_post(interaction, "stale", "[WON'T FIX]")
 
+    @app_commands.command(name="upstream", description="Mark post as stale.")
+    async def upstream(self, interaction: dc.Interaction) -> None:
+        await close_post(interaction, "stale", "[UPSTREAM]")
+
 
 bot.tree.add_command(Close(name="close", description="Mark current post as resolved."))
 
