@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
 EMOJI_NAMES = frozenset({
+    "commit",
     "discussion_answered",
     "issue_closed_completed",
     "issue_closed_unplanned",
