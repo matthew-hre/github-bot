@@ -67,10 +67,6 @@ def get_entity_emoji(entity: Entity) -> dc.Emoji | None:
     return entity_emojis.get(emoji_name)
 
 
-def _format_user_link(login: str) -> str:
-    return f"[`{login}`](<https://github.com/{login}>)"
-
-
 def _format_entity_detail(entity: Entity) -> str:
     if isinstance(entity, Issue):
         if not entity.labels:
@@ -91,7 +87,7 @@ def _format_entity_detail(entity: Entity) -> str:
     elif isinstance(entity, Discussion):
         if not entity.answered_by:
             return ""
-        body = f"answered by {_format_user_link(entity.answered_by.name)}"
+        body = f"answered by {entity.answered_by.hyperlink}"
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)
@@ -104,7 +100,7 @@ def _format_mention(entity: Entity) -> str:
     owner, name = entity.owner, entity.repo_name
     fmt_ts = partial(dynamic_timestamp, entity.created_at)
     subtext = (
-        f"-# by {_format_user_link(entity.user.name)}"
+        f"-# by {entity.user.hyperlink}"
         f" in [`{owner}/{name}`](<https://github.com/{owner}/{name}>)"
         f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
     )

@@ -86,11 +86,6 @@ class CommitActions(ItemActions):
     action_plural = "mentioned these commits"
 
 
-# TODO(trag1c): make this a property of GitHubUser
-def _gh_link(user: GitHubUser) -> str:
-    return f"[`{user.name}`](<{user.url}>)"
-
-
 def _format_commit_mention(commit: CommitSummary) -> str:
     emoji = entity_emojis.get("commit")
     title = commit.message.splitlines()[0]
@@ -104,12 +99,12 @@ def _format_commit_mention(commit: CommitSummary) -> str:
 
     subtext = "\n-# authored by "
     if (a := commit.author) and (c := commit.committer) and a.name != c.name:
-        subtext += f"{_gh_link(commit.author)}, committed by "
+        subtext += f"{commit.author.hyperlink}, committed by "
 
     if commit.signed:
         subtext += "🔏 "
 
-    subtext += _gh_link(commit.committer) if commit.committer else "an unknown user"
+    subtext += commit.committer.hyperlink if commit.committer else "an unknown user"
 
     repo_url = commit.url.rstrip(string.hexdigits).removesuffix("/commit/")
     _, owner, name = repo_url.rsplit("/", 2)

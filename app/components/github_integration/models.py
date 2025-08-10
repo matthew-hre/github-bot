@@ -34,6 +34,10 @@ class GitHubUser(BaseModel):
     url: str = Field(validation_alias=AliasChoices("html_url", "url"))
     icon_url: str = Field(validation_alias=AliasChoices("icon_url", "avatar_url"))
 
+    @property
+    def hyperlink(self) -> str:
+        return f"[`{self.name}`](<{self.url}>)"
+
 
 class Reactions(BaseModel):
     model_config = ConfigDict(frozen=True)
