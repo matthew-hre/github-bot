@@ -5,7 +5,7 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 
 from .cache import Entity, Issue, PullRequest, entity_cache
-from .resolution import resolve_repo_signatures
+from .resolution import resolve_entity_signatures
 from app.common.hooks import ProcessedMessage
 from app.common.message_moving import get_ghostty_guild
 from app.components.github_integration.models import Discussion
@@ -111,7 +111,7 @@ def _format_mention(entity: Entity) -> str:
 
 
 async def extract_entities(message: dc.Message) -> list[Entity]:
-    matches = list(dict.fromkeys([r async for r in resolve_repo_signatures(message)]))
+    matches = list(dict.fromkeys([r async for r in resolve_entity_signatures(message)]))
     cache_hits = await asyncio.gather(
         *(entity_cache.get(m) for m in matches), return_exceptions=True
     )

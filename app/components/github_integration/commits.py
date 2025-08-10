@@ -3,7 +3,6 @@ import datetime as dt
 import re
 import string
 from collections.abc import AsyncIterator, Iterable
-from contextlib import suppress
 from typing import NamedTuple
 
 import discord as dc
@@ -19,11 +18,10 @@ from app.common.hooks import (
 )
 from app.components.github_integration.mentions.fmt import entity_emojis
 from app.components.github_integration.mentions.resolution import (
-    REPO_ALIASES,
-    owner_cache,
+    resolve_repo_signature,
 )
 from app.components.github_integration.models import GitHubUser
-from app.setup import config, gh
+from app.setup import gh
 from app.utils import dynamic_timestamp
 
 type CommitKey = tuple[str, str, str]
@@ -117,31 +115,16 @@ def _format_commit_mention(commit: CommitSummary) -> str:
     return heading + subtext
 
 
-# TODO(trag1c): merge this w/ the other one
 async def resolve_repo_signatures(
-    sigs: Iterable[tuple[str, str, str]],
-) -> AsyncIterator[tuple[str, str, str]]:
+    sigs: Iterable[CommitKey],
+) -> AsyncIterator[CommitKey]:
+    valid_signatures = 0
     for owner, repo, sha in sigs:
-        match owner, repo:
-            case "", "":
-                # Bare SHA -> ghostty-org/ghostty
-                yield config.GITHUB_ORG, config.GITHUB_REPOS["main"], sha
-            case "", repo if repo in config.GITHUB_REPOS:
-                # Special ghostty-org prefixes
-                yield config.GITHUB_ORG, config.GITHUB_REPOS[repo], sha
-            case "", repo if repo in REPO_ALIASES:
-                # Aliases for special ghostty-org prefixes
-                yield config.GITHUB_ORG, config.GITHUB_REPOS[REPO_ALIASES[repo]], sha
-            case "", repo:
-                # Only a name was provided, e.g. zig@14f1178...
-                with suppress(RequestFailed, RuntimeError):
-                    yield await owner_cache.get(repo), repo, sha
-            case owner, "":
-                # Invalid case, e.g. trag1c/@a765df8...
-                continue
-            case owner, repo:
-                # Any public repo, e.g. trag1c/zig-codeblocks@fa8d6bc
-                yield owner.rstrip("/"), repo, sha
+        if sig := await resolve_repo_signature(owner or None, repo or None):
+            yield (*sig, sha)
+            valid_signatures += 1
+            if valid_signatures == 10:
+                break
 
 
 async def commit_links(message: dc.Message) -> ProcessedMessage:
