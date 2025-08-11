@@ -137,6 +137,8 @@ async def commit_links(message: dc.Message) -> ProcessedMessage:
 
 
 async def reply_with_commit_details(message: dc.Message) -> None:
+    if message.author.bot:
+        return
     output = await commit_links(message)
     if output.item_count == 0:
         return
