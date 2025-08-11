@@ -15,6 +15,8 @@ from app.components.github_integration import (
     ENTITY_REGEX,
     code_link_delete_hook,
     code_link_edit_hook,
+    commit_mention_delete_hook,
+    commit_mention_edit_hook,
     entity_comment_delete_hook,
     entity_comment_edit_hook,
     entity_mention_delete_hook,
@@ -22,6 +24,7 @@ from app.components.github_integration import (
     load_emojis,
     reply_with_code,
     reply_with_comments,
+    reply_with_commit_details,
     reply_with_entities,
 )
 from app.components.github_integration.mentions.integration import (
@@ -102,6 +105,7 @@ async def on_message(message: dc.Message) -> None:
         check_for_old_posts(message),  # Check for bumps of old help posts and lock them
         handle_xkcd_mentions(message),  # Reply to xkcd mentions with comic embeds
         check_for_edit_response(message),  # Check for responses in active edit threads
+        reply_with_commit_details(message),  # Reply to commit SHAs with GitHub links
     ]
 
     # Look for issue/PR/discussion mentions and name/link them
@@ -119,6 +123,7 @@ async def on_message_edit(before: dc.Message, after: dc.Message) -> None:
         code_link_edit_hook(before, after),
         zig_codeblock_edit_hook(before, after),
         xkcd_mention_edit_hook(before, after),
+        commit_mention_edit_hook(before, after),
     )
 
 
@@ -130,6 +135,7 @@ async def on_message_delete(message: dc.Message) -> None:
         code_link_delete_hook(message),
         zig_codeblock_delete_hook(message),
         xkcd_mention_delete_hook(message),
+        commit_mention_delete_hook(message),
     )
 
 

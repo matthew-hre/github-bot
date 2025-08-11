@@ -5,7 +5,7 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 
 from .cache import Entity, Issue, PullRequest, entity_cache
-from .resolution import resolve_repo_signatures
+from .resolution import resolve_entity_signatures
 from app.common.hooks import ProcessedMessage
 from app.common.message_moving import get_ghostty_guild
 from app.components.github_integration.models import Discussion
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
 EMOJI_NAMES = frozenset({
+    "commit",
     "discussion_answered",
     "issue_closed_completed",
     "issue_closed_unplanned",
@@ -66,10 +67,6 @@ def get_entity_emoji(entity: Entity) -> dc.Emoji | None:
     return entity_emojis.get(emoji_name)
 
 
-def _format_user_link(login: str) -> str:
-    return f"[`{login}`](<https://github.com/{login}>)"
-
-
 def _format_entity_detail(entity: Entity) -> str:
     if isinstance(entity, Issue):
         if not entity.labels:
@@ -90,7 +87,7 @@ def _format_entity_detail(entity: Entity) -> str:
     elif isinstance(entity, Discussion):
         if not entity.answered_by:
             return ""
-        body = f"answered by {_format_user_link(entity.answered_by.name)}"
+        body = f"answered by {entity.answered_by.hyperlink}"
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)
@@ -103,7 +100,7 @@ def _format_mention(entity: Entity) -> str:
     owner, name = entity.owner, entity.repo_name
     fmt_ts = partial(dynamic_timestamp, entity.created_at)
     subtext = (
-        f"-# by {_format_user_link(entity.user.name)}"
+        f"-# by {entity.user.hyperlink}"
         f" in [`{owner}/{name}`](<https://github.com/{owner}/{name}>)"
         f" on {fmt_ts('D')} ({fmt_ts('R')})\n"
     )
@@ -114,7 +111,7 @@ def _format_mention(entity: Entity) -> str:
 
 
 async def extract_entities(message: dc.Message) -> list[Entity]:
-    matches = list(dict.fromkeys([r async for r in resolve_repo_signatures(message)]))
+    matches = list(dict.fromkeys([r async for r in resolve_entity_signatures(message)]))
     cache_hits = await asyncio.gather(
         *(entity_cache.get(m) for m in matches), return_exceptions=True
     )

@@ -1,6 +1,5 @@
 import re
 from collections.abc import AsyncIterator
-from contextlib import suppress
 from functools import reduce
 
 import discord as dc
@@ -53,7 +52,30 @@ async def find_repo_owner(name: str) -> str:
     )
 
 
-async def resolve_repo_signatures(
+async def resolve_repo_signature(
+    owner: str | None, repo: str | None
+) -> tuple[str, str] | None:
+    match owner, repo:
+        case None, None:
+            # The Ghostty repo
+            return config.GITHUB_ORG, config.GITHUB_REPOS["main"]
+        case None, repo if repo in config.GITHUB_REPOS | REPO_ALIASES:
+            # Special ghostty-org prefixes
+            return config.GITHUB_ORG, config.GITHUB_REPOS[REPO_ALIASES.get(repo, repo)]
+        case None, repo:
+            # Only a name provided
+            try:
+                return await owner_cache.get(repo), repo
+            except (RequestFailed, RuntimeError):
+                return None
+        case owner, None:
+            # Invalid case
+            return None
+        case owner, repo:
+            return owner.rstrip("/"), repo
+
+
+async def resolve_entity_signatures(
     message: dc.Message,
 ) -> AsyncIterator[EntitySignature]:
     valid_signatures = 0
@@ -69,32 +91,16 @@ async def resolve_repo_signatures(
         if site:
             await message.edit(suppress=True)
 
-        match owner, repo:
-            case None, None if number < 10 and not site:
+        if owner is None:
+            if repo is None and number < 10:
                 # Ignore single-digit mentions like #1, (likely a false positive)
                 continue
-            case None, None:
-                # Standard Ghostty mention, e.g. #2354
-                yield config.GITHUB_ORG, config.GITHUB_REPOS["main"], number
-            case None, repo if repo in config.GITHUB_REPOS:
-                # Special ghostty-org prefixes
-                yield config.GITHUB_ORG, config.GITHUB_REPOS[repo], number
-            case None, repo if repo in REPO_ALIASES:
-                # Aliases for special ghostty-org repositories
-                yield config.GITHUB_ORG, config.GITHUB_REPOS[REPO_ALIASES[repo]], number
-            case None, "xkcd":
+            if repo == "xkcd":
                 # Ignore the xkcd prefix, as it is handled by xkcd_mentions.py
                 continue
-            case None, repo:
-                # Only a name provided, e.g. uv#8020.
-                with suppress(RequestFailed, RuntimeError):
-                    yield await owner_cache.get(repo), repo, number
-            case owner, None:
-                # Invalid case, e.g. trag1c/#123
-                continue
-            case owner, repo:
-                # Any public repo, e.g. trag1c/ixia#33.
-                yield owner.rstrip("/"), repo, number
-        valid_signatures += 1
-        if valid_signatures == 10:
-            break
+
+        if sig := await resolve_repo_signature(owner, repo):
+            yield (*sig, number)
+            valid_signatures += 1
+            if valid_signatures == 10:
+                break
