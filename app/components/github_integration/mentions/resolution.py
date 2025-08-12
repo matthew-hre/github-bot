@@ -1,5 +1,5 @@
 import re
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from functools import reduce
 
 import discord as dc
@@ -77,7 +77,7 @@ async def resolve_repo_signature(
 
 async def resolve_entity_signatures(
     message: dc.Message,
-) -> AsyncIterator[EntitySignature]:
+) -> AsyncGenerator[EntitySignature]:
     valid_signatures = 0
     for match in ENTITY_REGEX.finditer(remove_codeblocks(message.content)):
         site, sep = match["site"], match["sep"]

@@ -1,5 +1,5 @@
 import datetime as dt
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import Mock
@@ -162,7 +162,7 @@ def test_post_is_not_solved(names: list[str]) -> None:
 @pytest.mark.parametrize("start", [0, 1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 102, -99, 41])
 @pytest.mark.asyncio
 async def test_aenumerate[T](items: list[T], start: int) -> None:
-    async def async_iterator() -> AsyncIterator[T]:
+    async def async_iterator() -> AsyncGenerator[T]:
         for item in items:
             yield item
 

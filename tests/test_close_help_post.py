@@ -30,7 +30,7 @@ def fill_entity(**kwargs: Any) -> SimpleNamespace:
         "changed_files": 0,
         "labels": [],
     }
-    return SimpleNamespace(**defaults | kwargs)
+    return SimpleNamespace(defaults | kwargs)
 
 
 # Calling __new__ to skip initialization and having to pass in a proper Response object

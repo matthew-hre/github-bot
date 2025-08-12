@@ -26,11 +26,11 @@ BOT_ENV = {
 
 @pytest.fixture
 def bot_env() -> SimpleNamespace:
-    return SimpleNamespace(**{
+    return SimpleNamespace(
         # BOT_TOKEN should keep its prefix to match app/config.py.
-        k.removeprefix("BOT_") if k != "BOT_TOKEN" else k: v
+        (k.removeprefix("BOT_") if k != "BOT_TOKEN" else k, v)
         for k, v in BOT_ENV.items()
-    })
+    )
 
 
 def safe_environ() -> dict[str, str]:

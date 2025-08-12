@@ -2,7 +2,7 @@ import asyncio
 import re
 import string
 import urllib.parse
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from io import BytesIO
 from pathlib import Path
 from textwrap import dedent
@@ -74,7 +74,7 @@ class CodeLinkActions(ItemActions):
     action_plural = "linked these code snippets"
 
 
-async def get_snippets(content: str) -> AsyncIterator[Snippet]:
+async def get_snippets(content: str) -> AsyncGenerator[Snippet]:
     for match in CODE_LINK_PATTERN.finditer(content):
         *snippet_path, range_start, range_end = match.groups()
         snippet_path[-1] = snippet_path[-1].rstrip("/")
