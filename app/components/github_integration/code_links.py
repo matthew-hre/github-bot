@@ -25,8 +25,8 @@ from app.setup import gh
 from app.utils import suppress_embeds_after_delay
 
 CODE_LINK_PATTERN = re.compile(
-    r"https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s]+)/blob/([^/\s]+)/([^\?#\s]+)"
-    r"(?:[^\#\s]*)?#L(\d+)(?:C\d+)?(?:-L(\d+)(?:C\d+)?)?"
+    r"https?://(?:www\.)?github\.com/([a-z0-9\-]+)/([a-z0-9\-\._]+)/blob/"
+    r"([^/\s]+)/([^\?#\s]+)(?:[^\#\s]*)?#L(\d+)(?:C\d+)?(?:-L(\d+)(?:C\d+)?)?"
 )
 LANG_SUBSTITUTIONS = {
     "el": "lisp",
