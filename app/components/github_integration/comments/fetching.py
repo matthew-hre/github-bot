@@ -33,7 +33,7 @@ from app.utils import escape_special
 
 if TYPE_CHECKING:
     import datetime as dt
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncGenerator, Callable
 
     from githubkit.typing import Missing
     from pydantic import BaseModel
@@ -143,8 +143,8 @@ def _format_commit_id(
             if preserve_repo_url
             else cast("Issue", event.issue).repository_url
         )
-        .replace("api.", "", 1)
-        .replace("/repos", "", 1)
+        .replace("api.", "", count=1)
+        .replace("/repos", "", count=1)
         .replace("commits", "commit")
     )
     if not preserve_repo_url:
@@ -349,7 +349,7 @@ async def _get_entity_starter(entity_gist: EntityGist, _: int) -> Comment:
     )
 
 
-async def get_comments(content: str) -> AsyncIterator[Comment]:
+async def get_comments(content: str) -> AsyncGenerator[Comment]:
     found_comments = set[Comment]()
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _, number, event, event_no = map(str, match.groups())

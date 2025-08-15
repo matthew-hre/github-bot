@@ -3,7 +3,7 @@ name = "ghostty-bot"
 version = "0.1.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 authors = [
   { name = "Mitchell Hashimoto", email = "m@mitchellh.com" },
   { name = "trag1c", email = "dev@jakubr.me" },
@@ -20,7 +20,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "ruff~=0.12.0",
+  "ruff==0.12.8",
   "pyright~=1.1.402",
   "taplo>=0.9.3",
   "pytest>=8.4.1",
@@ -33,7 +33,7 @@ filterwarnings = ["ignore::Warning"]
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["ALL"]

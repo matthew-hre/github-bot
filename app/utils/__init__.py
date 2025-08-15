@@ -4,7 +4,7 @@ import asyncio
 import re
 from contextlib import suppress
 from textwrap import shorten
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeIs
 
 import discord as dc
 
@@ -34,9 +34,7 @@ __all__ = (
 
 if TYPE_CHECKING:
     import datetime as dt
-    from collections.abc import AsyncIterator
-
-    from typing_extensions import TypeIs
+    from collections.abc import AsyncGenerator, AsyncIterable
 
 _INVITE_LINK_REGEX = re.compile(r"\b(?:https?://)?(discord\.gg/[^\s]+)\b")
 _ORDERED_LIST_REGEX = re.compile(r"^(\d+)\. (.*)")
@@ -92,8 +90,8 @@ def post_is_solved(post: dc.Thread) -> bool:
 
 
 async def aenumerate[T](
-    it: AsyncIterator[T], start: int = 0
-) -> AsyncIterator[tuple[int, T]]:
+    it: AsyncIterable[T], start: int = 0
+) -> AsyncGenerator[tuple[int, T]]:
     i = start
     async for x in it:
         yield i, x

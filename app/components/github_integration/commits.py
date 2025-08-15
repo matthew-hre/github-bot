@@ -1,8 +1,9 @@
 import asyncio
+import copy
 import datetime as dt
 import re
 import string
-from collections.abc import AsyncIterator, Iterable
+from collections.abc import AsyncGenerator, Iterable
 from typing import NamedTuple
 
 import discord as dc
@@ -99,7 +100,7 @@ def _format_commit_mention(commit: CommitSummary) -> str:
         # `web-flow` is GitHub's committer account for all web commits (like merge or
         # revert) made on GitHub.com, so let's pretend the commit author is actually
         # the committer.
-        commit = commit._replace(committer=commit.author)
+        commit = copy.replace(commit, committer=commit.author)
 
     subtext = "\n-# authored by "
     if (a := commit.author) and (c := commit.committer) and a.name != c.name:
@@ -129,7 +130,7 @@ def _format_commit_mention(commit: CommitSummary) -> str:
 
 async def resolve_repo_signatures(
     sigs: Iterable[CommitKey],
-) -> AsyncIterator[CommitKey]:
+) -> AsyncGenerator[CommitKey]:
     valid_signatures = 0
     for owner, repo, sha in sigs:
         if sig := await resolve_repo_signature(owner or None, repo or None):
