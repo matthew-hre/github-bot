@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import copy
-import datetime as dt
 import re
 import string
-from collections.abc import AsyncGenerator, Iterable
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import discord as dc
 from githubkit.exception import RequestFailed
@@ -24,6 +24,10 @@ from app.components.github_integration.mentions.resolution import (
 from app.components.github_integration.models import GitHubUser
 from app.setup import gh
 from app.utils import dynamic_timestamp, format_diff_note
+
+if TYPE_CHECKING:
+    import datetime as dt
+    from collections.abc import AsyncGenerator, Iterable
 
 COMMIT_SHA_PATTERN = re.compile(
     r"\b(?:"
