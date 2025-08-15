@@ -22,7 +22,7 @@ from app.components.github_integration.mentions.resolution import (
 )
 from app.components.github_integration.models import GitHubUser
 from app.setup import gh
-from app.utils import dynamic_timestamp
+from app.utils import dynamic_timestamp, format_diff_note
 
 type CommitKey = tuple[str, str, str]
 
@@ -41,6 +41,9 @@ class CommitSummary(NamedTuple):
     author: GitHubUser | None
     committer: GitHubUser | None
     message: str
+    additions: int
+    deletions: int
+    files_changed: int
     url: str
     date: dt.datetime | None
     signed: bool
@@ -68,6 +71,9 @@ class CommitCache:
             author=GitHubUser(**a.model_dump()) if (a := obj.author) else None,
             committer=GitHubUser(**c.model_dump()) if (c := obj.committer) else None,
             message=obj.commit.message,
+            additions=(s.additions or 0) if (s := obj.stats) else 0,
+            deletions=(s.deletions or 0) if (s := obj.stats) else 0,
+            files_changed=len(obj.files or ()),
             url=obj.html_url,
             date=(c := obj.commit.committer) and (c.date or None),
             signed=bool((v := obj.commit.verification) and v.verified),
@@ -111,6 +117,12 @@ def _format_commit_mention(commit: CommitSummary) -> str:
     if commit.date:
         subtext += f" on {dynamic_timestamp(commit.date, 'D')}"
         subtext += f" ({dynamic_timestamp(commit.date, 'R')})"
+
+    diff_note = format_diff_note(
+        commit.additions, commit.deletions, commit.files_changed
+    )
+    if diff_note is not None:
+        subtext += f"\n-# {diff_note}"
 
     return heading + subtext
 

@@ -138,3 +138,9 @@ async def suppress_embeds_after_delay(message: dc.Message, delay: float = 5.0) -
     await asyncio.sleep(delay)
     with safe_edit:
         await message.edit(suppress=True)
+
+
+def format_diff_note(additions: int, deletions: int, changed_files: int) -> str | None:
+    if not (additions or deletions or changed_files):
+        return None  # Diff size unavailable
+    return f"diff size: `+{additions}` `-{deletions}` ({changed_files} files changed)"

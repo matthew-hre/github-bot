@@ -10,7 +10,7 @@ from app.common.hooks import ProcessedMessage
 from app.common.message_moving import get_ghostty_guild
 from app.components.github_integration.models import Discussion
 from app.setup import bot, config
-from app.utils import dynamic_timestamp, escape_special
+from app.utils import dynamic_timestamp, escape_special, format_diff_note
 
 if TYPE_CHECKING:
     import discord as dc
@@ -78,12 +78,11 @@ def _format_entity_detail(entity: Entity) -> str:
             labels, omission_note = entity.labels, ""
         body = f"labels: {', '.join(f'`{label}`' for label in labels)}{omission_note}"
     elif isinstance(entity, PullRequest):
-        if not (entity.additions or entity.deletions or entity.changed_files):
-            return ""  # Diff size unavailable
-        body = (
-            f"diff size: `+{entity.additions}` `-{entity.deletions}`"
-            f" ({entity.changed_files} files changed)"
+        body = format_diff_note(
+            entity.additions, entity.deletions, entity.changed_files
         )
+        if body is None:
+            return ""  # Diff size unavailable
     elif isinstance(entity, Discussion):
         if not entity.answered_by:
             return ""
