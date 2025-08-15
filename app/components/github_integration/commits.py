@@ -81,13 +81,14 @@ class CommitCache:
         except RequestFailed:
             return None
         obj = resp.parsed_data
+        stats = obj.stats or 0
         commit_summary = CommitSummary(
             sha=obj.sha,
             author=GitHubUser(**a.model_dump()) if (a := obj.author) else None,
             committer=GitHubUser(**c.model_dump()) if (c := obj.committer) else None,
             message=obj.commit.message,
-            additions=(s.additions or 0) if (s := obj.stats) else 0,
-            deletions=(s.deletions or 0) if (s := obj.stats) else 0,
+            additions=stats and (stats.additions or 0),
+            deletions=stats and (stats.deletions or 0),
             files_changed=len(obj.files or ()),
             url=obj.html_url,
             date=(c := obj.commit.committer) and (c.date or None),
