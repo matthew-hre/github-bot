@@ -21,14 +21,20 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
       - name: Install project
+        id: sync
         run: uv sync
       - name: Lint code
+        if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
         run: uv run ruff check --output-format github
       - name: Check Python formatting
+        if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
         run: uv run ruff format --preview --diff
       - name: Check TOML formatting
+        if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
         run: uv run taplo fmt --check pyproject.toml
       - name: Type-check code
+        if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
         run: uv run pyright app tests
       - name: Run tests
+        if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
         run: uv run pytest
