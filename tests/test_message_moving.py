@@ -1,5 +1,8 @@
 # pyright: reportPrivateUsage=false
+from __future__ import annotations
+
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import discord as dc
@@ -9,8 +12,14 @@ from app.common.message_moving import (
     MovedMessage,
     _find_snowflake,
     _format_emoji,
+    _unattachable_embed,
+    format_or_file,
     get_ghostty_guild,
+    message_can_be_moved,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # A random list of Unicode emojis that default to the emoji presentation.
 UNICODE_EMOJIS = "📨🌼🎬⌛🧆🦯🤩👤🥈🏑🌊🤲👦🛝🍏🥫🐙👰🇫🤏🚋🏽🐾🌄🔛🐸🤣🐎💿👃🔘🍋🚈👘🚹"
@@ -58,6 +67,47 @@ def test_format_emoji_is_usable(is_usable: bool, output: str) -> None:
     )
     fake_emoji.configure_mock(name="foo", url="bar")
     assert _format_emoji(fake_emoji) == output
+
+
+@pytest.mark.parametrize(
+    ("type_", "result"),
+    [
+        (dc.MessageType.default, True),
+        (dc.MessageType.call, False),
+        (dc.MessageType.pins_add, False),
+        (dc.MessageType.reply, True),
+        (dc.MessageType.new_member, False),
+        (dc.MessageType.premium_guild_tier_1, False),
+        (dc.MessageType.chat_input_command, True),
+        (dc.MessageType.guild_discovery_grace_period_final_warning, False),
+        (dc.MessageType.context_menu_command, True),
+        (dc.MessageType.auto_moderation_action, False),
+    ],
+)
+def test_message_can_be_moved(type_: dc.MessageType, result: bool) -> None:
+    fake_message = cast("dc.Message", SimpleNamespace(type=type_))
+    assert message_can_be_moved(fake_message) == result
+
+
+@pytest.mark.parametrize(
+    "elem",
+    [
+        "forward",
+        "reply",
+        "sticker",
+        "message",
+        "poll",
+        "attachment",
+        "embed",
+        "element",
+        "spider",
+        "terminal emulator",
+    ],
+)
+def test_unattachable_embed(elem: str) -> None:
+    # Require the (escaped) string to be in the returned embed. repr() on a string wraps
+    # it in quotes, so remove those too.
+    assert repr(elem)[1:-1] in repr(_unattachable_embed(elem).to_dict()).casefold()
 
 
 @pytest.mark.parametrize(
@@ -194,3 +244,58 @@ def test_get_ghostty_guild(
         assert get_ghostty_guild() == SimpleNamespace(name=result)
     except ValueError:
         assert result is None
+
+
+@pytest.mark.parametrize(
+    ("content", "template", "transform", "result"),
+    [
+        ("hi", None, None, "hi"),
+        ("hi", "{}!", None, "hi!"),
+        (
+            "HI EVER— I mean, hi everyone!",
+            None,
+            str.swapcase,
+            "hi ever— i MEAN, HI EVERYONE!",
+        ),
+        ("hello", "# ~~{}!~~", str.swapcase, "# ~~HELLO!~~"),
+    ],
+)
+def test_format_or_file_short(
+    content: str,
+    template: str | None,
+    transform: Callable[[str], str],
+    result: str,
+) -> None:
+    assert format_or_file(
+        content,
+        template=template,
+        transform=transform,
+    ) == (result, None)
+
+
+def test_format_or_file_long() -> None:
+    content, file = format_or_file("a" * 10000)
+    assert not content
+    assert file
+    assert file.fp.read() == b"a" * 10000
+
+
+def test_format_or_file_long_template() -> None:
+    content, file = format_or_file("a" * 2001, template="not {}")
+    assert content == "not "
+    assert file
+    assert file.fp.read() == b"a" * 2001
+
+
+def test_format_or_file_long_transform() -> None:
+    content, file = format_or_file("a" * 4321, transform=str.swapcase)
+    assert not content
+    assert file
+    assert file.fp.read() == b"a" * 4321
+
+
+def test_format_or_file_long_template_transform() -> None:
+    content, file = format_or_file("a" * 5000, template="# {}!", transform=str.swapcase)
+    assert content == "# !"
+    assert file
+    assert file.fp.read() == b"a" * 5000
