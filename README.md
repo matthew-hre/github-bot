@@ -280,7 +280,8 @@ label") is also supported. Same edit/delete hook and TTR cache rules apply.
 Similar to the above feature, entity mentions with a prefix of `xkcd`, such as
 `xkcd#1172`, will be replied to with an embed containing the XKCD's contents.
 Message edits and deletion are also handled, and a "❌ Delete" button is
-provided for one hour.
+provided for one hour. A "❄️ Freeze" button is also provided to stop reacting to
+message edits and deletions.
 
 <img src="https://github.com/user-attachments/assets/ff1cf1c8-2927-4156-87af-aa5671252ee7" alt="XKCD mentions example" width="75%">
 
