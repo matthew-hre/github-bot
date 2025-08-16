@@ -26,6 +26,7 @@ community moderation more efficient.
   - [Entity mentions](#entity-mentions)
     - [Code links](#code-links)
     - [Entity comments](#entity-comments)
+    - [Commit mentions](#commit-mentions)
   - [XKCD mentions](#xkcd-mentions)
   - [Zig code blocks](#zig-code-blocks)
   - [Message filters](#message-filters)
@@ -273,6 +274,17 @@ A subset of GitHub events (e.g. "requested review", "closed the issue", "added
 label") is also supported. Same edit/delete hook and TTR cache rules apply.
 
 <img src="https://github.com/user-attachments/assets/217ef598-5fcb-4854-b2d6-a2b7d67435e8" alt="Entity comments example" width="65%">
+
+### Commit mentions
+
+Ghostty Bot responds to messages containing commit hashes (such as `b7913f0` or
+`a8b9dd8dfc7a2cd6bb3f19969a450497654a47b0`) with information about the mentioned
+commit. The same prefixes used for entity mentions is also supported by using an
+`@`; e.g. `bot@4841da1`. Arbitrary repositories can also be mentioned with a
+syntax similar to entity mentions; e.g. `python/cpython@2a6888e` or
+`zig@39aca6f37e83e263236339f9`.
+
+<img src="TODO for trag1c" alt="Commit mentions example" width="todo%">
 
 
 ## XKCD mentions
