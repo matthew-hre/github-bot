@@ -26,6 +26,7 @@ community moderation more efficient.
   - [Entity mentions](#entity-mentions)
     - [Code links](#code-links)
     - [Entity comments](#entity-comments)
+    - [Commit mentions](#commit-mentions)
   - [XKCD mentions](#xkcd-mentions)
   - [Zig code blocks](#zig-code-blocks)
   - [Message filters](#message-filters)
@@ -234,11 +235,12 @@ that are no longer relevant.
 Automatic links to Ghostty's GitHub issues/PRs/discussions ("entities") when a
 message contains GitHub-like mentions (`#1234`). It reacts to message edits and
 deletions for 24 hours, while also providing a "❌ Delete" button for 30 seconds
-in case of false positives. Mentioning entities in other ghostty-org repos is
-supported with prefixes:
-* `web` for [ghostty-org/website][website-repo], e.g. `web#78`
-* `bot` or `bobr` for [ghostty-org/discord-bot][bot-repo], e.g. `bot#98`
-* `main` for [ghostty-org/ghostty][main-repo] (default), e.g. `main#2137` or
+in case of false positives. A "❄️ Freeze" button is also provided to stop
+reacting to message edits and deletions. Mentioning entities in other
+ghostty-org repos is supported with prefixes:
+* `web` or `website` for [ghostty-org/website][website-repo], e.g. `web#78`
+* `bot`, `bobr`, or `discord-bot` for [ghostty-org/discord-bot][bot-repo], e.g. `bot#98`
+* `main` or `ghostty` for [ghostty-org/ghostty][main-repo] (default), e.g. `main#2137` or
   just `#2137`
 
 On top of that, any GitHub repository can be mentioned, either with
@@ -273,13 +275,25 @@ label") is also supported. Same edit/delete hook and TTR cache rules apply.
 
 <img src="https://github.com/user-attachments/assets/217ef598-5fcb-4854-b2d6-a2b7d67435e8" alt="Entity comments example" width="65%">
 
+### Commit mentions
+
+Ghostty Bot responds to messages containing commit hashes (such as `b7913f0` or
+`a8b9dd8dfc7a2cd6bb3f19969a450497654a47b0`) with information about the mentioned
+commit. The same prefixes used for entity mentions is also supported by using an
+`@`; e.g. `bot@4841da1`. Arbitrary repositories can also be mentioned with a
+syntax similar to entity mentions; e.g. `python/cpython@2a6888e` or
+`zig@39aca6f37e83e263236339f9`.
+
+<img src="https://github.com/user-attachments/assets/c979dee7-ee0f-4ebf-82b3-f5d7e4ddbad9" alt="Commit mentions example" width="75%">
+
 
 ## XKCD mentions
 
 Similar to the above feature, entity mentions with a prefix of `xkcd`, such as
 `xkcd#1172`, will be replied to with an embed containing the XKCD's contents.
 Message edits and deletion are also handled, and a "❌ Delete" button is
-provided for one hour.
+provided for one hour. A "❄️ Freeze" button is also provided to stop reacting to
+message edits and deletions.
 
 <img src="https://github.com/user-attachments/assets/ff1cf1c8-2927-4156-87af-aa5671252ee7" alt="XKCD mentions example" width="75%">
 
