@@ -234,8 +234,9 @@ that are no longer relevant.
 Automatic links to Ghostty's GitHub issues/PRs/discussions ("entities") when a
 message contains GitHub-like mentions (`#1234`). It reacts to message edits and
 deletions for 24 hours, while also providing a "❌ Delete" button for 30 seconds
-in case of false positives. Mentioning entities in other ghostty-org repos is
-supported with prefixes:
+in case of false positives. A "❄️ Freeze" button is also provided to stop
+reacting to message edits and deletions. Mentioning entities in other
+ghostty-org repos is supported with prefixes:
 * `web` or `website` for [ghostty-org/website][website-repo], e.g. `web#78`
 * `bot`, `bobr`, or `discord-bot` for [ghostty-org/discord-bot][bot-repo], e.g. `bot#98`
 * `main` or `ghostty` for [ghostty-org/ghostty][main-repo] (default), e.g. `main#2137` or
