@@ -284,7 +284,7 @@ commit. The same prefixes used for entity mentions is also supported by using an
 syntax similar to entity mentions; e.g. `python/cpython@2a6888e` or
 `zig@39aca6f37e83e263236339f9`.
 
-<img src="TODO for trag1c" alt="Commit mentions example" width="todo%">
+<img src="https://github.com/user-attachments/assets/c979dee7-ee0f-4ebf-82b3-f5d7e4ddbad9" alt="Commit mentions example" width="75%">
 
 
 ## XKCD mentions
