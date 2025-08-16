@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import copy
-import datetime as dt
 import re
 import string
-from collections.abc import AsyncGenerator, Iterable
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import discord as dc
 from githubkit.exception import RequestFailed
@@ -25,7 +25,9 @@ from app.components.github_integration.models import GitHubUser
 from app.setup import gh
 from app.utils import dynamic_timestamp, format_diff_note
 
-type CommitKey = tuple[str, str, str]
+if TYPE_CHECKING:
+    import datetime as dt
+    from collections.abc import AsyncGenerator, Iterable
 
 COMMIT_SHA_PATTERN = re.compile(
     r"\b(?:"
@@ -35,6 +37,12 @@ COMMIT_SHA_PATTERN = re.compile(
     r"(?P<sha>[a-z0-9]{7,40})\b",
     re.IGNORECASE,
 )  # fmt: skip
+
+
+class CommitKey(NamedTuple):
+    owner: str
+    repo: str
+    sha: str
 
 
 class CommitSummary(NamedTuple):
@@ -54,31 +62,41 @@ class CommitCache:
     def __init__(self) -> None:
         self._cache: dict[CommitKey, CommitSummary] = {}
 
-    async def get(self, key: CommitKey) -> CommitSummary | None:
-        # TODO(trag1c): don't do this
-        key = (*key[:2], key[2][:7])  # Force short SHA
-        if key not in self._cache:
-            await self._fetch(key)
-        return self._cache.get(key)
+    def _filter_prefix(self, prefix: str) -> list[CommitKey]:
+        return [key for key in self._cache if key.sha.startswith(prefix)]
 
-    async def _fetch(self, key: CommitKey) -> None:
+    async def get(self, key: CommitKey) -> CommitSummary | None:
+        match self._filter_prefix(key.sha):
+            case []:
+                return await self._fetch(key)
+            case [full_sha]:
+                return self._cache.get(full_sha)
+            case _:
+                # Behave like GitHub: treat ambiguous short SHAs as invalid
+                return None
+
+    async def _fetch(self, key: CommitKey) -> CommitSummary | None:
         try:
             resp = await gh.rest.repos.async_get_commit(*key)
         except RequestFailed:
-            return
+            return None
         obj = resp.parsed_data
-        self._cache[key] = CommitSummary(
+        stats = obj.stats or 0
+        commit_summary = CommitSummary(
             sha=obj.sha,
             author=GitHubUser(**a.model_dump()) if (a := obj.author) else None,
             committer=GitHubUser(**c.model_dump()) if (c := obj.committer) else None,
             message=obj.commit.message,
-            additions=(s.additions or 0) if (s := obj.stats) else 0,
-            deletions=(s.deletions or 0) if (s := obj.stats) else 0,
+            additions=stats and (stats.additions or 0),
+            deletions=stats and (stats.deletions or 0),
             files_changed=len(obj.files or ()),
             url=obj.html_url,
             date=(c := obj.commit.committer) and (c.date or None),
             signed=bool((v := obj.commit.verification) and v.verified),
         )
+        key_with_full_sha = copy.replace(key, sha=obj.sha)
+        self._cache[key_with_full_sha] = commit_summary
+        return commit_summary
 
 
 commit_cache = CommitCache()
@@ -134,7 +152,7 @@ async def resolve_repo_signatures(
     valid_signatures = 0
     for owner, repo, sha in sigs:
         if sig := await resolve_repo_signature(owner or None, repo or None):
-            yield (*sig, sha)
+            yield CommitKey(*sig, sha)
             valid_signatures += 1
             if valid_signatures == 10:
                 break
