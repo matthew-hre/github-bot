@@ -34,7 +34,7 @@ COMMIT_SHA_PATTERN = re.compile(
     r"\b(?:"
         r"(?P<owner>\b[a-z0-9\-]+/)?"
         r"(?P<repo>\b[a-z0-9\-\._]+)"
-        r"(?P<sep>@|/commit/)"
+        r"(?P<sep>@|/commit/|/blob/)"
     r")?"
     r"(?P<sha>[a-f0-9]{7,40})\b",
     re.IGNORECASE,
@@ -153,6 +153,8 @@ async def resolve_repo_signatures(
 ) -> AsyncGenerator[CommitKey]:
     valid_signatures = 0
     for site, owner, repo, sep, sha in sigs:
+        if sep == "/blob/":
+            continue  # This is likely a code link
         if bool(site) != (sep == "/commit/"):
             continue  # Separator was `@` despite this being a link or vice versa
         if site and not owner:
