@@ -34,7 +34,7 @@ COMMIT_SHA_PATTERN = re.compile(
         r"(?P<owner>\b[a-z0-9\-]+/)?"
         r"(?P<repo>\b[a-z0-9\-\._]+)"
     r"@)?"
-    r"(?P<sha>[a-z0-9]{7,40})\b",
+    r"(?P<sha>[a-f0-9]{7,40})\b",
     re.IGNORECASE,
 )  # fmt: skip
 
