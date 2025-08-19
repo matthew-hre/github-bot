@@ -23,17 +23,19 @@ from app.components.github_integration.mentions.resolution import (
 )
 from app.components.github_integration.models import GitHubUser
 from app.setup import gh
-from app.utils import dynamic_timestamp, format_diff_note
+from app.utils import dynamic_timestamp, format_diff_note, suppress_embeds_after_delay
 
 if TYPE_CHECKING:
     import datetime as dt
     from collections.abc import AsyncGenerator, Iterable
 
 COMMIT_SHA_PATTERN = re.compile(
+    r"(?P<site>\bhttps?://(?:www\.)?github\.com/)?"
     r"\b(?:"
         r"(?P<owner>\b[a-z0-9\-]+/)?"
         r"(?P<repo>\b[a-z0-9\-\._]+)"
-    r"@)?"
+        r"(?P<sep>@|/commit/)"
+    r")?"
     r"(?P<sha>[a-f0-9]{7,40})\b",
     re.IGNORECASE,
 )  # fmt: skip
@@ -147,10 +149,14 @@ def _format_commit_mention(commit: CommitSummary) -> str:
 
 
 async def resolve_repo_signatures(
-    sigs: Iterable[CommitKey],
+    sigs: Iterable[tuple[str, str, str, str, str]],
 ) -> AsyncGenerator[CommitKey]:
     valid_signatures = 0
-    for owner, repo, sha in sigs:
+    for site, owner, repo, sep, sha in sigs:
+        if bool(site) != (sep == "/commit/"):
+            continue  # Separator was `@` despite this being a link or vice versa
+        if site and not owner:
+            continue  # Not a valid GitHub link
         if sig := await resolve_repo_signature(owner or None, repo or None):
             yield CommitKey(*sig, sha)
             valid_signatures += 1
@@ -181,7 +187,10 @@ async def reply_with_commit_details(message: dc.Message) -> None:
         view=CommitActions(message, output.item_count),
     )
     commit_linker.link(message, reply)
-    await remove_view_after_delay(reply)
+    await asyncio.gather(
+        suppress_embeds_after_delay(message),
+        remove_view_after_delay(reply),
+    )
 
 
 commit_mention_delete_hook = create_delete_hook(linker=commit_linker)
