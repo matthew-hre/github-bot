@@ -7,6 +7,8 @@ BOT_ENV = {
     "GITHUB_ORG": "ghostty-org",
     "GITHUB_REPOS": {"main": "ghostty", "bot": "discord-bot", "web": "website"},
     "GITHUB_TOKEN": "fake-gh-token",
+    "GITHUB_WEBHOOK_URL": "https://smee.io/aBCDef1gHijKLM2N",
+    "GITHUB_WEBHOOK_SECRET": "foobar",
     "BOT_ACCEPT_INVITE_URL": "https://youtu.be/-8KqaxE7kD0",
     "SENTRY_DSN": None,
     "BOT_HELP_CHANNEL_TAG_IDS": {
@@ -19,6 +21,7 @@ BOT_ENV = {
     "BOT_LOG_CHANNEL_ID": "011419111406",
     "BOT_MEDIA_CHANNEL_ID": "1204030800",
     "BOT_SHOWCASE_CHANNEL_ID": "1807142202001804",
+    "BOT_WEBHOOK_CHANNEL_ID": "1246449239523604510",
     "BOT_MOD_ROLE_ID": "121403",
     "BOT_HELPER_ROLE_ID": "070411150417",
 }

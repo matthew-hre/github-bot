@@ -17,6 +17,7 @@ dependencies = [
   "sentry-sdk~=2.35",
   "zig-codeblocks==0.3.3",
   "httpx~=0.28.1",
+  "monalisten==0.1.1",
 ]
 
 [dependency-groups]
