@@ -312,10 +312,9 @@ class HelpPostTitle(dc.ui.Modal, title="Turn into #help post"):
         self._message = message
 
     async def on_submit(self, interaction: dc.Interaction) -> None:
-        help_channel = cast("dc.ForumChannel", bot.get_channel(config.HELP_CHANNEL_ID))
         await interaction.response.defer(ephemeral=True)
 
-        webhook = await get_or_create_webhook(help_channel)
+        webhook = await get_or_create_webhook(config.help_channel)
         msg = await move_message_via_webhook(
             webhook,
             self._message,
@@ -711,7 +710,7 @@ async def turn_into_help_post(interaction: dc.Interaction, message: dc.Message) 
 
     if not message_can_be_moved(message):
         await interaction.response.send_message(
-            f"System messages cannot be turned into <#{config.HELP_CHANNEL_ID}> posts.",
+            f"System messages cannot be turned into <#{config.help_channel_id}> posts.",
             ephemeral=True,
             view=DeleteInstead(message),
         )

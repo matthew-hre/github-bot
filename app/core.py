@@ -156,7 +156,7 @@ async def sync(bot: commands.Bot, message: dc.Message) -> None:
 
 
 def handle_error(error: BaseException) -> None:
-    if config.SENTRY_DSN is not None:
+    if config.sentry_dsn is not None:
         capture_exception(error)
         return
 

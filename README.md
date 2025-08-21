@@ -93,15 +93,18 @@ You can get one in two ways:
 
 ## 3. Preparing a Discord server
 
-The following channels will be necessary:
-* `#help`: a forum channel with the following tags:
-  * Moved to GitHub
-  * Solved
-  * Stale
-  * Duplicate
-* `#media`: a text channel
-* `#showcase`: a text channel
-* `#botlog-everything`: a log channel
+The following **text** channels will be necessary:
+* `#media`
+* `#showcase`
+* `#webhook`
+* `#botlog-everything`
+
+Additionally, a **forum** channel named `#help` is needed. It must have the
+following tags:
+* Moved to GitHub
+* Solved
+* Stale
+* Duplicate
 
 The following roles will be necessary (both requiring the Manage Messages
 permission):
@@ -125,12 +128,12 @@ Below are explanations for each variable:
   * `BOT_HELPER_ROLE_ID`
 * `BOT_TOKEN`: the Discord bot token from
   [step 1](#1-creating-a-discord-application).
-* `GITHUB_ORG`: the GitHub organization name.
-* `GITHUB_REPOS`: a comma-separated list of `prefix:repo_name` pairs used for
+* `BOT_GITHUB_ORG`: the GitHub organization name.
+* `BOT_GITHUB_REPOS`: a comma-separated list of `prefix:repo_name` pairs used for
   entity mention prefixes. The `main`/`bot`/`web` prefixes aren't exactly fixed,
   but some of the bot logic assumes these names (e.g. defaulting to `main`).
-* `GITHUB_TOKEN`: the GitHub token from [step 2](#2-getting-a-github-token).
-* `SENTRY_DSN`: the Sentry DSN (optional).
+* `BOT_GITHUB_TOKEN`: the GitHub token from [step 2](#2-getting-a-github-token).
+* `BOT_SENTRY_DSN`: the Sentry DSN (optional).
 
 
 ## 5. Running the bot
@@ -161,8 +164,7 @@ This bot runs on Python 3.13+ and is managed with [uv]. To get started:
 ```mermaid
 flowchart LR;
 
-cfg{{config.py}} --> setup([setup.py])
-setup --> utils(utils/) --> core([core.py])
+setup{{setup.py}} --> utils(utils/) --> core([core.py])
 setup --> components(components/)
 utils --> components
 setup --> core
@@ -173,17 +175,10 @@ core --> main{{\_\_main__.py}}
 * `components/` is a place for all dedicated features, such as message filters
   or entity mentions. Most new features should become modules belonging to this
   package.
-* `config.py` handles reading and parsing the environment variables and the
-  local `.env` file. Although a standalone module, it's typically accessed
-  through a `setup.py` re-export for brevity:
-  ```diff
-  -from app import config
-  -from app.setup import bot
-  +from app.setup import bot, config
-  ```
 * `core.py` loads the `components` package and houses the code for handling the
   most standard bot events (e.g. `on_ready`, `on_message`, `on_error`).
-* `setup.py` creates the Discord and GitHub clients.
+* `setup.py` handles reading and parsing the environment variables and the
+  local `.env` file, and creates the Discord and GitHub clients.
 * `utils/` contains helper functions/classes not tied to any specific feature.
 * `__main__.py` initializes Sentry (optional) and starts the bot.
 

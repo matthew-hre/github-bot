@@ -58,10 +58,10 @@ async def resolve_repo_signature(
     match owner, repo:
         case None, None:
             # The Ghostty repo
-            return config.GITHUB_ORG, config.GITHUB_REPOS["main"]
-        case None, repo if repo in config.GITHUB_REPOS | REPO_ALIASES:
+            return config.github_org, config.github_repos["main"]
+        case None, repo if repo in config.github_repos | REPO_ALIASES:
             # Special ghostty-org prefixes
-            return config.GITHUB_ORG, config.GITHUB_REPOS[REPO_ALIASES.get(repo, repo)]
+            return config.github_org, config.github_repos[REPO_ALIASES.get(repo, repo)]
         case None, repo:
             # Only a name provided
             try:

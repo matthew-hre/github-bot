@@ -62,11 +62,11 @@ def is_dm(account: Account) -> TypeIs[dc.User]:
 
 
 def is_mod(member: dc.Member) -> bool:
-    return member.get_role(config.MOD_ROLE_ID) is not None
+    return member.get_role(config.mod_role_id) is not None
 
 
 def is_helper(member: dc.Member) -> bool:
-    return member.get_role(config.HELPER_ROLE_ID) is not None
+    return member.get_role(config.helper_role_id) is not None
 
 
 async def try_dm(account: Account, content: str, **extras: Any) -> None:

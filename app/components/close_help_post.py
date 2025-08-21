@@ -110,10 +110,10 @@ async def close_post(
 ) -> None:
     if not (
         isinstance(post := interaction.channel, dc.Thread)
-        and post.parent_id == config.HELP_CHANNEL_ID
+        and post.parent_id == config.help_channel_id
     ):
         await interaction.response.send_message(
-            f"This command can only be used in <#{config.HELP_CHANNEL_ID}> posts.",
+            f"This command can only be used in <#{config.help_channel_id}> posts.",
             ephemeral=True,
         )
         return
@@ -129,7 +129,7 @@ async def close_post(
     help_tags = {
         tag
         for tag in cast("dc.ForumChannel", post.parent).available_tags
-        if tag.id in config.HELP_CHANNEL_TAG_IDS.values()
+        if tag.id in config.help_channel_tag_ids.values()
     }
 
     if set(post.applied_tags) & help_tags:
@@ -140,7 +140,7 @@ async def close_post(
 
     await interaction.response.defer(ephemeral=True)
 
-    desired_tag_id = config.HELP_CHANNEL_TAG_IDS[tag]
+    desired_tag_id = config.help_channel_tag_ids[tag]
     await post.add_tags(next(tag for tag in help_tags if tag.id == desired_tag_id))
 
     if title_prefix is None:

@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import discord as dc
 import pytest
 
+from app.setup import config
 from app.utils import (
     Account,
     aenumerate,
@@ -26,10 +27,9 @@ def test_is_dm(type_: type[Account], result: bool) -> None:
     assert is_dm(Mock(type_)) == result
 
 
-def test_is_mod(monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace) -> None:
-    monkeypatch.setattr("app.utils.config", bot_env)
+def test_is_mod() -> None:
     fake_member = SimpleNamespace(
-        get_role=lambda role: role if role == bot_env.MOD_ROLE_ID else None
+        get_role=lambda role: role if role == config.mod_role_id else None
     )
     assert is_mod(cast("dc.Member", fake_member))
 
@@ -49,19 +49,15 @@ def test_is_mod(monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace) -> No
         1756274809124124,
     ],
 )
-def test_is_not_mod(
-    id_: int, monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace
-) -> None:
-    monkeypatch.setattr("app.utils.config", bot_env)
+def test_is_not_mod(id_: int) -> None:
     fake_member = SimpleNamespace(get_role=lambda role: role if role == id_ else None)
-    assert id_ != bot_env.MOD_ROLE_ID
+    assert id_ != config.mod_role_id
     assert not is_mod(cast("dc.Member", fake_member))
 
 
-def test_is_helper(monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace) -> None:
-    monkeypatch.setattr("app.utils.config", bot_env)
+def test_is_helper() -> None:
     fake_member = SimpleNamespace(
-        get_role=lambda role: role if role == bot_env.HELPER_ROLE_ID else None
+        get_role=lambda role: role if role == config.helper_role_id else None
     )
     assert is_helper(cast("dc.Member", fake_member))
 
@@ -80,12 +76,9 @@ def test_is_helper(monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace) ->
         10**50,
     ],
 )
-def test_is_not_helper(
-    id_: int, monkeypatch: pytest.MonkeyPatch, bot_env: SimpleNamespace
-) -> None:
-    monkeypatch.setattr("app.utils.config", bot_env)
+def test_is_not_helper(id_: int) -> None:
     fake_member = SimpleNamespace(get_role=lambda role: role if role == id_ else None)
-    assert id_ != bot_env.HELPER_ROLE_ID
+    assert id_ != config.helper_role_id
     assert not is_helper(cast("dc.Member", fake_member))
 
 

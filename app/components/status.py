@@ -85,7 +85,7 @@ class BotStatus:
             "launch_time": dynamic_timestamp(self.launch_time, "R"),
             "last_login_time": dynamic_timestamp(self.last_login_time, "R"),
             "last_sitemap_refresh": dynamic_timestamp(self.last_sitemap_refresh, "R"),
-            "help_channel": f"<#{config.HELP_CHANNEL_ID}>",
+            "help_channel": f"<#{config.help_channel_id}>",
             "scan": self._get_scan_data(),
             "gh": get_github_data(),
         }

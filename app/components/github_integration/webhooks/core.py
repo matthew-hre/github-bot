@@ -5,12 +5,12 @@ from githubkit.versions.latest.models import SimpleUser
 from monalisten import Monalisten
 
 from app.components.github_integration.mentions.fmt import entity_emojis
-from app.setup import bot, config
+from app.setup import config
 from app.utils import truncate
 
 client = Monalisten(
-    config.GITHUB_WEBHOOK_URL,
-    token=config.GITHUB_WEBHOOK_SECRET,
+    config.github_webhook_url,
+    token=config.github_webhook_secret,
     log_auth_warnings=True,
 )
 
@@ -53,11 +53,9 @@ async def send_embed(
     *,
     color: int | None = None,
 ) -> None:
-    webhook_channel = bot.get_channel(config.WEBHOOK_CHANNEL_ID)
-    assert isinstance(webhook_channel, dc.TextChannel)
     embed = (
         dc.Embed(color=color, **content.dict)
         .set_footer(**footer.dict)
         .set_author(name=actor.login, url=actor.html_url, icon_url=actor.avatar_url)
     )
-    await webhook_channel.send(embed=embed)
+    await config.webhook_channel.send(embed=embed)
