@@ -30,6 +30,7 @@ from app.components.github_integration import (
 from app.components.github_integration.mentions.integration import (
     update_recent_mentions,
 )
+from app.components.github_integration.webhooks import monalisten_client
 from app.components.lock_old_posts import check_for_old_posts
 from app.components.message_filter import check_message_filters
 from app.components.move_message import check_for_edit_response
@@ -48,6 +49,7 @@ from app.setup import bot, config
 from app.utils import is_dm, is_mod, try_dm
 
 TASKS = (autoclose_solved_posts, randomize_activity_status, update_recent_mentions)
+background_tasks = set[asyncio.Task[None]]()
 
 
 @bot.event
@@ -57,6 +59,10 @@ async def on_ready() -> None:
     for task in TASKS:
         if not task.is_running():
             task.start()
+
+    # Creating a strong reference
+    background_tasks.add(asyncio.create_task(monalisten_client.listen()))
+
     bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
     print(f"Bot logged on as {bot.user}!")
 

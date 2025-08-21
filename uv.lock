@@ -226,6 +226,7 @@ dependencies = [
     { name = "discord-py" },
     { name = "githubkit" },
     { name = "httpx" },
+    { name = "monalisten" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "sentry-sdk" },
@@ -246,6 +247,7 @@ requires-dist = [
     { name = "discord-py", specifier = "~=2.5.0" },
     { name = "githubkit", specifier = "~=0.13.1" },
     { name = "httpx", specifier = "~=0.28.1" },
+    { name = "monalisten", specifier = "==0.1.1" },
     { name = "pydantic", specifier = ">=2.11.7,<3" },
     { name = "python-dotenv", specifier = "==1.1.1" },
     { name = "sentry-sdk", specifier = "~=2.35" },
@@ -327,6 +329,15 @@ wheels = [
 ]
 
 [[package]]
+name = "httpx-sse"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6e/fa/66bd985dd0b7c109a3bcb89272ee0bfb7e2b4d06309ad7b38ff866734b2a/httpx_sse-0.4.1.tar.gz", hash = "sha256:8f44d34414bc7b21bf3602713005c5df4917884f76072479b21f68befa4ea26e", size = 12998, upload-time = "2025-06-24T13:21:05.71Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/0a/6269e3473b09aed2dab8aa1a600c70f31f00ae1349bee30658f7e358a159/httpx_sse-0.4.1-py3-none-any.whl", hash = "sha256:cba42174344c3a5b06f255ce65b350880f962d99ead85e776f23c6618a377a37", size = 8054, upload-time = "2025-06-24T13:21:04.772Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.10"
 source = { registry = "https://pypi.org/simple" }
@@ -342,6 +353,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f2/97/ebf4da567aa6827c909642694d71c9fcf53e5b504f2d96afea02718862f3/iniconfig-2.1.0.tar.gz", hash = "sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7", size = 4793, upload-time = "2025-03-19T20:09:59.721Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/e1/e6716421ea10d38022b952c159d5161ca1193197fb744506875fbb87ea7b/iniconfig-2.1.0-py3-none-any.whl", hash = "sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760", size = 6050, upload-time = "2025-03-19T20:10:01.071Z" },
+]
+
+[[package]]
+name = "monalisten"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "githubkit" },
+    { name = "httpx" },
+    { name = "httpx-sse" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/d2/281ad15aaca06f7303f2fdf5859b3d991c9131e13654393ffe96ca06dbfa/monalisten-0.1.1.tar.gz", hash = "sha256:bb3e9984ae4895aeae64b6a190bd0e71c4a9d0aaaca65ba07398618f1cccfbb5", size = 6276, upload-time = "2025-08-20T09:34:58.642Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/dd/51e7ec8904c08cad6ff8aa0a82a98d14e3c8f2aea5755532f67e27860e9f/monalisten-0.1.1-py3-none-any.whl", hash = "sha256:2502979c02195b6f03d537b380f0e45f9e29e91dab353ef03887dd1f50786c20", size = 7399, upload-time = "2025-08-20T09:34:57.722Z" },
 ]
 
 [[package]]
