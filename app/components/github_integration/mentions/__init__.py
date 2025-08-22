@@ -1,4 +1,4 @@
-from .fmt import entity_message, load_emojis
+from .fmt import entity_message
 from .integration import (
     entity_mention_delete_hook,
     entity_mention_edit_hook,
@@ -11,6 +11,5 @@ __all__ = (
     "entity_mention_delete_hook",
     "entity_mention_edit_hook",
     "entity_message",
-    "load_emojis",
     "reply_with_entities",
 )
