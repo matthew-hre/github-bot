@@ -1,3 +1,4 @@
+from types import MappingProxyType
 from typing import Literal, cast, get_args
 
 import discord as dc
@@ -18,7 +19,8 @@ EmojiName = Literal[
     "pull_open",
 ]
 
-emojis: dict[EmojiName, dc.Emoji] = {}
+_emojis: dict[EmojiName, dc.Emoji] = {}
+emojis = MappingProxyType(_emojis)
 
 
 async def load_emojis() -> None:
@@ -26,9 +28,9 @@ async def load_emojis() -> None:
 
     for emoji in get_ghostty_guild().emojis:
         if emoji.name in valid_emoji_names:
-            emojis[cast("EmojiName", emoji.name)] = emoji
+            _emojis[cast("EmojiName", emoji.name)] = emoji
 
-    if missing_emojis := valid_emoji_names - emojis.keys():
+    if missing_emojis := valid_emoji_names - _emojis.keys():
         await config.log_channel.send(
             "Failed to load the following emojis: " + ", ".join(missing_emojis)
         )
