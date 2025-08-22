@@ -4,7 +4,7 @@ import datetime as dt
 
 import discord as dc
 
-from app import config
+from app.setup import config
 from app.utils import aenumerate, dynamic_timestamp, post_is_solved
 
 
@@ -17,7 +17,7 @@ async def check_for_old_posts(message: dc.Message) -> None:
     if (
         not isinstance(post, dc.Thread)
         or not post.parent
-        or post.parent.id != config.HELP_CHANNEL_ID
+        or post.parent.id != config.help_channel_id
         or post.locked
         or post.last_message_id is None
         or not post_is_solved(post)

@@ -15,9 +15,10 @@ community moderation more efficient.
     - [1.2. Getting a Discord token](#12-getting-a-discord-token)
     - [1.3. Inviting the bot to your server](#13-inviting-the-bot-to-your-server)
   - [2. Getting a GitHub token](#2-getting-a-github-token)
-  - [3. Preparing a Discord server](#3-preparing-a-discord-server)
-  - [4. Preparing the `.env` file](#4-preparing-the-env-file)
-  - [5. Running the bot](#5-running-the-bot)
+  - [3. Creating a GitHub webhook](#3-creating-a-github-webhook)
+  - [4. Preparing a Discord server](#4-preparing-a-discord-server)
+  - [5. Preparing the `.env` file](#5-preparing-the-env-file)
+  - [6. Running the bot](#6-running-the-bot)
 - [Project structure](#project-structure)
 - [Features](#features)
   - [`/docs`](#docs)
@@ -91,17 +92,45 @@ You can get one in two ways:
 * If you have the `gh` CLI installed and authenticated, run `gh auth token`.
 
 
-## 3. Preparing a Discord server
+## 3. Creating a GitHub webhook
 
-The following channels will be necessary:
-* `#help`: a forum channel with the following tags:
-  * Moved to GitHub
-  * Solved
-  * Stale
-  * Duplicate
-* `#media`: a text channel
-* `#showcase`: a text channel
-* `#botlog-everything`: a log channel
+> [!tip]
+> This can be skipped if you're not going to interact with the bot's webhook
+> feature.
+
+The bot has a webhook feed feature which lets it stream customized GitHub repo
+activity to Discord channels. In order to set up a webhook stream from your
+repo:
+1. Go to https://smee.io/ (any webhook relay service should work, but smee.io is
+   field-tested) and choose "Start a new channel".
+2. Copy the URL of your channel.
+3. Go to your GitHub repository, then Settings > Webhooks > Add webhook.
+4. In "Payload URL", paste in your channel's URL.
+5. Set "Content type" to `application/json`.
+6. Set a "Secret" (optional, but recommended). It can be any string.
+7. For "Which events would you like to trigger this webhook?", it's easiest to
+   choose "Send me **everything**." because the bot's webhook client still only
+   triggers for events specified by hooks in the code.
+
+More resources:
+* *What are webhooks?* — [GitHub Docs][gh-webhook-docs]
+* *Why is a secret recommended?* — [Monalisten Docs][monalisten-docs-warning]
+
+
+## 4. Preparing a Discord server
+
+The following **text** channels will be necessary:
+* `#media`
+* `#showcase`
+* `#webhook`
+* `#botlog-everything`
+
+Additionally, a **forum** channel named `#help` is needed. It must have the
+following tags:
+* Moved to GitHub
+* Solved
+* Stale
+* Duplicate
 
 The following roles will be necessary (both requiring the Manage Messages
 permission):
@@ -109,31 +138,36 @@ permission):
 * `helper`
 
 
-## 4. Preparing the `.env` file
+## 5. Preparing the `.env` file
 
 Create a `.env` file in the root of the project based on `.env.example`.
 Below are explanations for each variable:
 * `BOT_ACCEPT_INVITE_URL`: a URL to visit to accept the Ghostty invite
-* Channel/role IDs from [step 3](#3-preparing-a-discord-server):
+* Channel/role IDs from [step 4](#4-preparing-a-discord-server):
   * `BOT_HELP_CHANNEL_ID`
   * `BOT_HELP_CHANNEL_TAG_IDS`: a comma-separated list of `tag_name:tag_id`
     pairs. The tag names are `moved`, `solved`, `stale` and `duplicate`.
   * `BOT_MEDIA_CHANNEL_ID`
   * `BOT_SHOWCASE_CHANNEL_ID`
   * `BOT_LOG_CHANNEL_ID`
+  * `BOT_WEBHOOK_CHANNEL_ID`
   * `BOT_MOD_ROLE_ID`
   * `BOT_HELPER_ROLE_ID`
 * `BOT_TOKEN`: the Discord bot token from
   [step 1](#1-creating-a-discord-application).
-* `GITHUB_ORG`: the GitHub organization name.
-* `GITHUB_REPOS`: a comma-separated list of `prefix:repo_name` pairs used for
+* `BOT_GITHUB_ORG`: the GitHub organization name.
+* `BOT_GITHUB_REPOS`: a comma-separated list of `prefix:repo_name` pairs used for
   entity mention prefixes. The `main`/`bot`/`web` prefixes aren't exactly fixed,
   but some of the bot logic assumes these names (e.g. defaulting to `main`).
-* `GITHUB_TOKEN`: the GitHub token from [step 2](#2-getting-a-github-token).
-* `SENTRY_DSN`: the Sentry DSN (optional).
+* `BOT_GITHUB_TOKEN`: the GitHub token from [step 2](#2-getting-a-github-token).
+* `BOT_SENTRY_DSN`: the Sentry DSN (optional).
+* Webhook environment variables from [step 3](#3-creating-a-github-webhook) (if
+  you skipped that section, you can use the dummy values from `.env.example`):
+  * `BOT_GITHUB_WEBHOOK_URL`: the URL to receive events from.
+  * `BOT_GITHUB_WEBHOOK_SECRET`: a token for validating events (optional).
 
 
-## 5. Running the bot
+## 6. Running the bot
 
 This bot runs on Python 3.13+ and is managed with [uv]. To get started:
 1. Install [uv].
@@ -161,8 +195,7 @@ This bot runs on Python 3.13+ and is managed with [uv]. To get started:
 ```mermaid
 flowchart LR;
 
-cfg{{config.py}} --> setup([setup.py])
-setup --> utils(utils/) --> core([core.py])
+setup{{setup.py}} --> utils(utils/) --> core([core.py])
 setup --> components(components/)
 utils --> components
 setup --> core
@@ -173,17 +206,10 @@ core --> main{{\_\_main__.py}}
 * `components/` is a place for all dedicated features, such as message filters
   or entity mentions. Most new features should become modules belonging to this
   package.
-* `config.py` handles reading and parsing the environment variables and the
-  local `.env` file. Although a standalone module, it's typically accessed
-  through a `setup.py` re-export for brevity:
-  ```diff
-  -from app import config
-  -from app.setup import bot
-  +from app.setup import bot, config
-  ```
 * `core.py` loads the `components` package and houses the code for handling the
   most standard bot events (e.g. `on_ready`, `on_message`, `on_error`).
-* `setup.py` creates the Discord and GitHub clients.
+* `setup.py` handles reading and parsing the environment variables and the
+  local `.env` file, and creates the Discord and GitHub clients.
 * `utils/` contains helper functions/classes not tied to any specific feature.
 * `__main__.py` initializes Sentry (optional) and starts the bot.
 
@@ -368,6 +394,8 @@ https://github.com/user-attachments/assets/8c8ed1cf-db00-414f-937f-43e565ae9d15
 [discord-docs]: https://discord.com/developers/applications
 [discord-invite]: https://discord.gg/ghostty
 [gh-new-token]: https://github.com/settings/tokens/new
+[gh-webhook-docs]: https://docs.github.com/en/webhooks/about-webhooks
+[monalisten-docs-warning]: https://github.com/trag1c/monalisten#foreword-on-how-this-works
 [just]: https://just.systems/
 [main-repo]: https://github.com/ghostty-org/ghostty
 [uv]: https://docs.astral.sh/uv/

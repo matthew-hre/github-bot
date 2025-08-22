@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from .cache import Entity, Issue, PullRequest, entity_cache
 from .resolution import resolve_entity_signatures
 from app.common.hooks import ProcessedMessage
 from app.common.message_moving import get_ghostty_guild
 from app.components.github_integration.models import Discussion
-from app.setup import bot, config
+from app.setup import config
 from app.utils import dynamic_timestamp, escape_special, format_diff_note
 
 if TYPE_CHECKING:
@@ -38,8 +38,7 @@ async def load_emojis() -> None:
         if emoji.name in EMOJI_NAMES:
             entity_emojis[emoji.name] = emoji
     if len(entity_emojis) < len(EMOJI_NAMES):
-        log_channel = cast("dc.TextChannel", bot.get_channel(config.LOG_CHANNEL_ID))
-        await log_channel.send(
+        await config.log_channel.send(
             "Failed to load the following emojis: "
             + ", ".join(EMOJI_NAMES - entity_emojis.keys())
         )
