@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from githubkit.versions.latest.models import SimpleUser
     from monalisten import AuthIssue
 
-type EmbedColor = Literal["green", "red", "purple", "gray"]
+type EmbedColor = Literal["green", "red", "purple", "gray", "orange"]
 type SubhookStore[E] = dict[str, Callable[[E], Awaitable[None]]]
 
 EMBED_COLORS: dict[EmbedColor, int] = {
@@ -24,6 +24,7 @@ EMBED_COLORS: dict[EmbedColor, int] = {
     "purple": 0xAB7DF8,
     "red": 0xF85149,
     "gray": 0x9198A1,
+    "orange": 0xEDB74A,
 }
 
 client = Monalisten(config.github_webhook_url, token=config.github_webhook_secret)
