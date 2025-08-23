@@ -7,49 +7,23 @@ from typing import TYPE_CHECKING
 from .cache import Entity, Issue, PullRequest, entity_cache
 from .resolution import resolve_entity_signatures
 from app.common.hooks import ProcessedMessage
-from app.common.message_moving import get_ghostty_guild
+from app.components.github_integration.emoji import emojis
 from app.components.github_integration.models import Discussion
-from app.setup import config
 from app.utils import dynamic_timestamp, escape_special, format_diff_note
 
 if TYPE_CHECKING:
     import discord as dc
 
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
-EMOJI_NAMES = frozenset({
-    "commit",
-    "discussion_answered",
-    "issue_closed_completed",
-    "issue_closed_unplanned",
-    "issue_draft",
-    "issue_open",
-    "pull_closed",
-    "pull_draft",
-    "pull_merged",
-    "pull_open",
-})
-
-entity_emojis: dict[str, dc.Emoji] = {}
-
-
-async def load_emojis() -> None:
-    guild = get_ghostty_guild()
-    for emoji in guild.emojis:
-        if emoji.name in EMOJI_NAMES:
-            entity_emojis[emoji.name] = emoji
-    if len(entity_emojis) < len(EMOJI_NAMES):
-        await config.log_channel.send(
-            "Failed to load the following emojis: "
-            + ", ".join(EMOJI_NAMES - entity_emojis.keys())
-        )
 
 
 def get_entity_emoji(entity: Entity) -> dc.Emoji | None:
     if isinstance(entity, Issue):
-        state = "closed_" if entity.closed else "open"
+        state = "open"
         if entity.closed:
+            state = "closed_"
             state += "completed" if entity.state_reason == "completed" else "unplanned"
-        emoji_name = f"issue_{state}"
+        emoji_name = "issue_" + state
     elif isinstance(entity, PullRequest):
         emoji_name = "pull_" + (
             "draft" if entity.draft
@@ -58,12 +32,14 @@ def get_entity_emoji(entity: Entity) -> dc.Emoji | None:
             else "open"
         )  # fmt: skip
     elif isinstance(entity, Discussion):
-        emoji_name = "discussion_answered" if entity.answered_by else "issue_draft"
+        emoji_name = "discussion"
+        if entity.answered_by:
+            emoji_name += "_answered"
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)
 
-    return entity_emojis.get(emoji_name)
+    return emojis.get(emoji_name)
 
 
 def _format_entity_detail(entity: Entity) -> str:

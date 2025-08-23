@@ -13,12 +13,12 @@ from .commits import (
     commit_mention_edit_hook,
     reply_with_commit_details,
 )
+from .emoji import load_emojis
 from .mentions import (
     ENTITY_REGEX,
     entity_mention_delete_hook,
     entity_mention_edit_hook,
     entity_message,
-    load_emojis,
     reply_with_entities,
 )
 

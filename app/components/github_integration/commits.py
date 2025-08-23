@@ -17,7 +17,7 @@ from app.common.hooks import (
     create_edit_hook,
     remove_view_after_delay,
 )
-from app.components.github_integration.mentions.fmt import entity_emojis
+from app.components.github_integration.emoji import emojis
 from app.components.github_integration.mentions.resolution import (
     resolve_repo_signature,
 )
@@ -112,7 +112,7 @@ class CommitActions(ItemActions):
 
 
 def _format_commit_mention(commit: CommitSummary) -> str:
-    emoji = entity_emojis.get("commit")
+    emoji = emojis.get("commit")
     title = commit.message.splitlines()[0]
     heading = f"{emoji} **Commit [`{commit.sha[:7]}`](<{commit.url}>):** {title}"
 

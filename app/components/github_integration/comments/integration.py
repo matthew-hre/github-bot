@@ -44,11 +44,8 @@ class CommentActions(ItemActions):
 
 
 def comment_to_embed(comment: Comment) -> dc.Embed:
-    title = (
-        f"{emoji} {comment.entity.title}"
-        if (emoji := get_entity_emoji(comment.entity))
-        else comment.entity.title
-    )
+    emoji = get_entity_emoji(comment.entity) or "❓"
+    title = f"{emoji} {comment.entity.title}"
     formatted_reactions = comment.reactions and [
         f"{REACTION_EMOJIS[reaction]} ×{count}"  # noqa: RUF001
         for reaction, count in comment.reactions

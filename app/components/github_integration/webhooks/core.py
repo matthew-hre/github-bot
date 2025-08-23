@@ -4,7 +4,8 @@ import discord as dc
 from githubkit.versions.latest.models import SimpleUser
 from monalisten import Monalisten
 
-from app.components.github_integration.mentions.fmt import entity_emojis
+from app.components.github_integration.emoji import EmojiName, emojis
+from app.components.github_integration.models import GitHubUser
 from app.setup import config
 from app.utils import truncate
 
@@ -35,14 +36,14 @@ class EmbedContent(NamedTuple):
 
 
 class Footer(NamedTuple):
-    icon: str
+    icon: EmojiName
     text: str
 
     @property
     def dict(self) -> dict[str, str | None]:
         return {
             "text": self.text,
-            "icon_url": emoji.url if (emoji := entity_emojis.get(self.icon)) else None,
+            "icon_url": emoji.url if (emoji := emojis.get(self.icon)) else None,
         }
 
 
@@ -53,9 +54,10 @@ async def send_embed(
     *,
     color: int | None = None,
 ) -> None:
+    author = GitHubUser(**actor.model_dump())
     embed = (
         dc.Embed(color=color, **content.dict)
         .set_footer(**footer.dict)
-        .set_author(name=actor.login, url=actor.html_url, icon_url=actor.avatar_url)
+        .set_author(**author.model_dump())
     )
     await config.webhook_channel.send(embed=embed)
