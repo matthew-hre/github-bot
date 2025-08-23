@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
 import discord as dc
-from githubkit.versions.latest.models import SimpleUser
 from monalisten import Monalisten
 
 from app.components.github_integration.emoji import EmojiName, emojis
@@ -12,7 +11,18 @@ from app.setup import config
 from app.utils import truncate
 
 if TYPE_CHECKING:
+    from githubkit.versions.latest.models import SimpleUser
     from monalisten import AuthIssue
+
+type EmbedColor = Literal["green", "red", "purple", "gray"]
+
+EMBED_COLORS: dict[EmbedColor, int] = {
+    "green": 0x3FB950,
+    "purple": 0xAB7DF8,
+    "red": 0xF85149,
+    "gray": 0x9198A1,
+}
+
 client = Monalisten(config.github_webhook_url, token=config.github_webhook_secret)
 
 
@@ -63,11 +73,11 @@ async def send_embed(
     content: EmbedContent,
     footer: Footer,
     *,
-    color: int | None = None,
+    color: EmbedColor | None = None,
 ) -> None:
     author = GitHubUser(**actor.model_dump())
     embed = (
-        dc.Embed(color=color, **content.dict)
+        dc.Embed(color=color and EMBED_COLORS.get(color), **content.dict)
         .set_footer(**footer.dict)
         .set_author(**author.model_dump())
     )
