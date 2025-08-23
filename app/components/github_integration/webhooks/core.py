@@ -1,4 +1,6 @@
-from typing import NamedTuple, TypedDict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
 import discord as dc
 from githubkit.versions.latest.models import SimpleUser
@@ -9,11 +11,20 @@ from app.components.github_integration.models import GitHubUser
 from app.setup import config
 from app.utils import truncate
 
-client = Monalisten(
-    config.github_webhook_url,
-    token=config.github_webhook_secret,
-    log_auth_warnings=True,
-)
+if TYPE_CHECKING:
+    from monalisten import AuthIssue
+client = Monalisten(config.github_webhook_url, token=config.github_webhook_secret)
+
+
+@client.on_internal("auth_issue")
+async def show_issue(issue: AuthIssue, event_data: dict[str, Any]) -> None:
+    guid = event_data.get("x-github-delivery", "<missing-guid>")
+    print(f"Token {issue.value} in event {guid}: {event_data}")
+
+
+@client.on_internal("ready")
+async def ready() -> None:
+    print("Monalisten client ready!")
 
 
 class EmbedContentArgs(TypedDict, total=False):
