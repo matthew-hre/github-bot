@@ -1,7 +1,8 @@
-from typing import NamedTuple, TypedDict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypedDict
 
 import discord as dc
-from githubkit.versions.latest.models import SimpleUser
 from monalisten import Monalisten
 
 from app.components.github_integration.emoji import EmojiName, emojis
@@ -9,11 +10,35 @@ from app.components.github_integration.models import GitHubUser
 from app.setup import config
 from app.utils import truncate
 
-client = Monalisten(
-    config.github_webhook_url,
-    token=config.github_webhook_secret,
-    log_auth_warnings=True,
-)
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from githubkit.versions.latest.models import SimpleUser
+    from monalisten import AuthIssue
+
+type EmbedColor = Literal["green", "red", "purple", "gray", "orange"]
+type SubhookStore[E] = dict[str, Callable[[E], Awaitable[None]]]
+
+EMBED_COLORS: dict[EmbedColor, int] = {
+    "green": 0x3FB950,
+    "purple": 0xAB7DF8,
+    "red": 0xF85149,
+    "gray": 0x9198A1,
+    "orange": 0xEDB74A,
+}
+
+client = Monalisten(config.github_webhook_url, token=config.github_webhook_secret)
+
+
+@client.on_internal("auth_issue")
+async def show_issue(issue: AuthIssue, event_data: dict[str, Any]) -> None:
+    guid = event_data.get("x-github-delivery", "<missing-guid>")
+    print(f"Token {issue.value} in event {guid}: {event_data}")
+
+
+@client.on_internal("ready")
+async def ready() -> None:
+    print("Monalisten client ready!")
 
 
 class EmbedContentArgs(TypedDict, total=False):
@@ -52,12 +77,25 @@ async def send_embed(
     content: EmbedContent,
     footer: Footer,
     *,
-    color: int | None = None,
+    color: EmbedColor | None = None,
 ) -> None:
     author = GitHubUser(**actor.model_dump())
     embed = (
-        dc.Embed(color=color, **content.dict)
+        dc.Embed(color=color and EMBED_COLORS.get(color), **content.dict)
         .set_footer(**footer.dict)
         .set_author(**author.model_dump())
     )
     await config.webhook_channel.send(embed=embed)
+
+
+def make_subhook_registrar[H](
+    hook_store: dict[str, H],
+) -> Callable[[str], Callable[[Any], H]]:
+    def register_subhook(action: str) -> Callable[[Any], H]:
+        def wrapper(function: Any) -> H:
+            hook_store[action] = function
+            return function
+
+        return wrapper
+
+    return register_subhook
