@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from functools import cached_property
 from typing import Any
@@ -7,6 +8,7 @@ from typing import Any
 import discord as dc
 from discord.ext import commands
 from githubkit import GitHub
+from loguru import logger
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -80,3 +82,11 @@ bot = commands.Bot(
 )
 
 gh = GitHub(config.github_token)
+
+logger.remove()
+logger.add(
+    sys.stderr,
+    # While $LOGURU_LEVEL is checked at import time, it doesn't override this value, so
+    # manually handle it.
+    level=os.getenv("LOGURU_LEVEL") or os.getenv("LOG_LEVEL") or "INFO",
+)
