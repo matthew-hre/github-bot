@@ -9,4 +9,7 @@ if config.sentry_dsn is not None:
         profiles_sample_rate=1.0,
     )
 
-bot.run(config.token)
+# Our logging is handled by Loguru, and logs from the standard logging module are
+# forwarded to Loguru in setup.py; hence, disable discord.py's log handler to avoid
+# duplicated logs showing up in stderr.
+bot.run(config.token, log_handler=None)
