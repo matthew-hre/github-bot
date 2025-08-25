@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Protocol, cast
 
+from loguru import logger
+
 from app.components.github_integration.webhooks.core import (
     EmbedContent,
     Footer,
@@ -71,7 +73,7 @@ async def handle_closed_issue(event: WebhookIssuesClosed) -> None:
         case "not_planned" | "duplicate":
             color, emoji_kind = "gray", "unplanned"
         case _:
-            print("Unexpected state reason in handle_closed_issue:", issue.state_reason)
+            logger.warning("unexpected state reason: {}", issue.state_reason)
             return
 
     state_reason = cast("str", issue.state_reason).replace("_", " ")
