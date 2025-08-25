@@ -178,6 +178,7 @@ async def handle_unlocked_pr(event: WebhookPullRequestUnlocked) -> None:
         event.sender,
         EmbedContent(f"unlocked PR #{number}", pr.html_url),
         Footer(get_pr_emoji(pr), f"PR #{number}: {pr.title}"),
+        color="blue",
     )
 
 
