@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, overload
 import discord as dc
 import httpx
 
-from app.setup import bot
+from app.setup import bot, config
 from app.utils import GuildTextChannel, dynamic_timestamp, truncate
 from app.utils.message_data import ExtensibleMessage, MessageData, get_files
 
@@ -38,11 +38,9 @@ NON_SYSTEM_MESSAGE_TYPES = frozenset({
 
 
 def get_ghostty_guild() -> dc.Guild:
-    try:
-        return next(g for g in bot.guilds if "ghostty" in g.name.casefold())
-    except StopIteration:
-        msg = "bot guild name does not contain 'ghostty'"
-        raise ValueError(msg) from None
+    return bot.get_guild(config.guild_id) or next(
+        (g for g in bot.guilds if "ghostty" in g.name.casefold()), bot.guilds[0]
+    )
 
 
 async def _get_original_message(message: dc.Message) -> dc.Message | None:

@@ -226,7 +226,7 @@ def test_get_moved_message_author_id(content: str, result: int | None) -> None:
     ("names", "result"),
     [
         (["Ghostty 👻", "Rootbeer", "Ghostty Bot Testing"], "Ghostty 👻"),
-        (["Ghost tea", "Casper Fanclub", "WezTerm"], None),
+        (["Ghost tea", "Casper Fanclub", "WezTerm"], "Ghost tea"),
         (
             ["Rust Programming Language", "Ghostty Community", "Ghostty"],
             "Ghostty Community",
@@ -238,12 +238,10 @@ def test_get_ghostty_guild(
 ) -> None:
     fake_guilds = [SimpleNamespace(name=name) for name in names]
     monkeypatch.setattr(
-        "app.common.message_moving.bot", SimpleNamespace(guilds=fake_guilds)
+        "app.common.message_moving.bot",
+        SimpleNamespace(guilds=fake_guilds, get_guild=lambda _: None),
     )
-    try:
-        assert get_ghostty_guild() == SimpleNamespace(name=result)
-    except ValueError:
-        assert result is None
+    assert get_ghostty_guild() == SimpleNamespace(name=result)
 
 
 @pytest.mark.parametrize(

@@ -49,6 +49,7 @@ class Config(BaseSettings):
 
     help_channel_tag_ids: dict[str, int]
 
+    guild_id: int
     help_channel_id: int
     log_channel_id: int
     media_channel_id: int
