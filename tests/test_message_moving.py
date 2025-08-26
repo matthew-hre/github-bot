@@ -229,7 +229,7 @@ def test_get_moved_message_author_id(content: str, result: int | None) -> None:
         (["Ghost tea", "Casper Fanclub", "WezTerm"], "Ghost tea"),
         (
             ["Rust Programming Language", "Ghostty Community", "Ghostty"],
-            "Ghostty Community",
+            "Rust Programming Language",
         ),
     ],
 )

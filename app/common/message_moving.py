@@ -38,9 +38,7 @@ NON_SYSTEM_MESSAGE_TYPES = frozenset({
 
 
 def get_ghostty_guild() -> dc.Guild:
-    return bot.get_guild(config.guild_id) or next(
-        (g for g in bot.guilds if "ghostty" in g.name.casefold()), bot.guilds[0]
-    )
+    return bot.get_guild(config.guild_id) or bot.guilds[0]
 
 
 async def _get_original_message(message: dc.Message) -> dc.Message | None:
