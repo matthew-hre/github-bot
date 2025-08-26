@@ -37,7 +37,7 @@ async def extract_numbers_then_hex(msg: dc.Message) -> ProcessedMessage:
 
 
 async def print_hex_nums(msg: dc.Message) -> None:
-    print((await extract_numbers_then_hex(msg)).content)
+    print((await extract_numbers_then_hex(msg)).content)  # noqa: T201
 
 
 class TrackedCallable[**P, R]:
