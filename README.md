@@ -185,8 +185,8 @@ This bot runs on Python 3.13+ and is managed with [uv]. To get started:
    ```
    or, if you have [just] installed:
    ```console
-   $ just autofix
-   $ just ci
+   $ just fix
+   $ just check
    ```
 
 
