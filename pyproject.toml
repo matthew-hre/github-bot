@@ -41,18 +41,7 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = [
-  "COM",
-  "ERA",
-  "D",
-  "FIX",
-  "S",
-  "ANN401",
-  "ISC001",
-  "T201",
-  "TD003",
-  "PLR2004",
-]
+ignore = ["COM", "ERA", "D", "FIX", "S", "ANN401", "ISC001", "TD003", "PLR2004"]
 mccabe.max-complexity = 20
 pylint.max-branches = 20
 pylint.max-returns = 15

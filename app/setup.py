@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from functools import cached_property
-from typing import Any
+from typing import Any, cast
 
 import discord as dc
 from discord.ext import commands
@@ -13,6 +13,14 @@ from githubkit import GitHub
 from loguru import logger
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_SENSITIVE_KEYS = (
+    "token",
+    "github_token",
+    "github_webhook_url",
+    "github_webhook_secret",
+    "sentry_dsn",
+)
 
 
 def cache_channel[T](field: str, _: type[T]) -> cached_property[T]:
@@ -84,6 +92,22 @@ bot = commands.Bot(
 )
 
 gh = GitHub(config.github_token)
+
+
+# Redact any sensitive values that make their way into the logs.
+class RedactedStderr:
+    def __getattr__(self, attr: str) -> Any:
+        return getattr(sys.__stderr__, attr)
+
+    def write(self, content: str) -> None:
+        for key in _SENSITIVE_KEYS:
+            if secret := getattr(config, key):
+                content = content.replace(secret, f"<{key} redacted>")
+        assert sys.__stderr__
+        sys.__stderr__.write(content)
+
+
+sys.stderr = cast("Any", RedactedStderr())
 
 
 # Both discord.py and httpx use the standard logging module; redirect them to Loguru.
