@@ -2,13 +2,13 @@
 default:
     @just --list
 
-# Run taplo, ruff, pytest, and pyright in check mode
+# Run taplo, ruff, pytest, and basedpyright in check mode
 check:
     uv run taplo fmt --check --diff pyproject.toml
     uv run ruff format --preview --check
     uv run ruff check
     uv run pytest
-    uv run pyright app tests
+    uv run basedpyright app tests
 
 # Run taplo and ruff in fix mode
 fix:

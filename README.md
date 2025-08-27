@@ -180,7 +180,7 @@ This bot runs on Python 3.13+ and is managed with [uv]. To get started:
    ```console
    $ uv run ruff check
    $ uv run ruff format --preview
-   $ uv run pyright app tests
+   $ uv run basedpyright app tests
    $ uv run taplo fmt pyproject.toml
    $ uv run pytest
    ```
