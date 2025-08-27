@@ -49,6 +49,7 @@ class Config(BaseSettings):
 
     help_channel_tag_ids: dict[str, int]
 
+    guild_id: int | None = None
     help_channel_id: int
     log_channel_id: int
     media_channel_id: int
@@ -70,6 +71,12 @@ class Config(BaseSettings):
             name: int(id_)
             for name, id_ in (pair.split(":") for pair in value.split(","))
         }
+
+    @cached_property
+    def ghostty_guild(self) -> dc.Guild:
+        if self.guild_id and (guild := bot.get_guild(self.guild_id)):
+            return guild
+        return bot.guilds[0]
 
     log_channel = cache_channel("log_channel_id", dc.TextChannel)
     help_channel = cache_channel("help_channel_id", dc.ForumChannel)

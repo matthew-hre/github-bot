@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, overload
 import discord as dc
 import httpx
 
-from app.setup import bot
+from app.setup import bot, config
 from app.utils import GuildTextChannel, dynamic_timestamp, truncate
 from app.utils.message_data import ExtensibleMessage, MessageData, get_files
 
@@ -35,14 +35,6 @@ NON_SYSTEM_MESSAGE_TYPES = frozenset({
     dc.MessageType.chat_input_command,
     dc.MessageType.context_menu_command,
 })
-
-
-def get_ghostty_guild() -> dc.Guild:
-    try:
-        return next(g for g in bot.guilds if "ghostty" in g.name.casefold())
-    except StopIteration:
-        msg = "bot guild name does not contain 'ghostty'"
-        raise ValueError(msg) from None
 
 
 async def _get_original_message(message: dc.Message) -> dc.Message | None:
@@ -71,12 +63,11 @@ def convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
     emojis in the current guild too.
     """
-    guild = get_ghostty_guild()
 
     def replace_nitro_emoji(match: re.Match[str]) -> str:
         animated, name, id_ = match.groups()
         emoji = bot.get_emoji(int(id_))
-        if not force and emoji and emoji.guild_id == guild.id:
+        if not force and emoji and emoji.guild_id == config.ghostty_guild.id:
             return match[0]
 
         ext = "gif" if animated else "webp"
