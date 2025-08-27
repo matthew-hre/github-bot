@@ -76,7 +76,6 @@ class Config(BaseSettings):
     def ghostty_guild(self) -> dc.Guild:
         if self.guild_id and (guild := bot.get_guild(self.guild_id)):
             return guild
-        logger.info("guild {} not found; defaulting to first guild", self.guild_id)
         return bot.guilds[0]
 
     log_channel = cache_channel("log_channel_id", dc.TextChannel)
