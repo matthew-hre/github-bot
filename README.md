@@ -144,7 +144,7 @@ Create a `.env` file in the root of the project based on `.env.example`.
 Below are explanations for each variable:
 * `BOT_ACCEPT_INVITE_URL`: a URL to visit to accept the Ghostty invite
 * Channel/role IDs from [step 4](#4-preparing-a-discord-server):
-  * `BOT_GUILD_ID`: the id of the server you prepared.
+  * `BOT_GUILD_ID`: the id of the server you prepared (optional; useful when your bot is in multiple servers).
   * `BOT_HELP_CHANNEL_ID`
   * `BOT_HELP_CHANNEL_TAG_IDS`: a comma-separated list of `tag_name:tag_id`
     pairs. The tag names are `moved`, `solved`, `stale` and `duplicate`.

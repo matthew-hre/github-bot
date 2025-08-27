@@ -23,18 +23,6 @@ _SENSITIVE_KEYS = (
 )
 
 
-def cache_guild[T](field: str, _: type[T]) -> cached_property[T]:
-    @cached_property
-    def prop(self: Config) -> Any:
-        guild_id = self.model_dump()[field]
-        if guild := bot.get_guild(guild_id):
-            return guild
-        logger.warning("guild {} not found; defaulting to first guild", guild_id)
-        return bot.guilds[0]
-
-    return prop
-
-
 def cache_channel[T](field: str, _: type[T]) -> cached_property[T]:
     @cached_property
     def prop(self: Config) -> Any:
@@ -61,7 +49,7 @@ class Config(BaseSettings):
 
     help_channel_tag_ids: dict[str, int]
 
-    guild_id: int
+    guild_id: int | None = None
     help_channel_id: int
     log_channel_id: int
     media_channel_id: int
@@ -84,7 +72,13 @@ class Config(BaseSettings):
             for name, id_ in (pair.split(":") for pair in value.split(","))
         }
 
-    ghostty_guild = cache_guild("guild_id", dc.Guild)
+    @cached_property
+    def ghostty_guild(self) -> dc.Guild:
+        if self.guild_id and (guild := bot.get_guild(self.guild_id)):
+            return guild
+        logger.info("guild {} not found; defaulting to first guild", self.guild_id)
+        return bot.guilds[0]
+
     log_channel = cache_channel("log_channel_id", dc.TextChannel)
     help_channel = cache_channel("help_channel_id", dc.ForumChannel)
     webhook_channel = cache_channel("webhook_channel_id", dc.TextChannel)
