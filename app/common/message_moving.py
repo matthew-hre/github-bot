@@ -37,10 +37,6 @@ NON_SYSTEM_MESSAGE_TYPES = frozenset({
 })
 
 
-def get_ghostty_guild() -> dc.Guild:
-    return bot.get_guild(config.guild_id) or bot.guilds[0]
-
-
 async def _get_original_message(message: dc.Message) -> dc.Message | None:
     """Can throw dc.errors.NotFound if the original message was deleted."""
     if (msg_ref := message.reference) is None:
@@ -67,12 +63,11 @@ def convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
     emojis in the current guild too.
     """
-    guild = get_ghostty_guild()
 
     def replace_nitro_emoji(match: re.Match[str]) -> str:
         animated, name, id_ = match.groups()
         emoji = bot.get_emoji(int(id_))
-        if not force and emoji and emoji.guild_id == guild.id:
+        if not force and emoji and emoji.guild_id == config.ghostty_guild.id:
             return match[0]
 
         ext = "gif" if animated else "webp"

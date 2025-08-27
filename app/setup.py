@@ -23,6 +23,18 @@ _SENSITIVE_KEYS = (
 )
 
 
+def cache_guild[T](field: str, _: type[T]) -> cached_property[T]:
+    @cached_property
+    def prop(self: Config) -> Any:
+        guild_id = self.model_dump()[field]
+        if guild := bot.get_guild(guild_id):
+            return guild
+        logger.warning("guild {} not found; defaulting to first guild", guild_id)
+        return bot.guilds[0]
+
+    return prop
+
+
 def cache_channel[T](field: str, _: type[T]) -> cached_property[T]:
     @cached_property
     def prop(self: Config) -> Any:
@@ -72,6 +84,7 @@ class Config(BaseSettings):
             for name, id_ in (pair.split(":") for pair in value.split(","))
         }
 
+    ghostty_guild = cache_guild("guild_id", dc.Guild)
     log_channel = cache_channel("log_channel_id", dc.TextChannel)
     help_channel = cache_channel("help_channel_id", dc.ForumChannel)
     webhook_channel = cache_channel("webhook_channel_id", dc.TextChannel)

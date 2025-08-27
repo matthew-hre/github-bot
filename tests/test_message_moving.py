@@ -14,7 +14,6 @@ from app.common.message_moving import (
     _format_emoji,
     _unattachable_embed,
     format_or_file,
-    get_ghostty_guild,
     message_can_be_moved,
 )
 
@@ -220,28 +219,6 @@ def test_get_moved_message_author_id(content: str, result: int | None) -> None:
     # NOTE: casting a SimpleNamespace to MovedMessage seems to break the code in
     # ExtensibleMessage, so we shall access _extract_author_id() directly.
     assert MovedMessage._extract_author_id(content) == result
-
-
-@pytest.mark.parametrize(
-    ("names", "result"),
-    [
-        (["Ghostty 👻", "Rootbeer", "Ghostty Bot Testing"], "Ghostty 👻"),
-        (["Ghost tea", "Casper Fanclub", "WezTerm"], "Ghost tea"),
-        (
-            ["Rust Programming Language", "Ghostty Community", "Ghostty"],
-            "Rust Programming Language",
-        ),
-    ],
-)
-def test_get_ghostty_guild(
-    names: list[str], result: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    fake_guilds = [SimpleNamespace(name=name) for name in names]
-    monkeypatch.setattr(
-        "app.common.message_moving.bot",
-        SimpleNamespace(guilds=fake_guilds, get_guild=lambda _: None),
-    )
-    assert get_ghostty_guild() == SimpleNamespace(name=result)
 
 
 @pytest.mark.parametrize(
