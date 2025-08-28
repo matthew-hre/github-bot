@@ -14,14 +14,6 @@ from loguru import logger
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_SENSITIVE_KEYS = (
-    "token",
-    "github_token",
-    "github_webhook_url",
-    "github_webhook_secret",
-    "sentry_dsn",
-)
-
 
 def cache_channel[T](field: str, _: type[T]) -> cached_property[T]:
     @cached_property
@@ -90,17 +82,18 @@ if "pytest" in sys.modules:
 config = Config()  # pyright: ignore [reportCallIssue]
 
 
-# Redact any sensitive values that make their way into the logs.
+# Redact any sensitive values that make their way into the logs. While the secrets in
+# the config object itself don't leak them as they use `SecretStr`s, it is possible that
+# some other consumer of the secrets could still unintentionally leak them.
 class RedactedStderr:
     def __getattr__(self, attr: str) -> Any:
         return getattr(sys.__stderr__, attr)
 
     def write(self, content: str) -> None:
-        for key in _SENSITIVE_KEYS:
-            if secret := getattr(config, key):
-                content = content.replace(
-                    secret.get_secret_value(), f"<{key} redacted>"
-                )
+        for key, value in config:
+            # Redact all SecretStr values if populated
+            if isinstance(value, SecretStr) and (secret := value.get_secret_value()):
+                content = content.replace(secret, f"<{key} redacted>")
         assert sys.__stderr__
         sys.__stderr__.write(content)
 
