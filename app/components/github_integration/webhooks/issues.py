@@ -152,19 +152,22 @@ async def handle_issue_comment_event(event: IssueCommentEvent) -> None:
 async def handle_created_issue_comment(event: WebhookIssueCommentCreated) -> None:
     issue, number = event.issue, event.issue.number
 
+    title = "commented on "
     if issue.pull_request:
         entity = f"PR #{issue.number}"
+        title += entity
         emoji = "pull_" + (
             ("merged" if issue.pull_request.merged_at else "closed")
             if issue.state == "closed"
             else ("draft" if issue.draft else "open")
         )
     else:
-        entity = f"issue #{number}"
+        entity = f"Issue #{number}"
+        title += entity.casefold()
         emoji = get_issue_emoji(cast("IssueLike", issue))
 
     await send_embed(
         event.sender,
-        EmbedContent(f"commented on {entity}", issue.html_url, event.comment.body),
-        Footer(emoji, f"{entity.capitalize()}: {issue.title}"),
+        EmbedContent(title, issue.html_url, event.comment.body),
+        Footer(emoji, f"{entity}: {issue.title}"),
     )
