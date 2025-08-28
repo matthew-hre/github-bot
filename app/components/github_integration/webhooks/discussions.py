@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Protocol, cast
 
-from app.components.github_integration.comments.fetching import FALLBACK_AUTHOR
 from app.components.github_integration.models import GitHubUser
 from app.components.github_integration.webhooks.core import (
     EmbedContent,
@@ -119,7 +118,7 @@ async def handle_unanswered_discussion(event: WebhookDiscussionUnanswered) -> No
     discussion, number = event.discussion, event.discussion.number
     emoji = "discussion_answered" if discussion.state == "closed" else "discussion"
     await send_embed(
-        event.sender or cast("SimpleUser", FALLBACK_AUTHOR),
+        event.sender or cast("SimpleUser", GitHubUser.default()),
         EmbedContent(
             f"unmarked an answer in discussion #{number} in {discussion.category.name}",
             discussion.html_url,
