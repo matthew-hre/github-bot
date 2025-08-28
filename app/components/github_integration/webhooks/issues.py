@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Literal, Protocol, cast
 
 from loguru import logger
@@ -34,6 +35,25 @@ issue_subhooks: SubhookStore[IssuesEvent] = {}
 register_issue_subhook = make_subhook_registrar(issue_subhooks)
 
 
+CONVERTED_DISCUSSION_HEADER = re.compile(
+    r"\s*### Discussed in https://github.com/.*?/discussions/(?P<discussion_number>\d+)"
+    r"\s*<div type='discussions-op-text'>"
+    r"\s*<sup>(?P<subtext>.+?)</sup>",
+    re.MULTILINE,
+)
+
+
+def reformat_converted_discussion_header(body: str | None, repo_url: str) -> str | None:
+    if body is None or not (match := CONVERTED_DISCUSSION_HEADER.match(body)):
+        return body
+
+    d, subtext = match["discussion_number"], match["subtext"]
+    new_heading = f"### Discussed in [#{d}]({repo_url}/discussions/{d})\n-# {subtext}\n"
+
+    _, end = match.span()
+    return new_heading + "".join(body[end:].lstrip().rsplit("</div>", maxsplit=1))
+
+
 class IssueLike(Protocol):
     state: Missing[Literal["open", "closed"]]
     state_reason: Missing[str | None]
@@ -56,9 +76,10 @@ async def handle_issue_event(event: IssuesEvent) -> None:
 @register_issue_subhook("opened")
 async def handle_opened_issue(event: WebhookIssuesOpened) -> None:
     issue, number = event.issue, event.issue.number
+    body = reformat_converted_discussion_header(issue.body, event.repository.html_url)
     await send_embed(
         event.sender,
-        EmbedContent(f"opened issue #{number}", issue.html_url, issue.body),
+        EmbedContent(f"opened issue #{number}", issue.html_url, body),
         Footer("issue_open", f"Issue #{number}: {issue.title}"),
         color="green",
     )
