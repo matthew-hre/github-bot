@@ -18,7 +18,7 @@ from app.components.github_integration.webhooks.core import (
 )
 
 if TYPE_CHECKING:
-    from githubkit.versions.v2022_11_28.models import (
+    from githubkit.versions.latest.models import (
         WebhookPullRequestClosed,
         WebhookPullRequestConvertedToDraft,
         WebhookPullRequestEdited,
