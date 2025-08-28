@@ -11,16 +11,8 @@ import discord as dc
 from discord.ext import commands
 from githubkit import GitHub
 from loguru import logger
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-_SENSITIVE_KEYS = (
-    "token",
-    "github_token",
-    "github_webhook_url",
-    "github_webhook_secret",
-    "sentry_dsn",
-)
 
 
 def cache_channel[T](field: str, _: type[T]) -> cached_property[T]:
@@ -36,16 +28,16 @@ class Config(BaseSettings):
         env_prefix="BOT_", env_file=".env", enable_decoding=False
     )
 
-    token: str
+    token: SecretStr
 
     github_org: str
     github_repos: dict[str, str]
-    github_token: str
-    github_webhook_url: str
-    github_webhook_secret: str | None = None
+    github_token: SecretStr
+    github_webhook_url: SecretStr
+    github_webhook_secret: SecretStr | None = None
 
     accept_invite_url: str
-    sentry_dsn: str | None = None
+    sentry_dsn: SecretStr | None = None
 
     help_channel_tag_ids: dict[str, int]
 
@@ -89,26 +81,18 @@ if "pytest" in sys.modules:
 # https://github.com/pydantic/pydantic-settings/issues/201
 config = Config()  # pyright: ignore [reportCallIssue]
 
-intents = dc.Intents.default()
-intents.members = True
-intents.message_content = True
-bot = commands.Bot(
-    command_prefix=commands.when_mentioned_or("!"),
-    intents=intents,
-    allowed_mentions=dc.AllowedMentions(everyone=False, roles=False),
-)
 
-gh = GitHub(config.github_token)
-
-
-# Redact any sensitive values that make their way into the logs.
+# Redact any sensitive values that make their way into the logs. While the secrets in
+# the config object itself don't leak them as they use `SecretStr`s, it is possible that
+# some other consumer of the secrets could still unintentionally leak them.
 class RedactedStderr:
     def __getattr__(self, attr: str) -> Any:
         return getattr(sys.__stderr__, attr)
 
     def write(self, content: str) -> None:
-        for key in _SENSITIVE_KEYS:
-            if secret := getattr(config, key):
+        for key, value in config:
+            # Redact all SecretStr values if populated
+            if isinstance(value, SecretStr) and (secret := value.get_secret_value()):
                 content = content.replace(secret, f"<{key} redacted>")
         assert sys.__stderr__
         sys.__stderr__.write(content)
@@ -157,3 +141,15 @@ logger.add(
         "httpx": "WARNING",
     },
 )
+
+
+intents = dc.Intents.default()
+intents.members = True
+intents.message_content = True
+bot = commands.Bot(
+    command_prefix=commands.when_mentioned_or("!"),
+    intents=intents,
+    allowed_mentions=dc.AllowedMentions(everyone=False, roles=False),
+)
+
+gh = GitHub(config.github_token.get_secret_value())

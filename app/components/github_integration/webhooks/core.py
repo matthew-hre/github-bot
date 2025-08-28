@@ -29,7 +29,12 @@ EMBED_COLORS: dict[EmbedColor, int] = {
     "blue": 0x4C8CED,
 }
 
-client = Monalisten(config.github_webhook_url, token=config.github_webhook_secret)
+client = Monalisten(
+    config.github_webhook_url.get_secret_value(),
+    token=config.github_webhook_secret.get_secret_value()
+    if config.github_webhook_secret
+    else None,
+)
 
 
 @client.on_internal("auth_issue")
