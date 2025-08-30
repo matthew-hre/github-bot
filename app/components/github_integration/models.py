@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Annotated, Literal, NamedTuple, cast
+from typing import Annotated, Literal, NamedTuple, Self, cast
 
 from githubkit.versions.latest.models import IssuePropLabelsItemsOneof1
 from pydantic import (
@@ -37,6 +37,14 @@ class GitHubUser(BaseModel):
     @property
     def hyperlink(self) -> str:
         return f"[`{self.name}`](<{self.url}>)"
+
+    @classmethod
+    def default(cls) -> Self:
+        return cls(
+            login="GitHub",
+            url="https://github.com",
+            icon_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+        )
 
 
 class Reactions(BaseModel):

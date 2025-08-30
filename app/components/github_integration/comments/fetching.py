@@ -42,11 +42,6 @@ COMMENT_PATTERN = re.compile(
     r"https?://(?:www\.)?github\.com/([a-z0-9\-]+)/([a-z0-9\-\._]+)/"
     r"(issues|discussions|pull)/(\d+)/?#(\w+?-?)(\d+)"
 )
-FALLBACK_AUTHOR = GitHubUser(
-    login="GitHub",
-    url="https://github.com",
-    icon_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-)
 STATE_TO_COLOR = {
     "APPROVED": 0x2ECC71,  # green
     "CHANGES_REQUESTED": 0xE74C3C,  # red
@@ -174,7 +169,7 @@ comment_cache = CommentCache(minutes=30)
 
 
 def _make_author(user: BaseModel | None) -> GitHubUser:
-    return GitHubUser(**user.model_dump()) if user else FALLBACK_AUTHOR
+    return GitHubUser(**user.model_dump()) if user else GitHubUser.default()
 
 
 def _make_reactions(rollup: ReactionRollup | Missing[ReactionRollup]) -> Reactions:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Literal, Protocol, cast
 
 from loguru import logger
@@ -15,7 +16,7 @@ from app.components.github_integration.webhooks.core import (
 
 if TYPE_CHECKING:
     from githubkit.typing import Missing
-    from githubkit.versions.v2022_11_28.models import (
+    from githubkit.versions.latest.models import (
         WebhookIssueCommentCreated,
         WebhookIssuesClosed,
         WebhookIssuesLocked,
@@ -32,6 +33,25 @@ if TYPE_CHECKING:
 issue_subhooks: SubhookStore[IssuesEvent] = {}
 
 register_issue_subhook = make_subhook_registrar(issue_subhooks)
+
+
+CONVERTED_DISCUSSION_HEADER = re.compile(
+    r"\s*### Discussed in https://github.com/.*?/discussions/(?P<discussion_number>\d+)"
+    r"\s*<div type='discussions-op-text'>"
+    r"\s*<sup>(?P<subtext>.+?)</sup>",
+    re.MULTILINE,
+)
+
+
+def reformat_converted_discussion_header(body: str | None, repo_url: str) -> str | None:
+    if body is None or not (match := CONVERTED_DISCUSSION_HEADER.match(body)):
+        return body
+
+    d, subtext = match["discussion_number"], match["subtext"]
+    new_heading = f"### Discussed in [#{d}]({repo_url}/discussions/{d})\n-# {subtext}\n"
+
+    _, end = match.span()
+    return new_heading + "".join(body[end:].lstrip().rsplit("</div>", maxsplit=1))
 
 
 class IssueLike(Protocol):
@@ -56,9 +76,10 @@ async def handle_issue_event(event: IssuesEvent) -> None:
 @register_issue_subhook("opened")
 async def handle_opened_issue(event: WebhookIssuesOpened) -> None:
     issue, number = event.issue, event.issue.number
+    body = reformat_converted_discussion_header(issue.body, event.repository.html_url)
     await send_embed(
         event.sender,
-        EmbedContent(f"opened issue #{number}", issue.html_url, issue.body),
+        EmbedContent(f"opened issue #{number}", issue.html_url, body),
         Footer("issue_open", f"Issue #{number}: {issue.title}"),
         color="green",
     )
@@ -152,19 +173,22 @@ async def handle_issue_comment_event(event: IssueCommentEvent) -> None:
 async def handle_created_issue_comment(event: WebhookIssueCommentCreated) -> None:
     issue, number = event.issue, event.issue.number
 
+    title = "commented on "
     if issue.pull_request:
         entity = f"PR #{issue.number}"
+        title += entity
         emoji = "pull_" + (
             ("merged" if issue.pull_request.merged_at else "closed")
             if issue.state == "closed"
             else ("draft" if issue.draft else "open")
         )
     else:
-        entity = f"issue #{number}"
+        entity = f"Issue #{number}"
+        title += entity.casefold()
         emoji = get_issue_emoji(cast("IssueLike", issue))
 
     await send_embed(
         event.sender,
-        EmbedContent(f"commented on {entity}", issue.html_url, event.comment.body),
-        Footer(emoji, f"{entity.capitalize()}: {issue.title}"),
+        EmbedContent(title, issue.html_url, event.comment.body),
+        Footer(emoji, f"{entity}: {issue.title}"),
     )

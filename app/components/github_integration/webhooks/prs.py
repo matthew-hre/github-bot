@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 from loguru import logger
 
-from app.components.github_integration.comments.fetching import FALLBACK_AUTHOR
 from app.components.github_integration.models import GitHubUser
 from app.components.github_integration.webhooks.core import (
     EmbedContent,
@@ -18,7 +17,7 @@ from app.components.github_integration.webhooks.core import (
 )
 
 if TYPE_CHECKING:
-    from githubkit.versions.v2022_11_28.models import (
+    from githubkit.versions.latest.models import (
         WebhookPullRequestClosed,
         WebhookPullRequestConvertedToDraft,
         WebhookPullRequestEdited,
@@ -255,7 +254,7 @@ async def handle_pr_review_dismissed(
     review_author = (
         GitHubUser(**event.review.user.model_dump())
         if event.review.user
-        else FALLBACK_AUTHOR
+        else GitHubUser.default()
     )
     await send_embed(
         event.sender,
