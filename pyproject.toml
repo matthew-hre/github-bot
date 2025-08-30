@@ -24,7 +24,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "ruff==0.12.10",
-  "pyright==1.1.404",
+  "basedpyright==1.31.3",
   "taplo==0.9.3",
   "pytest==8.4.1",
   "pytest-asyncio==1.1.0",
