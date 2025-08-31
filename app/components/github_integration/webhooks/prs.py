@@ -224,8 +224,14 @@ async def handle_pr_review_event(event: PullRequestReviewEvent) -> None:
 
 @register_pr_review_subhook("submitted")
 async def handle_pr_review_submitted(event: WebhookPullRequestReviewSubmitted) -> None:
-    pr, number = event.pull_request, event.pull_request.number
-    match event.review.state:
+    pr, number, review = event.pull_request, event.pull_request.number, event.review
+
+    if review.state == "commented" and not review.body:
+        # We most definitely have some pull_request_review_comment event(s) happening at
+        # the same time, so an empty review like this can be ignored to reduce spam.
+        return
+
+    match review.state:
         case "approved":
             color, title = "green", "approved"
         case "commented":
@@ -239,7 +245,7 @@ async def handle_pr_review_submitted(event: WebhookPullRequestReviewSubmitted) -
     emoji = "pull_" + ("draft" if pr.draft else "merged" if pr.merged_at else pr.state)
     await send_embed(
         event.sender,
-        EmbedContent(f"{title} PR #{number}", pr.html_url, event.review.body),
+        EmbedContent(f"{title} PR #{number}", pr.html_url, review.body),
         Footer(emoji, f"PR #{number}: {pr.title}"),
         color=color,
     )
