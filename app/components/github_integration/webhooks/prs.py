@@ -62,6 +62,7 @@ register_pr_review_subhook = make_subhook_registrar(pr_review_subhooks)
 class PRLike(Protocol):
     number: int
     title: str
+    html_url: str
     draft: Any
     merged_at: Any
     state: Any
@@ -79,6 +80,12 @@ def pr_footer(
     return Footer(emoji, f"PR #{pr.number}: {pr.title}")
 
 
+def pr_embed_content(
+    pr: PRLike, template: str, body: str | None = None
+) -> EmbedContent:
+    return EmbedContent(template.format(f"PR #{pr.number}"), pr.html_url, body)
+
+
 @client.on("pull_request")
 async def handle_pr_event(event: PullRequestEvent) -> None:
     if subhook := pr_subhooks.get(event.action):
@@ -90,7 +97,7 @@ async def handle_opened_pr(event: WebhookPullRequestOpened) -> None:
     pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"opened PR #{pr.number}", pr.html_url, pr.body),
+        pr_embed_content(pr, "opened {}", pr.body),
         pr_footer(pr, emoji="pull_open"),
         color="green",
     )
@@ -102,7 +109,7 @@ async def handle_closed_pr(event: WebhookPullRequestClosed) -> None:
     action, color = ("merged", "purple") if pr.merged else ("closed", "red")
     await send_embed(
         event.sender,
-        EmbedContent(f"{action} PR #{pr.number}", pr.html_url),
+        pr_embed_content(pr, f"{action} {{}}"),
         pr_footer(pr, emoji="pull_" + action),
         color=color,
     )
@@ -113,7 +120,7 @@ async def handle_reopened_pr(event: WebhookPullRequestReopened) -> None:
     pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"reopened PR #{pr.number}", pr.html_url),
+        pr_embed_content(pr, "reopened {}"),
         pr_footer(pr, emoji="pull_open"),
         color="green",
     )
@@ -142,9 +149,7 @@ async def handle_edited_pr(event: WebhookPullRequestEdited) -> None:
 
     assert event.sender
     await send_embed(
-        event.sender,
-        EmbedContent(f"edited PR #{pr.number}", pr.html_url, content),
-        pr_footer(pr),
+        event.sender, pr_embed_content(pr, "edited {}", content), pr_footer(pr)
     )
 
 
@@ -153,7 +158,7 @@ async def handle_drafted_pr(event: WebhookPullRequestConvertedToDraft) -> None:
     pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"converted PR #{pr.number} to draft", pr.html_url),
+        pr_embed_content(pr, "converted {} to draft"),
         pr_footer(pr, emoji="pull_draft"),
         color="gray",
     )
@@ -164,7 +169,7 @@ async def handle_undrafted_pr(event: WebhookPullRequestReadyForReview) -> None:
     pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"marked PR #{pr.number} as ready for review", pr.html_url),
+        pr_embed_content(pr, "marked {} as ready for review"),
         pr_footer(pr, emoji="pull_open"),
         color="green",
     )
@@ -173,11 +178,11 @@ async def handle_undrafted_pr(event: WebhookPullRequestReadyForReview) -> None:
 @register_pr_subhook("locked")
 async def handle_locked_pr(event: WebhookPullRequestLocked) -> None:
     pr = event.pull_request
-    title = f"locked PR #{pr.number}"
+    template = "locked {}"
     if reason := pr.active_lock_reason:
-        title += f" as {reason}"
+        template += f" as {reason}"
     await send_embed(
-        event.sender, EmbedContent(title, pr.html_url), pr_footer(pr), color="orange"
+        event.sender, pr_embed_content(pr, template), pr_footer(pr), color="orange"
     )
 
 
@@ -185,10 +190,7 @@ async def handle_locked_pr(event: WebhookPullRequestLocked) -> None:
 async def handle_unlocked_pr(event: WebhookPullRequestUnlocked) -> None:
     pr = event.pull_request
     await send_embed(
-        event.sender,
-        EmbedContent(f"unlocked PR #{pr.number}", pr.html_url),
-        pr_footer(pr),
-        color="blue",
+        event.sender, pr_embed_content(pr, "unlocked {}"), pr_footer(pr), color="blue"
     )
 
 
@@ -198,7 +200,7 @@ async def handle_pr_review_request(event: WebhookPullRequestReviewRequested) -> 
     content = f"from {_format_reviewer(event)}"
     await send_embed(
         event.sender,
-        EmbedContent(f"requested review for PR #{pr.number}", pr.html_url, content),
+        pr_embed_content(pr, "requested review for {}", content),
         pr_footer(pr),
     )
 
@@ -211,9 +213,7 @@ async def handle_pr_removed_review_request(
     content = f"from {_format_reviewer(event)}"
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"removed review request for PR #{pr.number}", pr.html_url, content
-        ),
+        pr_embed_content(pr, "removed review request for {}", content),
         pr_footer(pr),
     )
 
@@ -256,7 +256,7 @@ async def handle_pr_review_submitted(event: WebhookPullRequestReviewSubmitted) -
     emoji = "pull_" + ("draft" if pr.draft else "merged" if pr.merged_at else pr.state)
     await send_embed(
         event.sender,
-        EmbedContent(f"{title} PR #{pr.number}", pr.html_url, review.body),
+        pr_embed_content(pr, f"{title} {{}}", review.body),
         pr_footer(pr, emoji=emoji),
         color=color,
     )
@@ -275,10 +275,8 @@ async def handle_pr_review_dismissed(
     )
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"dismissed a PR #{pr.number} review",
-            pr.html_url,
-            f"authored by {review_author.hyperlink}",
+        pr_embed_content(
+            pr, "dismissed a {} review", f"authored by {review_author.hyperlink}"
         ),
         pr_footer(pr, emoji=emoji),
         color="orange",
@@ -305,7 +303,7 @@ async def handle_pr_review_comment_created(
 
     await send_embed(
         event.sender,
-        EmbedContent(f"left a review comment on PR #{pr.number}", pr.html_url, content),
+        pr_embed_content(pr, "left a review comment on {}", content),
         pr_footer(pr, from_review=True),
     )
 

@@ -14,6 +14,7 @@ from app.components.github_integration.webhooks.core import (
 
 if TYPE_CHECKING:
     from githubkit.versions.latest.models import (
+        DiscussionPropCategory,
         SimpleUser,
         WebhookDiscussionAnswered,
         WebhookDiscussionClosed,
@@ -37,6 +38,8 @@ register_discussion_subhook = make_subhook_registrar(discussion_subhooks)
 class DiscussionLike(Protocol):
     title: str
     number: int
+    html_url: str
+    category: DiscussionPropCategory
     answer_html_url: str | None
     state: Literal["open", "closed", "locked", "converting", "transferring"]
 
@@ -52,6 +55,16 @@ def discussion_footer(
     return Footer(emoji, f"Discussion #{discussion.number}: {discussion.title}")
 
 
+def discussion_embed_content(
+    discussion: DiscussionLike, action: str, body: str | None = None
+) -> EmbedContent:
+    return EmbedContent(
+        f"{action} discussion #{discussion.number} in {discussion.category.name}",
+        discussion.html_url,
+        body,
+    )
+
+
 @client.on("discussion")
 async def handle_discussion_event(event: DiscussionEvent) -> None:
     if subhook := discussion_subhooks.get(event.action):
@@ -63,11 +76,7 @@ async def handle_created_discussion(event: WebhookDiscussionCreated) -> None:
     discussion = event.discussion
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"opened discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
-            discussion.body,
-        ),
+        discussion_embed_content(discussion, "opened", discussion.body),
         discussion_footer(discussion, emoji="discussion"),
         color="gray",
     )
@@ -78,10 +87,7 @@ async def handle_closed_discussion(event: WebhookDiscussionClosed) -> None:
     discussion = event.discussion
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"closed discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
-        ),
+        discussion_embed_content(discussion, "closed"),
         discussion_footer(discussion, emoji="discussion_answered"),
         color="purple",
     )
@@ -93,10 +99,7 @@ async def handle_reopened_discussion(event: WebhookDiscussionReopened) -> None:
     emoji = "discussion_answered" if discussion.answer_html_url else "discussion"
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"reopened discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
-        ),
+        discussion_embed_content(discussion, "reopened"),
         discussion_footer(discussion, emoji=emoji),
         color="gray",
     )
@@ -108,9 +111,9 @@ async def handle_answered_discussion(event: WebhookDiscussionAnswered) -> None:
     accepting_user = GitHubUser(**event.sender.model_dump())
     await send_embed(
         cast("SimpleUser", answer.user),
-        EmbedContent(
-            f"answered discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
+        discussion_embed_content(
+            discussion,
+            "answered",
             f"-# Answer chosen by {accepting_user.hyperlink}\n{answer.body}",
         ),
         discussion_footer(discussion, emoji="discussion_answered"),
@@ -124,11 +127,7 @@ async def handle_unanswered_discussion(event: WebhookDiscussionUnanswered) -> No
     emoji = "discussion_answered" if discussion.state == "closed" else "discussion"
     await send_embed(
         event.sender or cast("SimpleUser", GitHubUser.default()),
-        EmbedContent(
-            f"unmarked an answer in discussion #{discussion.number}"
-            f" in {discussion.category.name}",
-            discussion.html_url,
-        ),
+        discussion_embed_content(discussion, "unmarked an answer in"),
         discussion_footer(discussion, emoji=emoji),
         color="red",
     )
@@ -140,10 +139,7 @@ async def handle_locked_discussion(event: WebhookDiscussionLocked) -> None:
     emoji = "discussion_answered" if discussion.answer_html_url else "discussion"
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"locked discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
-        ),
+        discussion_embed_content(discussion, "locked"),
         discussion_footer(discussion, emoji=emoji),
         color="orange",
     )
@@ -154,10 +150,7 @@ async def handle_unlocked_discussion(event: WebhookDiscussionUnlocked) -> None:
     discussion = event.discussion
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"unlocked discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
-        ),
+        discussion_embed_content(discussion, "unlocked"),
         discussion_footer(discussion),
         color="blue",
     )
@@ -168,10 +161,7 @@ async def handle_pinned_discussion(event: WebhookDiscussionPinned) -> None:
     discussion = event.discussion
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"pinned discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
-        ),
+        discussion_embed_content(discussion, "pinned"),
         discussion_footer(discussion),
         color="blue",
     )
@@ -182,10 +172,7 @@ async def handle_unpinned_discussion(event: WebhookDiscussionUnpinned) -> None:
     discussion = event.discussion
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"unpinned discussion #{discussion.number} in {discussion.category.name}",
-            discussion.html_url,
-        ),
+        discussion_embed_content(discussion, "unpinned"),
         discussion_footer(discussion),
         color="orange",
     )
