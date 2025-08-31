@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 import re
+from typing import final, override
 
 import discord as dc
 import httpx
@@ -30,6 +31,7 @@ class XKCD(BaseModel):
 
 
 class XKCDMentionCache(TTRCache[int, dc.Embed]):
+    @override
     async def fetch(self, key: int) -> None:
         url = XKCD_URL.format(key)
         async with httpx.AsyncClient() as client:
@@ -58,6 +60,7 @@ xkcd_mention_cache = XKCDMentionCache(hours=12)
 xkcd_mention_linker = MessageLinker()
 
 
+@final
 class XKCDActions(ItemActions):
     linker = xkcd_mention_linker
     action_singular = "linked this xkcd comic"

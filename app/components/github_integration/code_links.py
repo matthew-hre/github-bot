@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from io import BytesIO
 from pathlib import Path
 from textwrap import dedent
-from typing import NamedTuple
+from typing import NamedTuple, final, override
 
 import discord as dc
 from zig_codeblocks import highlight_zig_code
@@ -53,6 +53,7 @@ class Snippet(NamedTuple):
 
 
 class ContentCache(TTRCache[SnippetPath, str]):
+    @override
     async def fetch(self, key: SnippetPath) -> None:
         resp = await gh.rest.repos.async_get_content(
             key.owner,
@@ -68,6 +69,7 @@ content_cache = ContentCache(minutes=30)
 code_linker = MessageLinker()
 
 
+@final
 class CodeLinkActions(ItemActions):
     linker = code_linker
     action_singular = "linked this code snippet"

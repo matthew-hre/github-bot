@@ -1,6 +1,7 @@
 import asyncio
 from collections import defaultdict
 from itertools import chain
+from typing import final
 
 import discord as dc
 from discord.ext import tasks
@@ -31,6 +32,7 @@ IGNORED_MESSAGE_TYPES = frozenset((
 mention_linker = MessageLinker()
 
 
+@final
 class MentionActions(ItemActions):
     linker = mention_linker
     action_singular = "mentioned this entity"

@@ -1,3 +1,5 @@
+from typing import override
+
 from githubkit.exception import RequestFailed
 
 from .discussions import get_discussion
@@ -9,6 +11,7 @@ type EntitySignature = tuple[str, str, int]
 
 
 class EntityCache(TTRCache[EntitySignature, Entity]):
+    @override
     async def fetch(self, key: EntitySignature) -> None:
         try:
             entity = (await gh.rest.issues.async_get(*key)).parsed_data

@@ -4,7 +4,7 @@ import re
 import string
 from io import BytesIO
 from random import choices
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, final
 
 import discord as dc
 from zig_codeblocks import (
@@ -67,6 +67,7 @@ def _apply_discord_wa_in_ansi_codeblocks(source: str) -> str:
     return source
 
 
+@final
 class CodeblockActions(ItemActions):
     linker = codeblock_linker
     action_singular = "sent this code block"

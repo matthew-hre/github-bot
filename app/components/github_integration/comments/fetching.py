@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import re
 from contextlib import suppress
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, override
 
 from githubkit.exception import RequestFailed
 from githubkit.versions.latest.models import (
@@ -148,6 +148,7 @@ def _format_commit_id(
 
 
 class CommentCache(TTRCache[tuple[EntityGist, str, int], Comment]):
+    @override
     async def fetch(self, key: tuple[EntityGist, str, int]) -> None:
         entity_gist, event_type, event_no = key
         coro = {

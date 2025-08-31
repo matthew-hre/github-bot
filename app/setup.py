@@ -1,3 +1,4 @@
+# pyright: reportUnannotatedClassAttribute=false
 from __future__ import annotations
 
 import inspect
@@ -5,7 +6,7 @@ import logging
 import os
 import sys
 from functools import cached_property
-from typing import Any, cast
+from typing import Any, cast, override
 
 import discord as dc
 from discord.ext import commands
@@ -105,6 +106,7 @@ sys.stderr = cast("Any", RedactedStderr())
 # This code snippet is taken straight from Loguru's README:
 # https://github.com/Delgan/loguru/tree/0.7.3#entirely-compatible-with-standard-logging
 class _InterceptHandler(logging.Handler):
+    @override
     def emit(self, record: logging.LogRecord) -> None:
         # Get corresponding Loguru level if it exists.
         try:

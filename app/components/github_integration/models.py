@@ -1,5 +1,6 @@
+# pyright: reportUnannotatedClassAttribute=false
 import datetime as dt
-from typing import Annotated, Literal, NamedTuple, Self, cast
+from typing import Annotated, Literal, NamedTuple, Self, cast, override
 
 from githubkit.versions.latest.models import IssuePropLabelsItemsOneof1
 from pydantic import (
@@ -119,6 +120,7 @@ class EntityGist(NamedTuple):
     repo: str
     number: int
 
+    @override
     def __str__(self) -> str:
         return f"{self.owner}/{self.repo}#{self.number}"
 

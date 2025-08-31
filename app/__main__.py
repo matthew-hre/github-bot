@@ -1,6 +1,6 @@
 import sentry_sdk
 
-from app.core import bot, config
+from app.core import bot, config  # pyright: ignore[reportPrivateLocalImportUsage]
 
 if config.sentry_dsn is not None:
     sentry_sdk.init(

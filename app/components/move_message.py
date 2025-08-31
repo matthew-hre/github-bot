@@ -2,7 +2,7 @@ import asyncio
 import datetime as dt
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Self, cast
+from typing import Self, cast, final, override
 
 import discord as dc
 
@@ -119,6 +119,7 @@ EDITING_TIMEOUT_ALMOST_REACHED = (
 UPLOADING = "⌛ Uploading attachments (this may take some time)…"
 
 
+@final
 class DeleteInstead(dc.ui.View):
     def __init__(self, message: dc.Message) -> None:
         super().__init__()
@@ -235,6 +236,7 @@ async def _remove_edit_thread_after_timeout(thread: dc.Thread, author: Account) 
     await _remove_edit_thread_after_timeout(thread, author)
 
 
+@final
 class SelectChannel(dc.ui.View):
     def __init__(self, message: dc.Message, executor: dc.Member) -> None:
         super().__init__()
@@ -280,6 +282,7 @@ class SelectChannel(dc.ui.View):
         )
 
 
+@final
 class Ghostping(dc.ui.View):
     def __init__(self, author: dc.Member, channel: GuildTextChannel) -> None:
         super().__init__()
@@ -302,6 +305,7 @@ class Ghostping(dc.ui.View):
         await (await self._channel.send(self._author.mention)).delete()
 
 
+@final
 class HelpPostTitle(dc.ui.Modal, title="Turn into #help post"):
     title_ = dc.ui.TextInput[Self](
         label="#help post title", style=dc.TextStyle.short, max_length=100
@@ -311,6 +315,7 @@ class HelpPostTitle(dc.ui.Modal, title="Turn into #help post"):
         super().__init__()
         self._message = message
 
+    @override
     async def on_submit(self, interaction: dc.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
 
@@ -329,8 +334,8 @@ class HelpPostTitle(dc.ui.Modal, title="Turn into #help post"):
         )
 
 
+@final
 class ChooseMessageAction(dc.ui.View):
-    attachment_button: dc.ui.Button[Self]
     thread_button: dc.ui.Button[Self]
     help_button: dc.ui.Button[Self]
 
@@ -366,7 +371,7 @@ class ChooseMessageAction(dc.ui.View):
         match len(self._message.attachments):
             case 0:
                 # Don't allow removing attachments when there aren't any.
-                pass
+                return
             case 1 if is_attachment_only(
                 self._message, preprocessed_content=self._split_subtext.content
             ):
@@ -374,19 +379,19 @@ class ChooseMessageAction(dc.ui.View):
                 # attachment, as that would make the message empty. This is in line with
                 # Discord's UI (it does not show the remove button on the attachment if
                 # there is only one).
-                pass
+                return
             case 1:
-                self.attachment_button = dc.ui.Button(
+                attachment_button = dc.ui.Button[Self](
                     label="Remove attachment", emoji="🔗"
                 )
-                self.attachment_button.callback = self.remove_attachment
-                self.add_item(self.attachment_button)
+                attachment_button.callback = self.remove_attachment
+                self.add_item(attachment_button)
             case _:
-                self.attachment_button = dc.ui.Button(
+                attachment_button = dc.ui.Button[Self](
                     label="Remove attachments", emoji="🔗"
                 )
-                self.attachment_button.callback = self.send_attachment_picker
-                self.add_item(self.attachment_button)
+                attachment_button.callback = self.send_attachment_picker
+                self.add_item(attachment_button)
 
     async def remove_attachment(self, interaction: dc.Interaction) -> None:
         await self._message.edit(attachments=[])
@@ -489,6 +494,7 @@ class ChooseMessageAction(dc.ui.View):
         )
 
 
+@final
 class EditMessage(dc.ui.Modal, title="Edit Message"):
     new_text = dc.ui.TextInput[Self](
         label="New message content",
@@ -504,6 +510,7 @@ class EditMessage(dc.ui.Modal, title="Edit Message"):
         self.new_text.max_length = 2000 - len(split_subtext.subtext) - 1
         self._message = message
 
+    @override
     async def on_submit(self, interaction: dc.Interaction) -> None:
         content = f"{self.new_text.value}\n{self._split_subtext.subtext}"
         converted_content = convert_nitro_emojis(content)
@@ -514,6 +521,7 @@ class EditMessage(dc.ui.Modal, title="Edit Message"):
         await interaction.response.send_message("Message edited.", ephemeral=True)
 
 
+@final
 class DeleteAttachments(dc.ui.View):
     select: dc.ui.Select[Self]
 
@@ -550,6 +558,7 @@ class DeleteAttachments(dc.ui.View):
         )
 
 
+@final
 class CancelEditing(dc.ui.View):
     def __init__(self, thread: dc.Thread) -> None:
         super().__init__()
@@ -573,6 +582,7 @@ class CancelEditing(dc.ui.View):
         # would result in NotFound being thrown since the thread was just deleted above.
 
 
+@final
 class ContinueEditing(dc.ui.View):
     def __init__(self, thread: dc.Thread) -> None:
         super().__init__()
@@ -598,6 +608,7 @@ class ContinueEditing(dc.ui.View):
         )
 
 
+@final
 class SkipLargeAttachments(dc.ui.View):
     def __init__(
         self, message: dc.Message, state: ThreadState, new_content: str
@@ -633,6 +644,7 @@ class SkipLargeAttachments(dc.ui.View):
         )
 
 
+@final
 class AttachmentChoice(dc.ui.View):
     def __init__(self, message: dc.Message, state: ThreadState) -> None:
         super().__init__()
