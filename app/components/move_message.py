@@ -381,17 +381,13 @@ class ChooseMessageAction(dc.ui.View):
                 # there is only one).
                 return
             case 1:
-                attachment_button = dc.ui.Button[Self](
-                    label="Remove attachment", emoji="🔗"
-                )
-                attachment_button.callback = self.remove_attachment
-                self.add_item(attachment_button)
+                label, callback = "Remove attachment", self.remove_attachment
             case _:
-                attachment_button = dc.ui.Button[Self](
-                    label="Remove attachments", emoji="🔗"
-                )
-                attachment_button.callback = self.send_attachment_picker
-                self.add_item(attachment_button)
+                label, callback = "Remove attachments", self.send_attachment_picker
+
+        attachment_button = dc.ui.Button[Self](label=label, emoji="🔗")
+        attachment_button.callback = callback
+        self.add_item(attachment_button)
 
     async def remove_attachment(self, interaction: dc.Interaction) -> None:
         await self._message.edit(attachments=[])
