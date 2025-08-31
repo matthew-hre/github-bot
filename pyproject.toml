@@ -31,7 +31,11 @@ dev = [
 ]
 
 [tool.pyright]
-typeCheckingMode = "strict"
+reportAny = false
+reportExplicitAny = false
+reportImplicitStringConcatenation = false
+reportInvalidCast = false
+reportUnusedCallResult = false
 reportUnknownLambdaType = false
 
 [tool.pytest.ini_options]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, final
 
 import discord as dc
 
@@ -37,6 +37,7 @@ _FIGURE_SPACE = "\u2007"
 comment_linker = MessageLinker()
 
 
+@final
 class CommentActions(ItemActions):
     linker = comment_linker
     action_singular = "linked this comment"

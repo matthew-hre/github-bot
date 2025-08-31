@@ -3,7 +3,7 @@ import datetime as dt
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Self
+from typing import ClassVar, Self, final
 
 import discord as dc
 
@@ -24,6 +24,7 @@ async def remove_view_after_delay(message: dc.Message, delay: float = 30.0) -> N
         await message.edit(view=None)
 
 
+@final
 class MessageLinker:
     def __init__(self) -> None:
         self._refs: dict[dc.Message, dc.Message] = {}
@@ -80,9 +81,11 @@ class MessageLinker:
 
 
 class ItemActions(dc.ui.View):
-    linker: MessageLinker
-    action_singular: str
-    action_plural: str
+    linker: ClassVar[MessageLinker]
+    action_singular: ClassVar[str]
+    action_plural: ClassVar[str]
+    message: dc.Message
+    item_count: int
 
     def __init__(self, message: dc.Message, item_count: int) -> None:
         super().__init__()

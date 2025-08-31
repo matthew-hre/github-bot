@@ -4,11 +4,16 @@ import asyncio
 from functools import partial
 from typing import TYPE_CHECKING
 
-from .cache import Entity, Issue, PullRequest, entity_cache
+from .cache import entity_cache
 from .resolution import resolve_entity_signatures
 from app.common.hooks import ProcessedMessage
 from app.components.github_integration.emoji import emojis
-from app.components.github_integration.models import Discussion
+from app.components.github_integration.models import (
+    Discussion,
+    Entity,
+    Issue,
+    PullRequest,
+)
 from app.utils import dynamic_timestamp, escape_special, format_diff_note
 
 if TYPE_CHECKING:

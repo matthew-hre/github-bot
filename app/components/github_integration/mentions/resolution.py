@@ -1,12 +1,14 @@
 import re
 from collections.abc import AsyncGenerator
 from functools import reduce
+from typing import override
 
 import discord as dc
 from githubkit.exception import RequestFailed
 from zig_codeblocks import extract_codeblocks
 
-from .cache import EntitySignature, TTRCache
+from .cache import EntitySignature
+from app.common.cache import TTRCache
 from app.setup import config, gh
 
 ENTITY_REGEX = re.compile(
@@ -28,6 +30,7 @@ REPO_ALIASES = {
 
 
 class OwnerCache(TTRCache[str, str]):
+    @override
     async def fetch(self, key: str) -> None:
         self[key] = await find_repo_owner(key)
 

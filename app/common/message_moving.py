@@ -6,7 +6,7 @@ import re
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Self, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, final, overload
 
 import discord as dc
 import httpx
@@ -102,8 +102,7 @@ async def _get_sticker_embed(sticker: dc.StickerItem) -> dc.Embed:
                     f" • {footer}" if footer else "."
                 )
                 embed.color = dc.Color.orange()
-            embed.set_footer(text=footer)
-            return embed
+            return embed.set_footer(text=footer)
     return _unattachable_embed("sticker", title=sticker.name, description=description)
 
 
@@ -240,6 +239,7 @@ def _format_emoji(emoji: str | dc.PartialEmoji | dc.Emoji) -> str:
     return f"[{emoji.name}](<{emoji.url}>)"
 
 
+@final
 class _Subtext:
     # NOTE: when changing the subtext's format in ways that are not backward-compatible,
     # don't forget to bump the cut-off time in app/components/message_filter.py!
@@ -319,6 +319,7 @@ class _Subtext:
         return "\n".join(f"-# {s}" for s in strs if s)
 
 
+@final
 class SplitSubtext:
     def __init__(self, message: MovedMessage) -> None:
         # Since we know that we definitely have a moved message here (due to the
@@ -406,7 +407,8 @@ class MovedMessageLookupFailed(Enum):
     NOT_MOVED = -2
 
 
-class MovedMessage(ExtensibleMessage, dc.WebhookMessage):
+@final
+class MovedMessage(ExtensibleMessage, dc.WebhookMessage):  # pyright: ignore[reportUnsafeMultipleInheritance]
     def __init__(
         self, message: dc.WebhookMessage, *, author: dc.Member | None = None
     ) -> None:

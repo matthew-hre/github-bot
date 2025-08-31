@@ -4,7 +4,7 @@ import asyncio
 import copy
 import re
 import string
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, final
 
 import discord as dc
 from githubkit.exception import RequestFailed
@@ -105,6 +105,7 @@ commit_cache = CommitCache()
 commit_linker = MessageLinker()
 
 
+@final
 class CommitActions(ItemActions):
     linker = commit_linker
     action_singular = "mentioned this commit"

@@ -1,3 +1,4 @@
+# pyright: reportImportCycles=false
 import datetime as dt
 from collections.abc import Sequence
 

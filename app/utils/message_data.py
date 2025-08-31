@@ -18,7 +18,7 @@ class ExtensibleMessage(dc.Message):
     Message.__init__().
     """
 
-    def __init__(self, message: dc.Message) -> None:
+    def __init__(self, message: dc.Message) -> None:  # pyright: ignore[reportMissingSuperCall]
         # Message doesn't expose a __dict__ that we can update() onto our __dict__, so
         # use dir() to manually add them all.
         for attr in dir(message):
@@ -50,8 +50,8 @@ async def get_files(attachments: list[dc.Attachment]) -> tuple[list[dc.File], in
 
 
 class MessageData(ExtensibleMessage):
-    files: list[dc.File]
-    skipped_attachments: int
+    files: list[dc.File]  # pyright: ignore[reportUninitializedInstanceVariable]
+    skipped_attachments: int  # pyright: ignore[reportUninitializedInstanceVariable]
 
     @classmethod
     async def scrape(cls, message: dc.Message) -> Self:

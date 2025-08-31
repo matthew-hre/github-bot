@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, final
 
 import pytest
 
@@ -40,6 +40,7 @@ async def print_hex_nums(msg: dc.Message) -> None:
     print((await extract_numbers_then_hex(msg)).content)  # noqa: T201
 
 
+@final
 class TrackedCallable[**P, R]:
     def __init__(self, callable_: Callable[P, R]) -> None:
         self._callable = callable_
@@ -54,6 +55,7 @@ class TrackedCallable[**P, R]:
         return self._callable(*args, **kwargs)
 
 
+@final
 class EditHook:
     def __init__(self, linker: MessageLinker) -> None:
         self.message_processor = TrackedCallable(extract_numbers_then_hex)

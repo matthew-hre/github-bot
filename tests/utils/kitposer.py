@@ -1,13 +1,14 @@
 """Toolkit for monkeypatching githubkit requests"""
 
 from collections.abc import Awaitable
-from typing import Any, Self, cast
+from typing import Any, Self, cast, final, override
 
 
 class PoserSetupError(RuntimeError):
     pass
 
 
+@final
 class KitResponse[T]:
     def __init__(self, value: T) -> None:
         self._value = value
@@ -21,6 +22,7 @@ async def fake_request[T](obj: T) -> Awaitable[T]:
     return obj  # pyright: ignore [reportReturnType]
 
 
+@final
 class Call:
     make_async: bool
     make_kitresponse: bool
@@ -31,15 +33,18 @@ class Call:
         self.make_async = cast("bool", kwargs.pop("__kitposer_async__", True))
         self.make_kitresponse = cast("bool", kwargs.pop("__kitposer_wrap__", True))
 
+    @override
     def __hash__(self) -> int:
         return hash((str(self._a), str(self._kw)))
 
+    @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Call):
             return NotImplemented
         return hash(self) == hash(other)
 
 
+@final
 class KitPoser:
     def __init__(
         self, responses: dict[str, dict[Call, Any]], context: str = ""
