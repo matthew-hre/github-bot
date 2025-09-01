@@ -1,5 +1,6 @@
 from . import discussions as discussions
 from . import issues as issues
+from . import misc as misc
 from . import prs as prs
 from .core import client as monalisten_client
 
