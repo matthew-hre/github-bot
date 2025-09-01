@@ -51,6 +51,9 @@ pylint.max-branches = 20
 pylint.max-returns = 15
 isort.known-local-folder = ["app"]
 
+[tool.ruff.format]
+preview = true
+
 [tool.ruff.lint.flake8-import-conventions.aliases]
 discord = "dc"
 
