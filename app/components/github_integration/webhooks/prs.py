@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from itertools import dropwhile
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 from loguru import logger
 
@@ -59,12 +59,31 @@ register_pr_subhook = make_subhook_registrar(pr_subhooks)
 register_pr_review_subhook = make_subhook_registrar(pr_review_subhooks)
 
 
-def get_pr_emoji(pull_request: Any, *, from_review: bool = False) -> EmojiName:
-    # pull_request_review(_comment) events have pull_request objects that don't have
-    # the .merged field, so we have to fall back to checking if .merged_at is non-None
-    merged = pull_request.merged_at is not None if from_review else pull_request.merged
-    state = cast("Literal['open', 'closed']", pull_request.state)
-    return "pull_" + ("draft" if pull_request.draft else "merged" if merged else state)
+class PRLike(Protocol):
+    number: int
+    title: str
+    html_url: str
+    draft: Any
+    merged_at: Any
+    state: Any
+
+
+def pr_footer(
+    pr: PRLike, *, emoji: EmojiName | None = None, from_review: bool = False
+) -> Footer:
+    if emoji is None:
+        # pull_request_review(_comment) events have pull_request objects that don't have
+        # the .merged field, so we have to fall back to checking if .merged_at is truthy
+        merged = pr.merged_at is not None if from_review else cast("Any", pr).merged
+        state = cast("Literal['open', 'closed']", pr.state)
+        emoji = "pull_" + ("draft" if pr.draft else "merged" if merged else state)
+    return Footer(emoji, f"PR #{pr.number}: {pr.title}")
+
+
+def pr_embed_content(
+    pr: PRLike, template: str, body: str | None = None
+) -> EmbedContent:
+    return EmbedContent(template.format(f"PR #{pr.number}"), pr.html_url, body)
 
 
 @client.on("pull_request")
@@ -75,41 +94,41 @@ async def handle_pr_event(event: PullRequestEvent) -> None:
 
 @register_pr_subhook("opened")
 async def handle_opened_pr(event: WebhookPullRequestOpened) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"opened PR #{number}", pr.html_url, pr.body),
-        Footer("pull_open", f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, "opened {}", pr.body),
+        pr_footer(pr, emoji="pull_open"),
         color="green",
     )
 
 
 @register_pr_subhook("closed")
 async def handle_closed_pr(event: WebhookPullRequestClosed) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     action, color = ("merged", "purple") if pr.merged else ("closed", "red")
     await send_embed(
         event.sender,
-        EmbedContent(f"{action} PR #{number}", pr.html_url),
-        Footer("pull_" + action, f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, f"{action} {{}}"),
+        pr_footer(pr, emoji="pull_" + action),
         color=color,
     )
 
 
 @register_pr_subhook("reopened")
 async def handle_reopened_pr(event: WebhookPullRequestReopened) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"reopened PR #{number}", pr.html_url),
-        Footer("pull_open", f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, "reopened {}"),
+        pr_footer(pr, emoji="pull_open"),
         color="green",
     )
 
 
 @register_pr_subhook("edited")
 async def handle_edited_pr(event: WebhookPullRequestEdited) -> None:
-    pr, number, changes = event.pull_request, event.number, event.changes
+    pr, changes = event.pull_request, event.changes
 
     if pr.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
         return
@@ -130,67 +149,59 @@ async def handle_edited_pr(event: WebhookPullRequestEdited) -> None:
 
     assert event.sender
     await send_embed(
-        event.sender,
-        EmbedContent(f"edited PR #{number}", pr.html_url, content),
-        Footer(get_pr_emoji(pr), f"PR #{number}: {pr.title}"),
+        event.sender, pr_embed_content(pr, "edited {}", content), pr_footer(pr)
     )
 
 
 @register_pr_subhook("converted_to_draft")
 async def handle_drafted_pr(event: WebhookPullRequestConvertedToDraft) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"converted PR #{number} to draft", pr.html_url),
-        Footer("pull_draft", f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, "converted {} to draft"),
+        pr_footer(pr, emoji="pull_draft"),
         color="gray",
     )
 
 
 @register_pr_subhook("ready_for_review")
 async def handle_undrafted_pr(event: WebhookPullRequestReadyForReview) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     await send_embed(
         event.sender,
-        EmbedContent(f"marked PR #{number} as ready for review", pr.html_url),
-        Footer("pull_open", f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, "marked {} as ready for review"),
+        pr_footer(pr, emoji="pull_open"),
         color="green",
     )
 
 
 @register_pr_subhook("locked")
 async def handle_locked_pr(event: WebhookPullRequestLocked) -> None:
-    pr, number = event.pull_request, event.number
-    title = f"locked PR #{number}"
+    pr = event.pull_request
+    template = "locked {}"
     if reason := pr.active_lock_reason:
-        title += f" as {reason}"
+        template += f" as {reason}"
     await send_embed(
-        event.sender,
-        EmbedContent(title, pr.html_url),
-        Footer(get_pr_emoji(pr), f"PR #{number}: {pr.title}"),
-        color="orange",
+        event.sender, pr_embed_content(pr, template), pr_footer(pr), color="orange"
     )
 
 
 @register_pr_subhook("unlocked")
 async def handle_unlocked_pr(event: WebhookPullRequestUnlocked) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     await send_embed(
-        event.sender,
-        EmbedContent(f"unlocked PR #{number}", pr.html_url),
-        Footer(get_pr_emoji(pr), f"PR #{number}: {pr.title}"),
-        color="blue",
+        event.sender, pr_embed_content(pr, "unlocked {}"), pr_footer(pr), color="blue"
     )
 
 
 @register_pr_subhook("review_requested")
 async def handle_pr_review_request(event: WebhookPullRequestReviewRequested) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     content = f"from {_format_reviewer(event)}"
     await send_embed(
         event.sender,
-        EmbedContent(f"requested review for PR #{number}", pr.html_url, content),
-        Footer(get_pr_emoji(pr), f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, "requested review for {}", content),
+        pr_footer(pr),
     )
 
 
@@ -198,12 +209,12 @@ async def handle_pr_review_request(event: WebhookPullRequestReviewRequested) -> 
 async def handle_pr_removed_review_request(
     event: WebhookPullRequestReviewRequestRemoved,
 ) -> None:
-    pr, number = event.pull_request, event.number
+    pr = event.pull_request
     content = f"from {_format_reviewer(event)}"
     await send_embed(
         event.sender,
-        EmbedContent(f"removed review request for PR #{number}", pr.html_url, content),
-        Footer(get_pr_emoji(pr), f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, "removed review request for {}", content),
+        pr_footer(pr),
     )
 
 
@@ -224,7 +235,7 @@ async def handle_pr_review_event(event: PullRequestReviewEvent) -> None:
 
 @register_pr_review_subhook("submitted")
 async def handle_pr_review_submitted(event: WebhookPullRequestReviewSubmitted) -> None:
-    pr, number, review = event.pull_request, event.pull_request.number, event.review
+    pr, review = event.pull_request, event.review
 
     if review.state == "commented" and not review.body:
         # We most definitely have some pull_request_review_comment event(s) happening at
@@ -245,8 +256,8 @@ async def handle_pr_review_submitted(event: WebhookPullRequestReviewSubmitted) -
     emoji = "pull_" + ("draft" if pr.draft else "merged" if pr.merged_at else pr.state)
     await send_embed(
         event.sender,
-        EmbedContent(f"{title} PR #{number}", pr.html_url, review.body),
-        Footer(emoji, f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, f"{title} {{}}", review.body),
+        pr_footer(pr, emoji=emoji),
         color=color,
     )
 
@@ -255,7 +266,7 @@ async def handle_pr_review_submitted(event: WebhookPullRequestReviewSubmitted) -
 async def handle_pr_review_dismissed(
     event: WebhookPullRequestReviewDismissed,
 ) -> None:
-    pr, number = event.pull_request, event.pull_request.number
+    pr = event.pull_request
     emoji = "pull_" + ("draft" if pr.draft else "merged" if pr.merged_at else pr.state)
     review_author = (
         GitHubUser(**event.review.user.model_dump())
@@ -264,12 +275,10 @@ async def handle_pr_review_dismissed(
     )
     await send_embed(
         event.sender,
-        EmbedContent(
-            f"dismissed a PR #{number} review",
-            pr.html_url,
-            f"authored by {review_author.hyperlink}",
+        pr_embed_content(
+            pr, "dismissed a {} review", f"authored by {review_author.hyperlink}"
         ),
-        Footer(emoji, f"PR #{number}: {pr.title}"),
+        pr_footer(pr, emoji=emoji),
         color="orange",
     )
 
@@ -285,8 +294,7 @@ async def handle_pr_review_comment_event(
 async def handle_pr_review_comment_created(
     event: WebhookPullRequestReviewCommentCreated,
 ) -> None:
-    pr, number = event.pull_request, event.pull_request.number
-    content = event.comment.body
+    pr, content = event.pull_request, event.comment.body
 
     hunk = _reduce_diff_hunk(event.comment.diff_hunk)
     if 500 - len(content) - len(hunk) - HUNK_CODEBLOCK_OVERHEAD >= 0:
@@ -295,8 +303,8 @@ async def handle_pr_review_comment_created(
 
     await send_embed(
         event.sender,
-        EmbedContent(f"left a review comment on PR #{number}", pr.html_url, content),
-        Footer(get_pr_emoji(pr, from_review=True), f"PR #{number}: {pr.title}"),
+        pr_embed_content(pr, "left a review comment on {}", content),
+        pr_footer(pr, from_review=True),
     )
 
 
