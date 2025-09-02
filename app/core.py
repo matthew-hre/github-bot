@@ -1,6 +1,7 @@
 import asyncio
 import datetime as dt
 import sys
+from contextlib import suppress
 from typing import cast
 
 import discord as dc
@@ -61,7 +62,9 @@ async def on_ready() -> None:
             task.start()
 
     # Creating a strong reference
-    background_tasks.add(asyncio.create_task(monalisten_client.listen()))
+    monalisten_task = asyncio.create_task(monalisten_client.listen())
+    monalisten_task.add_done_callback(handle_task_error)
+    background_tasks.add(monalisten_task)
 
     bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
     logger.info("logged in as {}", bot.user)
@@ -155,10 +158,18 @@ async def sync(bot: commands.Bot, message: dc.Message) -> None:
     await try_dm(message.author, "Command tree synced.")
 
 
+def handle_task_error(task: asyncio.Task[None]) -> None:
+    with suppress(asyncio.CancelledError):
+        if exc := task.exception():
+            handle_error(exc)
+
+
 def handle_error(error: BaseException) -> None:
     if config.sentry_dsn is not None:
         capture_exception(error)
         return
     logger.exception(error)
+    for note in getattr(error, "__notes__", []):
+        logger.error(note)
     if isinstance(error, dc.app_commands.CommandInvokeError):
         handle_error(error.original)

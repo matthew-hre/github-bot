@@ -9,6 +9,7 @@ from app.components.github_integration.webhooks.core import (
     SubhookStore,
     client,
     make_subhook_registrar,
+    reraise_with_payload,
     send_embed,
 )
 
@@ -68,7 +69,8 @@ def discussion_embed_content(
 @client.on("discussion")
 async def handle_discussion_event(event: DiscussionEvent) -> None:
     if subhook := discussion_subhooks.get(event.action):
-        await subhook(event)
+        with reraise_with_payload(event):
+            await subhook(event)
 
 
 @register_discussion_subhook("created")
