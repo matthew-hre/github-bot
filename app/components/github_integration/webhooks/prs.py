@@ -13,6 +13,7 @@ from app.components.github_integration.webhooks.core import (
     SubhookStore,
     client,
     make_subhook_registrar,
+    reraise_with_payload,
     send_embed,
 )
 
@@ -89,7 +90,8 @@ def pr_embed_content(
 @client.on("pull_request")
 async def handle_pr_event(event: PullRequestEvent) -> None:
     if subhook := pr_subhooks.get(event.action):
-        await subhook(event)
+        with reraise_with_payload(event):
+            await subhook(event)
 
 
 @register_pr_subhook("opened")
@@ -230,7 +232,8 @@ def _format_reviewer(event: Any) -> str:
 @client.on("pull_request_review")
 async def handle_pr_review_event(event: PullRequestReviewEvent) -> None:
     if subhook := pr_review_subhooks.get(event.action):
-        await subhook(event)
+        with reraise_with_payload(event):
+            await subhook(event)
 
 
 @register_pr_review_subhook("submitted")
@@ -288,7 +291,8 @@ async def handle_pr_review_comment_event(
     event: PullRequestReviewCommentEvent,
 ) -> None:
     if event.action == "created":
-        await handle_pr_review_comment_created(event)
+        with reraise_with_payload(event):
+            await handle_pr_review_comment_created(event)
 
 
 async def handle_pr_review_comment_created(

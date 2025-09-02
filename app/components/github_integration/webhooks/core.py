@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypedDict
 
 import discord as dc
@@ -12,10 +13,12 @@ from app.setup import config
 from app.utils import truncate
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Generator
 
     from githubkit.versions.latest.models import SimpleUser
     from monalisten import AuthIssue
+    from pydantic import BaseModel
+    from pydantic_core import ErrorDetails
 
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]
 type SubhookStore[E] = dict[str, Callable[[E], Awaitable[None]]]
@@ -37,6 +40,14 @@ client = Monalisten(
 )
 
 
+@client.on_internal("error")
+async def forward_error(
+    event_data: dict[str, Any], message: str, pydantic_errors: list[ErrorDetails] | None
+) -> None:
+    msg = f"{message}\n{event_data}\n{pydantic_errors or []}"
+    raise RuntimeError(msg)
+
+
 @client.on_internal("auth_issue")
 async def show_issue(issue: AuthIssue, event_data: dict[str, Any]) -> None:
     guid = event_data.get("x-github-delivery", "<missing-guid>")
@@ -46,6 +57,15 @@ async def show_issue(issue: AuthIssue, event_data: dict[str, Any]) -> None:
 @client.on_internal("ready")
 async def ready() -> None:
     logger.info("monalisten client ready")
+
+
+@contextmanager
+def reraise_with_payload(event: BaseModel) -> Generator[None]:
+    try:
+        yield
+    except BaseException as e:
+        e.add_note(str(event.model_dump()))
+        raise
 
 
 class EmbedContentArgs(TypedDict, total=False):

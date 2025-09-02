@@ -11,6 +11,7 @@ from app.components.github_integration.webhooks.core import (
     SubhookStore,
     client,
     make_subhook_registrar,
+    reraise_with_payload,
     send_embed,
 )
 
@@ -85,7 +86,8 @@ def issue_embed_content(
 @client.on("issues")
 async def handle_issue_event(event: IssuesEvent) -> None:
     if subhook := issue_subhooks.get(event.action):
-        await subhook(event)
+        with reraise_with_payload(event):
+            await subhook(event)
 
 
 @register_issue_subhook("opened")
@@ -180,7 +182,8 @@ async def handle_unpinned_issue(event: WebhookIssuesUnpinned) -> None:
 @client.on("issue_comment")
 async def handle_issue_comment_event(event: IssueCommentEvent) -> None:
     if event.action == "created":
-        await handle_created_issue_comment(event)
+        with reraise_with_payload(event):
+            await handle_created_issue_comment(event)
 
 
 async def handle_created_issue_comment(event: WebhookIssueCommentCreated) -> None:
