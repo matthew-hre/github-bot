@@ -145,7 +145,7 @@ async def handle_edited_pr(event: WebhookPullRequestEdited) -> None:
         case [note]:
             content = note
         case [note1, note2]:
-            content = f"* {note1}\n*\n {note2}"
+            content = f"* {note1}\n* {note2}"
         case _:
             return
 
