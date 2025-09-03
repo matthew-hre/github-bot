@@ -234,6 +234,6 @@ async def handle_created_issue_comment(event: WebhookIssueCommentCreated) -> Non
 
     await send_embed(
         event.sender,
-        EmbedContent(title, issue.html_url, event.comment.body),
+        EmbedContent(title, event.comment.html_url, event.comment.body),
         Footer(emoji, f"{entity}: {issue.title}"),
     )
