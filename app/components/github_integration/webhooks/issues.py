@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import re
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from githubkit.versions.latest.models import (
         WebhookIssueCommentCreated,
         WebhookIssuesClosed,
+        WebhookIssuesEdited,
         WebhookIssuesLocked,
         WebhookIssuesOpened,
         WebhookIssuesPinned,
@@ -131,6 +133,34 @@ async def handle_reopened_issue(event: WebhookIssuesReopened) -> None:
         issue_embed_content(issue, "reopened {}"),
         issue_footer(issue, emoji="issue_open"),
         color="green",
+    )
+
+
+@register_issue_subhook("edited")
+async def handle_edited_issue(event: WebhookIssuesEdited) -> None:
+    issue, changes = event.issue, event.changes
+
+    if issue.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
+        return
+
+    update_notes: list[str] = []
+    if changes.title:
+        update_notes.append(f'Renamed from "{changes.title.from_}" to "{issue.title}"')
+    if changes.body:
+        update_notes.append("Updated description")
+
+    match update_notes:
+        case [note]:
+            content = note
+        case [note1, note2]:
+            content = f"* {note1}\n* {note2}"
+        case _:
+            return
+
+    await send_embed(
+        event.sender,
+        issue_embed_content(issue, "edited {}", content),
+        issue_footer(issue),
     )
 
 
