@@ -259,7 +259,7 @@ async def handle_pr_review_submitted(event: WebhookPullRequestReviewSubmitted) -
     emoji = "pull_" + ("draft" if pr.draft else "merged" if pr.merged_at else pr.state)
     await send_embed(
         event.sender,
-        pr_embed_content(pr, f"{title} {{}}", review.body),
+        EmbedContent(f"{title} PR #{pr.number}", review.html_url, review.body),
         pr_footer(pr, emoji=emoji),
         color=color,
     )
@@ -307,7 +307,9 @@ async def handle_pr_review_comment_created(
 
     await send_embed(
         event.sender,
-        pr_embed_content(pr, "left a review comment on {}", content),
+        EmbedContent(
+            f"left a review comment on PR #{pr.number}", event.comment.html_url, content
+        ),
         pr_footer(pr, from_review=True),
     )
 
