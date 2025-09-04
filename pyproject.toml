@@ -13,7 +13,7 @@ dependencies = [
   "discord-py~=2.6.3",
   "githubkit~=0.13.1",
   "pydantic>=2.11.7,<3",
-  "sentry-sdk~=2.35",
+  "sentry-sdk~=2.36",
   "zig-codeblocks==0.3.3",
   "httpx~=0.28.1",
   "monalisten==0.2.0",
@@ -24,7 +24,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "ruff==0.12.10",
-  "basedpyright==1.31.3",
+  "basedpyright==1.31.4",
   "taplo==0.9.3",
   "pytest==8.4.1",
   "pytest-asyncio==1.1.0",
