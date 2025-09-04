@@ -7,7 +7,7 @@ on:
   pull_request:
 
 env:
-  UV_VERSION: 0.7.16
+  UV_VERSION: 0.8.15
   UV_NO_SYNC: 1
   UV_LOCKED: 1
   PY_COLORS: 1
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
       - name: Setup uv
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1  # v6.5.0
+        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6  # v6.6.1
         with:
           version: ${{ env.UV_VERSION }}
       - name: Environment
