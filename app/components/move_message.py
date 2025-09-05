@@ -318,7 +318,7 @@ class HelpPostTitle(ErrorModal, title="Turn into #help post"):
 
     @override
     async def on_submit(self, interaction: dc.Interaction) -> None:
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True, thinking=True)
 
         webhook = await get_or_create_webhook(config.help_channel)
         msg = await move_message_via_webhook(
