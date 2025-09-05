@@ -15,6 +15,7 @@ from app.common.message_moving import (
     message_can_be_moved,
     move_message_via_webhook,
 )
+from app.errors import ErrorModal
 from app.setup import bot, config
 from app.utils import (
     MAX_ATTACHMENT_SIZE,
@@ -306,7 +307,7 @@ class Ghostping(dc.ui.View):
 
 
 @final
-class HelpPostTitle(dc.ui.Modal, title="Turn into #help post"):
+class HelpPostTitle(ErrorModal, title="Turn into #help post"):
     title_ = dc.ui.TextInput[Self](
         label="#help post title", style=dc.TextStyle.short, max_length=100
     )
@@ -491,7 +492,7 @@ class ChooseMessageAction(dc.ui.View):
 
 
 @final
-class EditMessage(dc.ui.Modal, title="Edit Message"):
+class EditMessage(ErrorModal, title="Edit Message"):
     new_text = dc.ui.TextInput[Self](
         label="New message content",
         style=dc.TextStyle.long,

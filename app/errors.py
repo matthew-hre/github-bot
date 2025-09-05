@@ -1,0 +1,57 @@
+import asyncio
+import sys
+from contextlib import suppress
+from typing import cast, override
+
+import discord as dc
+from loguru import logger
+from sentry_sdk import capture_exception
+
+from app.setup import bot, config
+
+
+def handle_task_error(task: asyncio.Task[None]) -> None:
+    with suppress(asyncio.CancelledError):
+        if exc := task.exception():
+            handle_error(exc)
+
+
+def handle_error(error: BaseException) -> None:
+    if config.sentry_dsn is not None:
+        capture_exception(error)
+        return
+    logger.exception(error)
+    for note in getattr(error, "__notes__", []):
+        logger.error(note)
+    if isinstance(error, dc.app_commands.CommandInvokeError):
+        handle_error(error.original)
+
+
+@bot.event
+async def on_error(*_: object) -> None:
+    handle_error(cast("BaseException", sys.exc_info()[1]))
+
+
+@bot.tree.error
+async def on_app_command_error(
+    interaction: dc.Interaction, error: dc.app_commands.AppCommandError
+) -> None:
+    if not interaction.response.is_done():
+        await interaction.response.send_message(
+            "Something went wrong :(", ephemeral=True
+        )
+    else:
+        await interaction.followup.send("Something went wrong :(")
+    handle_error(error)
+
+
+class ErrorModal(dc.ui.Modal):
+    @override
+    async def on_error(self, interaction: dc.Interaction, error: Exception, /) -> None:
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                "Something went wrong :(", ephemeral=True
+            )
+        else:
+            await interaction.followup.send("Something went wrong :(", ephemeral=True)
+        handle_error(error)
