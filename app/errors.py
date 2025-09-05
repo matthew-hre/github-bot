@@ -44,7 +44,7 @@ async def interaction_error_handler(
     handle_error(error)
 
 
-bot.tree.error(interaction_error_handler)
+bot.tree.on_error = interaction_error_handler
 
 
 class ErrorModal(dc.ui.Modal):
