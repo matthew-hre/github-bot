@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         SimpleUser,
         WebhookDiscussionAnswered,
         WebhookDiscussionClosed,
+        WebhookDiscussionCommentCreated,
         WebhookDiscussionCreated,
         WebhookDiscussionLocked,
         WebhookDiscussionPinned,
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
         WebhookDiscussionUnlocked,
         WebhookDiscussionUnpinned,
     )
-    from monalisten.types import DiscussionEvent
+    from monalisten.types import DiscussionCommentEvent, DiscussionEvent
 
     from app.components.github_integration.emoji import EmojiName
 
@@ -185,5 +186,24 @@ async def handle_unpinned_discussion(event: WebhookDiscussionUnpinned) -> None:
         discussion_embed_content(discussion, "unpinned"),
         discussion_footer(discussion),
         color="orange",
+        feed_type="discussions",
+    )
+
+
+@client.on("discussion_comment")
+async def handle_discussion_comment_event(event: DiscussionCommentEvent) -> None:
+    if event.action == "created":
+        with reraise_with_payload(event):
+            await handle_created_discussion_comment(event)
+
+
+async def handle_created_discussion_comment(
+    event: WebhookDiscussionCommentCreated,
+) -> None:
+    discussion = event.discussion
+    await send_embed(
+        event.sender,
+        discussion_embed_content(discussion, "commented on", event.comment.body),
+        discussion_footer(discussion),
         feed_type="discussions",
     )
