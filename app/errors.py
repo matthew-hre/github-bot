@@ -32,26 +32,22 @@ async def on_error(*_: object) -> None:
     handle_error(cast("BaseException", sys.exc_info()[1]))
 
 
-@bot.tree.error
-async def on_app_command_error(
-    interaction: dc.Interaction, error: dc.app_commands.AppCommandError
+async def interaction_error_handler(
+    interaction: dc.Interaction, error: Exception, /
 ) -> None:
     if not interaction.response.is_done():
         await interaction.response.send_message(
             "Something went wrong :(", ephemeral=True
         )
     else:
-        await interaction.followup.send("Something went wrong :(")
+        await interaction.followup.send("Something went wrong :(", ephemeral=True)
     handle_error(error)
+
+
+bot.tree.error(interaction_error_handler)
 
 
 class ErrorModal(dc.ui.Modal):
     @override
     async def on_error(self, interaction: dc.Interaction, error: Exception, /) -> None:
-        if not interaction.response.is_done():
-            await interaction.response.send_message(
-                "Something went wrong :(", ephemeral=True
-            )
-        else:
-            await interaction.followup.send("Something went wrong :(", ephemeral=True)
-        handle_error(error)
+        return await interaction_error_handler(interaction, error)
