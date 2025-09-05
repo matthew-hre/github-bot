@@ -151,7 +151,8 @@ Below are explanations for each variable:
   * `BOT_MEDIA_CHANNEL_ID`
   * `BOT_SHOWCASE_CHANNEL_ID`
   * `BOT_LOG_CHANNEL_ID`
-  * `BOT_WEBHOOK_CHANNEL_ID`
+  * `BOT_WEBHOOK_CHANNEL_IDS`: a comma-separated list of `feed_type:channel_id`
+    pairs. The feed type names are `main` and `discussions`.
   * `BOT_MOD_ROLE_ID`
   * `BOT_HELPER_ROLE_ID`
 * `BOT_TOKEN`: the Discord bot token from

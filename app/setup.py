@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 from functools import cached_property
-from typing import Any, cast, override
+from typing import Any, Literal, cast, override
 
 import discord as dc
 from discord.ext import commands
@@ -14,6 +14,8 @@ from githubkit import GitHub
 from loguru import logger
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+type WebhookFeedType = Literal["main", "discussions"]
 
 # This maps valid special ghostty-org repo prefixes to appropriate repo names. Since the
 # actual repo names are also valid prefixes, they can be viewed as self-mapping aliases.
@@ -58,18 +60,33 @@ class Config(BaseSettings):
     log_channel_id: int
     media_channel_id: int
     showcase_channel_id: int
-    webhook_channel_id: int
+    webhook_channel_ids: dict[WebhookFeedType, int]
 
     mod_role_id: int
     helper_role_id: int
 
-    @field_validator("help_channel_tag_ids", mode="before")
+    @field_validator("help_channel_tag_ids", "webhook_channel_ids", mode="before")
     @classmethod
-    def parse_tag_ids(cls, value: str) -> dict[str, int]:
+    def parse_id_mapping(cls, value: str) -> dict[str, int]:
         return {
             name: int(id_)
             for name, id_ in (pair.split(":") for pair in value.split(","))
         }
+
+    @cached_property
+    def webhook_channels(self) -> dict[WebhookFeedType, dc.TextChannel]:
+        channels: dict[WebhookFeedType, dc.TextChannel] = {}
+        for feed_type, id_ in self.webhook_channel_ids.items():
+            channel = self.ghostty_guild.get_channel(id_)
+            if not isinstance(channel, dc.TextChannel):
+                msg = (
+                    "expected {} webhook channel to be a text channel"
+                    if channel
+                    else "failed to find {} webhook channel"
+                )
+                raise TypeError(msg.format(feed_type))
+            channels[feed_type] = channel
+        return channels
 
     @cached_property
     def ghostty_guild(self) -> dc.Guild:
@@ -79,7 +96,6 @@ class Config(BaseSettings):
 
     log_channel = cache_channel("log_channel_id", dc.TextChannel)
     help_channel = cache_channel("help_channel_id", dc.ForumChannel)
-    webhook_channel = cache_channel("webhook_channel_id", dc.TextChannel)
 
 
 if "pytest" in sys.modules:

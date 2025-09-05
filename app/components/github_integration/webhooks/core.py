@@ -9,7 +9,7 @@ from monalisten import Monalisten
 
 from app.components.github_integration.emoji import EmojiName, emojis
 from app.components.github_integration.models import GitHubUser
-from app.setup import config
+from app.setup import WebhookFeedType, config
 from app.utils import truncate
 
 if TYPE_CHECKING:
@@ -105,6 +105,7 @@ async def send_embed(
     footer: Footer,
     *,
     color: EmbedColor | None = None,
+    feed_type: WebhookFeedType = "main",
 ) -> None:
     author = GitHubUser(**actor.model_dump())
     embed = (
@@ -112,7 +113,7 @@ async def send_embed(
         .set_footer(**footer.dict)
         .set_author(**author.model_dump())
     )
-    await config.webhook_channel.send(embed=embed)
+    await config.webhook_channels[feed_type].send(embed=embed)
 
 
 def make_subhook_registrar[H](
