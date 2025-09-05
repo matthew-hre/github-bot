@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from contextlib import suppress
-from typing import cast, override
+from typing import Any, cast, override
 
 import discord as dc
 from loguru import logger
@@ -51,3 +51,15 @@ class ErrorModal(dc.ui.Modal):
     @override
     async def on_error(self, interaction: dc.Interaction, error: Exception, /) -> None:
         return await interaction_error_handler(interaction, error)
+
+
+class ErrorView(dc.ui.View):
+    @override
+    async def on_error(
+        self, interaction: dc.Interaction, error: Exception, item: dc.ui.Item[Any], /
+    ) -> None:
+        # If not completed, let discord client send red error message
+        if interaction.response.is_done():
+            await interaction.followup.send("Something went wrong :(", ephemeral=True)
+
+        handle_error(error)

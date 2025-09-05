@@ -15,7 +15,7 @@ from app.common.message_moving import (
     message_can_be_moved,
     move_message_via_webhook,
 )
-from app.errors import ErrorModal
+from app.errors import ErrorModal, ErrorView
 from app.setup import bot, config
 from app.utils import (
     MAX_ATTACHMENT_SIZE,
@@ -121,7 +121,7 @@ UPLOADING = "⌛ Uploading attachments (this may take some time)…"
 
 
 @final
-class DeleteInstead(dc.ui.View):
+class DeleteInstead(ErrorView):
     def __init__(self, message: dc.Message) -> None:
         super().__init__()
         self.message = message
@@ -238,7 +238,7 @@ async def _remove_edit_thread_after_timeout(thread: dc.Thread, author: Account) 
 
 
 @final
-class SelectChannel(dc.ui.View):
+class SelectChannel(ErrorView):
     def __init__(self, message: dc.Message, executor: dc.Member) -> None:
         super().__init__()
         self.message = message
@@ -284,7 +284,7 @@ class SelectChannel(dc.ui.View):
 
 
 @final
-class Ghostping(dc.ui.View):
+class Ghostping(ErrorView):
     def __init__(self, author: dc.Member, channel: GuildTextChannel) -> None:
         super().__init__()
         self._author = author
@@ -336,7 +336,7 @@ class HelpPostTitle(ErrorModal, title="Turn into #help post"):
 
 
 @final
-class ChooseMessageAction(dc.ui.View):
+class ChooseMessageAction(ErrorView):
     thread_button: dc.ui.Button[Self]
     help_button: dc.ui.Button[Self]
 
@@ -519,7 +519,7 @@ class EditMessage(ErrorModal, title="Edit Message"):
 
 
 @final
-class DeleteAttachments(dc.ui.View):
+class DeleteAttachments(ErrorView):
     select: dc.ui.Select[Self]
 
     def __init__(
@@ -556,7 +556,7 @@ class DeleteAttachments(dc.ui.View):
 
 
 @final
-class CancelEditing(dc.ui.View):
+class CancelEditing(ErrorView):
     def __init__(self, thread: dc.Thread) -> None:
         super().__init__()
         self._thread = thread
@@ -580,7 +580,7 @@ class CancelEditing(dc.ui.View):
 
 
 @final
-class ContinueEditing(dc.ui.View):
+class ContinueEditing(ErrorView):
     def __init__(self, thread: dc.Thread) -> None:
         super().__init__()
         self._thread = thread
@@ -606,7 +606,7 @@ class ContinueEditing(dc.ui.View):
 
 
 @final
-class SkipLargeAttachments(dc.ui.View):
+class SkipLargeAttachments(ErrorView):
     def __init__(
         self, message: dc.Message, state: ThreadState, new_content: str
     ) -> None:
@@ -642,7 +642,7 @@ class SkipLargeAttachments(dc.ui.View):
 
 
 @final
-class AttachmentChoice(dc.ui.View):
+class AttachmentChoice(ErrorView):
     def __init__(self, message: dc.Message, state: ThreadState) -> None:
         super().__init__()
         self._message = message
