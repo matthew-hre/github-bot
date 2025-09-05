@@ -48,7 +48,7 @@ def _load_children(
 def _get_file(path: str) -> str:
     return gh.rest.repos.get_content(
         config.github_org,
-        config.github_repos["web"],
+        "website",
         path,
         headers={"Accept": "application/vnd.github.raw+json"},
     ).text

@@ -15,6 +15,18 @@ from loguru import logger
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# This maps valid special ghostty-org repo prefixes to appropriate repo names. Since the
+# actual repo names are also valid prefixes, they can be viewed as self-mapping aliases.
+REPO_ALIASES = {
+    "ghostty": "ghostty",
+    "main": "ghostty",
+    "web": "website",
+    "website": "website",
+    "discord-bot": "discord-bot",
+    "bot": "discord-bot",
+    "bobr": "discord-bot",
+}
+
 
 def cache_channel[T](field: str, _: type[T]) -> cached_property[T]:
     @cached_property
@@ -32,7 +44,6 @@ class Config(BaseSettings):
     token: SecretStr
 
     github_org: str
-    github_repos: dict[str, str]
     github_token: SecretStr
     github_webhook_url: SecretStr
     github_webhook_secret: SecretStr | None = None
@@ -51,11 +62,6 @@ class Config(BaseSettings):
 
     mod_role_id: int
     helper_role_id: int
-
-    @field_validator("github_repos", mode="before")
-    @classmethod
-    def parse_repos(cls, value: str) -> dict[str, str]:
-        return dict(val.split(":") for val in value.split(","))
 
     @field_validator("help_channel_tag_ids", mode="before")
     @classmethod
