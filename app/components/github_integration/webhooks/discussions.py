@@ -81,6 +81,7 @@ async def handle_created_discussion(event: WebhookDiscussionCreated) -> None:
         discussion_embed_content(discussion, "opened", discussion.body),
         discussion_footer(discussion, emoji="discussion"),
         color="gray",
+        feed_type="discussions",
     )
 
 
@@ -92,6 +93,7 @@ async def handle_closed_discussion(event: WebhookDiscussionClosed) -> None:
         discussion_embed_content(discussion, "closed"),
         discussion_footer(discussion, emoji="discussion_answered"),
         color="purple",
+        feed_type="discussions",
     )
 
 
@@ -104,6 +106,7 @@ async def handle_reopened_discussion(event: WebhookDiscussionReopened) -> None:
         discussion_embed_content(discussion, "reopened"),
         discussion_footer(discussion, emoji=emoji),
         color="gray",
+        feed_type="discussions",
     )
 
 
@@ -120,6 +123,7 @@ async def handle_answered_discussion(event: WebhookDiscussionAnswered) -> None:
         ),
         discussion_footer(discussion, emoji="discussion_answered"),
         color="green",
+        feed_type="discussions",
     )
 
 
@@ -132,6 +136,7 @@ async def handle_unanswered_discussion(event: WebhookDiscussionUnanswered) -> No
         discussion_embed_content(discussion, "unmarked an answer in"),
         discussion_footer(discussion, emoji=emoji),
         color="red",
+        feed_type="discussions",
     )
 
 
@@ -144,6 +149,7 @@ async def handle_locked_discussion(event: WebhookDiscussionLocked) -> None:
         discussion_embed_content(discussion, "locked"),
         discussion_footer(discussion, emoji=emoji),
         color="orange",
+        feed_type="discussions",
     )
 
 
@@ -155,6 +161,7 @@ async def handle_unlocked_discussion(event: WebhookDiscussionUnlocked) -> None:
         discussion_embed_content(discussion, "unlocked"),
         discussion_footer(discussion),
         color="blue",
+        feed_type="discussions",
     )
 
 
@@ -166,6 +173,7 @@ async def handle_pinned_discussion(event: WebhookDiscussionPinned) -> None:
         discussion_embed_content(discussion, "pinned"),
         discussion_footer(discussion),
         color="blue",
+        feed_type="discussions",
     )
 
 
@@ -177,4 +185,5 @@ async def handle_unpinned_discussion(event: WebhookDiscussionUnpinned) -> None:
         discussion_embed_content(discussion, "unpinned"),
         discussion_footer(discussion),
         color="orange",
+        feed_type="discussions",
     )
