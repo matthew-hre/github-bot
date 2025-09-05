@@ -9,7 +9,7 @@ from zig_codeblocks import extract_codeblocks
 
 from .cache import EntitySignature
 from app.common.cache import TTRCache
-from app.setup import config, gh
+from app.setup import REPO_ALIASES, config, gh
 
 ENTITY_REGEX = re.compile(
     r"(?P<site>\bhttps?://(?:www\.)?github\.com/)?"
@@ -19,14 +19,6 @@ ENTITY_REGEX = re.compile(
     r"(?P<number>\d{1,6})(?!\.\d|/?#)\b",
     re.IGNORECASE,
 )
-
-
-REPO_ALIASES = {
-    "ghostty": "main",
-    "website": "web",
-    "discord-bot": "bot",
-    "bobr": "bot",
-}
 
 
 class OwnerCache(TTRCache[str, str]):
@@ -61,10 +53,10 @@ async def resolve_repo_signature(
     match owner, repo:
         case None, None:
             # The Ghostty repo
-            return config.github_org, config.github_repos["main"]
-        case None, repo if repo in config.github_repos | REPO_ALIASES:
+            return config.github_org, "ghostty"
+        case None, repo if repo in REPO_ALIASES:
             # Special ghostty-org prefixes
-            return config.github_org, config.github_repos[REPO_ALIASES.get(repo, repo)]
+            return config.github_org, REPO_ALIASES[repo]
         case None, repo:
             # Only a name provided
             try:

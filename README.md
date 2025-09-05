@@ -151,15 +151,13 @@ Below are explanations for each variable:
   * `BOT_MEDIA_CHANNEL_ID`
   * `BOT_SHOWCASE_CHANNEL_ID`
   * `BOT_LOG_CHANNEL_ID`
-  * `BOT_WEBHOOK_CHANNEL_ID`
+  * `BOT_WEBHOOK_CHANNEL_IDS`: a comma-separated list of `feed_type:channel_id`
+    pairs. The feed type names are `main` and `discussions`.
   * `BOT_MOD_ROLE_ID`
   * `BOT_HELPER_ROLE_ID`
 * `BOT_TOKEN`: the Discord bot token from
   [step 1](#1-creating-a-discord-application).
 * `BOT_GITHUB_ORG`: the GitHub organization name.
-* `BOT_GITHUB_REPOS`: a comma-separated list of `prefix:repo_name` pairs used for
-  entity mention prefixes. The `main`/`bot`/`web` prefixes aren't exactly fixed,
-  but some of the bot logic assumes these names (e.g. defaulting to `main`).
 * `BOT_GITHUB_TOKEN`: the GitHub token from [step 2](#2-getting-a-github-token).
 * `BOT_SENTRY_DSN`: the Sentry DSN (optional).
 * Webhook environment variables from [step 3](#3-creating-a-github-webhook) (if
