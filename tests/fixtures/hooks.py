@@ -9,7 +9,6 @@ from app.common.hooks import (
     ItemActions,
     MessageLinker,
     ProcessedMessage,
-    create_delete_hook,
     create_edit_hook,
 )
 
@@ -27,7 +26,7 @@ linker = pytest.fixture(lambda: MessageLinker())
 
 @pytest.fixture
 def delete_hook(linker: MessageLinker) -> DeleteHook:
-    return create_delete_hook(linker=linker)
+    return linker.delete
 
 
 async def extract_numbers_then_hex(msg: dc.Message) -> ProcessedMessage:

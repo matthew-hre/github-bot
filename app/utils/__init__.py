@@ -10,7 +10,7 @@ import discord as dc
 from loguru import logger
 
 from .message_data import MAX_ATTACHMENT_SIZE, ExtensibleMessage, MessageData, get_files
-from app.setup import config
+from app.config import config
 
 __all__ = (
     "MAX_ATTACHMENT_SIZE",

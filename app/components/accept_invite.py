@@ -1,22 +1,38 @@
-import discord as dc
+from typing import TYPE_CHECKING, final
 
-from app.setup import bot, config
+import discord as dc
+from discord.ext import commands
+
 from app.utils import is_dm, try_dm
 
+if TYPE_CHECKING:
+    from app.bot import GhosttyBot
 
-@bot.tree.command(name="accept-invite", description="Accept a pending tester invite.")
-@dc.app_commands.guild_only()
-async def accept_invite(interaction: dc.Interaction) -> None:
-    assert not is_dm(interaction.user)
 
-    await try_dm(interaction.user, config.accept_invite_url, silent=True)
-    await try_dm(
-        interaction.user,
-        "Ghostty is already out! 👉 https://ghostty.org/",
+@final
+class AcceptInvite(commands.Cog):
+    def __init__(self, bot: "GhosttyBot") -> None:
+        self.bot = bot
+
+    @dc.app_commands.command(
+        name="accept-invite", description="Accept a pending tester invite."
     )
-    await interaction.response.send_message("Check your DMs!", ephemeral=True)
+    @dc.app_commands.guild_only()
+    async def accept_invite(self, interaction: dc.Interaction) -> None:
+        assert not is_dm(interaction.user)
 
-    await config.log_channel.send(
-        f"{interaction.user.mention} accepted the invite!",
-        allowed_mentions=dc.AllowedMentions.none(),
-    )
+        await try_dm(interaction.user, self.bot.config.accept_invite_url, silent=True)
+        await try_dm(
+            interaction.user,
+            "Ghostty is already out! 👉 https://ghostty.org/",
+        )
+        await interaction.response.send_message("Check your DMs!", ephemeral=True)
+
+        await self.bot.log_channel.send(
+            f"{interaction.user.mention} accepted the invite!",
+            allowed_mentions=dc.AllowedMentions.none(),
+        )
+
+
+async def setup(bot: "GhosttyBot") -> None:
+    await bot.add_cog(AcceptInvite(bot))

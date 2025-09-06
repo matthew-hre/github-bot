@@ -1,9 +1,11 @@
 import secrets
+from typing import TYPE_CHECKING, final, override
 
 from discord import Activity, ActivityType, CustomActivity
-from discord.ext import tasks
+from discord.ext import commands, tasks
 
-from app.setup import bot
+if TYPE_CHECKING:
+    from app.bot import GhosttyBot
 
 STATUSES = (
     Activity(type=ActivityType.watching, name="over the Ghostty server 👻"),
@@ -16,6 +18,25 @@ STATUSES = (
 )
 
 
-@tasks.loop(hours=2)
-async def randomize_activity_status() -> None:
-    await bot.change_presence(activity=secrets.choice(STATUSES))
+@final
+class ActivityStatus(commands.Cog):
+    def __init__(self, bot: "GhosttyBot") -> None:
+        self.bot = bot
+
+        self.randomize_activity_status.start()
+
+    @override
+    async def cog_unload(self) -> None:
+        self.randomize_activity_status.cancel()
+
+    @tasks.loop(hours=2)
+    async def randomize_activity_status(self) -> None:
+        await self.bot.change_presence(activity=secrets.choice(STATUSES))
+
+    @randomize_activity_status.before_loop
+    async def before_randomize_activity_satatus(self) -> None:
+        await self.bot.wait_until_ready()
+
+
+async def setup(bot: "GhosttyBot") -> None:
+    await bot.add_cog(ActivityStatus(bot))

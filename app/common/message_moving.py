@@ -11,14 +11,15 @@ from typing import TYPE_CHECKING, Any, Literal, Self, final, overload
 import discord as dc
 import httpx
 
-from app.setup import bot, config
 from app.utils import GuildTextChannel, dynamic_timestamp, truncate
 from app.utils.message_data import ExtensibleMessage, MessageData, get_files
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-_EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
+    from app.bot import GhosttyBot
+
+EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 _REACTION_REGEX = re.compile(r"([^\s×]+) ×(\d+)", re.ASCII)  # noqa: RUF001
 _SNOWFLAKE_REGEX = re.compile(r"<(\D{0,2})(\d+)>", re.ASCII)
 
@@ -56,25 +57,6 @@ def _unattachable_embed(unattachable_elem: str, **kwargs: Any) -> dc.Embed:
     """kwargs are passed to dc.Embed()."""
     kwargs["color"] = dc.Color.brand_red()
     return dc.Embed(**kwargs).set_footer(text=f"Unable to attach {unattachable_elem}.")
-
-
-def convert_nitro_emojis(content: str, *, force: bool = False) -> str:
-    """
-    Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
-    emojis in the current guild too.
-    """
-
-    def replace_nitro_emoji(match: re.Match[str]) -> str:
-        animated, name, id_ = match.groups()
-        emoji = bot.get_emoji(int(id_))
-        if not force and emoji and emoji.guild_id == config.ghostty_guild.id:
-            return match[0]
-
-        ext = "gif" if animated else "webp"
-        tag = animated and "&animated=true"
-        return f"[{name}](<https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name}>)"
-
-    return _EMOJI_REGEX.sub(replace_nitro_emoji, content)
 
 
 async def _get_sticker_embed(sticker: dc.StickerItem) -> dc.Embed:
@@ -136,9 +118,10 @@ async def _format_context_menu_command(reply: dc.Message) -> dc.Embed:
 
 
 async def _format_forward(
+    bot: GhosttyBot,
     forward: dc.MessageSnapshot,
 ) -> tuple[list[dc.Embed], list[dc.File]]:
-    content = convert_nitro_emojis(forward.content)
+    content = bot.convert_nitro_emojis(forward.content)
     if len(content) > 4096:
         content = forward.content
 
@@ -514,6 +497,7 @@ class MovedMessage(ExtensibleMessage, dc.WebhookMessage):  # pyright: ignore[rep
 
 @overload
 async def move_message_via_webhook(
+    bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
     executor: dc.Member | None = None,
@@ -526,6 +510,7 @@ async def move_message_via_webhook(
 
 @overload
 async def move_message_via_webhook(
+    bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
     executor: dc.Member | None = None,
@@ -537,6 +522,7 @@ async def move_message_via_webhook(
 
 
 async def move_message_via_webhook(  # noqa: PLR0913
+    bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
     executor: dc.Member | None = None,
@@ -561,7 +547,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
     if message.message_snapshots:
         # Only include the first message snapshot.
         snapshot = message.message_snapshots[0]
-        forward_embeds, forward_attachments = await _format_forward(snapshot)
+        forward_embeds, forward_attachments = await _format_forward(bot, snapshot)
         embeds = [*forward_embeds, *embeds]
         msg_data.files.extend(forward_attachments)
     elif reply_embed := await _get_reply_embed(message):
@@ -593,7 +579,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
     content, file = format_or_file(
         _format_interaction(message),
         template=f"{{}}\n{subtext}",
-        transform=convert_nitro_emojis,
+        transform=bot.convert_nitro_emojis,
     )
     if file:
         msg_data.files.append(file)

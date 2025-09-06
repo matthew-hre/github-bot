@@ -9,7 +9,7 @@ from zig_codeblocks import extract_codeblocks
 
 from .cache import EntitySignature
 from app.common.cache import TTRCache
-from app.setup import REPO_ALIASES, config, gh
+from app.config import REPO_ALIASES, config, gh
 
 ENTITY_REGEX = re.compile(
     r"(?P<site>\bhttps?://(?:www\.)?github\.com/)?"

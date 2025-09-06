@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, NoReturn, TypedDict
 
 import discord as dc
 from loguru import logger
@@ -9,7 +9,7 @@ from monalisten import Monalisten
 
 from app.components.github_integration.emoji import EmojiName, emojis
 from app.components.github_integration.models import GitHubUser
-from app.setup import WebhookFeedType, config
+from app.config import config
 from app.utils import truncate
 
 if TYPE_CHECKING:
@@ -19,6 +19,9 @@ if TYPE_CHECKING:
     from monalisten import AuthIssue
     from pydantic import BaseModel
     from pydantic_core import ErrorDetails
+
+    from app.bot import GhosttyBot
+    from app.config import WebhookFeedType
 
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]
 type SubhookStore[E] = dict[str, Callable[[E], Awaitable[None]]]
@@ -38,6 +41,21 @@ client = Monalisten(
     if config.github_webhook_secret
     else None,
 )
+
+
+class Test(Monalisten):
+    def __init__(self, source: str, *, token: str | None = None) -> None:
+        super().__init__(source, token=token)
+
+    async def on_error(self) -> None:
+        @self.on_internal("error")
+        async def _(
+            event_data: dict[str, Any],
+            message: str,
+            pydantic_errors: list[ErrorDetails] | None,
+        ) -> NoReturn:
+            msg = f"{message}\n{event_data}\n{pydantic_errors or []}"
+            raise RuntimeError(msg)
 
 
 @client.on_internal("error")
@@ -99,7 +117,8 @@ class Footer(NamedTuple):
         }
 
 
-async def send_embed(
+async def send_embed(  # noqa: PLR0913
+    bot: GhosttyBot,
     actor: SimpleUser,
     content: EmbedContent,
     footer: Footer,
@@ -113,7 +132,7 @@ async def send_embed(
         .set_footer(**footer.dict)
         .set_author(**author.model_dump())
     )
-    await config.webhook_channels[feed_type].send(embed=embed)
+    await bot.webhook_channels[feed_type].send(embed=embed)
 
 
 def make_subhook_registrar[H](

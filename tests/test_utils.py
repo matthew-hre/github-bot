@@ -7,7 +7,7 @@ from unittest.mock import Mock
 import discord as dc
 import pytest
 
-from app.setup import config
+from app.config import config
 from app.utils import (
     Account,
     aenumerate,
