@@ -1,5 +1,6 @@
 import sentry_sdk
 
+# Import bot from `core` instead of `setup` as core is otherwise never loaded.
 from app.core import bot  # pyright: ignore[reportPrivateLocalImportUsage]
 from app.setup import config
 

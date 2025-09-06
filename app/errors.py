@@ -47,19 +47,20 @@ async def interaction_error_handler(
 bot.tree.on_error = interaction_error_handler
 
 
-class ErrorModal(dc.ui.Modal):
+class SafeModal(dc.ui.Modal):
     @override
     async def on_error(self, interaction: dc.Interaction, error: Exception, /) -> None:
         return await interaction_error_handler(interaction, error)
 
 
-class ErrorView(dc.ui.View):
+class SafeView(dc.ui.View):
     @override
     async def on_error(
         self, interaction: dc.Interaction, error: Exception, item: dc.ui.Item[Any], /
     ) -> None:
-        # If not completed, let discord client send red error message
         if interaction.response.is_done():
             await interaction.followup.send("Something went wrong :(", ephemeral=True)
+        # else: don't complete interaction,
+        # letting discord client send red error message
 
         handle_error(error)
