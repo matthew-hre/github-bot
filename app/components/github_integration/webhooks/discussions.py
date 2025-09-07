@@ -133,16 +133,16 @@ class Discussions(commands.Cog):
     async def handle_answered_discussion(
         self, event: WebhookDiscussionAnswered
     ) -> None:
-        discussion, answer = event.discussion, event.answer
-        accepting_user = GitHubUser(**event.sender.model_dump())
+        discussion = event.discussion
+        if answering_user := event.answer.user:
+            gh_user = GitHubUser(**answering_user.model_dump())
+            body = f"-# Answer by {gh_user.hyperlink}"
+        else:
+            body = None
         await send_embed(
             self.bot,
-            cast("SimpleUser", answer.user),
-            discussion_embed_content(
-                discussion,
-                "answered",
-                f"-# Answer chosen by {accepting_user.hyperlink}\n{answer.body}",
-            ),
+            event.sender,
+            discussion_embed_content(discussion, "chose an answer for", body),
             discussion_footer(discussion, emoji="discussion_answered"),
             color="green",
             feed_type="discussions",
@@ -157,7 +157,7 @@ class Discussions(commands.Cog):
         await send_embed(
             self.bot,
             event.sender or cast("SimpleUser", GitHubUser.default()),
-            discussion_embed_content(discussion, "unmarked an answer in"),
+            discussion_embed_content(discussion, "unmarked an answer for"),
             discussion_footer(discussion, emoji=emoji),
             color="red",
             feed_type="discussions",
