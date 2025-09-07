@@ -102,9 +102,7 @@ class Docs(commands.Cog):
             headers={"Accept": "application/vnd.github.raw+json"},
         ).text
 
-    @dc.app_commands.command(
-        name="refresh-docs", description="Link a documentation page."
-    )
+    @dc.app_commands.command(name="refresh-docs", description="Refresh sitemap docs")
     @dc.app_commands.guild_only()
     async def refresh_docs(self, interaction: dc.Interaction) -> None:
         if is_mod(cast("dc.Member", interaction.user)):

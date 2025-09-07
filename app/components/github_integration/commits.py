@@ -245,6 +245,7 @@ class Commits(commands.Cog):
         content = "\n\n".join(map(self._format_commit_mention, valid_shas))
         return ProcessedMessage(item_count=len(valid_shas), content=content)
 
+    @commands.Cog.listener("on_message")
     async def reply_with_commit_details(self, message: dc.Message) -> None:
         if message.author.bot:
             return

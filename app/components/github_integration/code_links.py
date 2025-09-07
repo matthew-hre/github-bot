@@ -164,6 +164,7 @@ class CodeLinks(commands.Cog):
             blobs.append("-# Some snippets were omitted")
         return ProcessedMessage(content="\n".join(blobs), item_count=len(snippets))
 
+    @commands.Cog.listener("on_message")
     async def reply_with_code(self, message: dc.Message) -> None:
         if message.author.bot:
             return

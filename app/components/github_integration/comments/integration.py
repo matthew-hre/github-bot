@@ -77,6 +77,7 @@ class CommentIntegration(commands.Cog):
             )
         return embed
 
+    @commands.Cog.listener("on_message")
     async def reply_with_comments(self, message: dc.Message) -> None:
         if message.author.bot:
             return

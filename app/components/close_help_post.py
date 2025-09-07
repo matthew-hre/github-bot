@@ -63,9 +63,11 @@ class Close(commands.GroupCog, group_name="close"):
         self, interaction: dc.Interaction, config_option: str | None = None
     ) -> None:
         if config_option:
-            docs = cast("Docs | None", self.bot.cogs.get("app.components.docs"))
+            docs = cast("Docs | None", self.bot.cogs.get("Docs"))
             if not docs:
-                await interaction.response.send_message("Docs are disabled")
+                await interaction.response.send_message(
+                    "Docs are disabled", ephemeral=True
+                )
                 return
             try:
                 # TODO(Joshie): validate this works the way I think

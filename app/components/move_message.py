@@ -828,6 +828,7 @@ class MoveMessage(commands.Cog):
             ephemeral=True,
         )
 
+    @commands.Cog.listener("on_message")
     async def check_for_edit_response(self, message: dc.Message) -> None:
         if not (
             # While the channel_type check covers this isinstance() check, Pyright needs

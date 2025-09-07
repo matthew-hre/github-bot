@@ -92,6 +92,7 @@ class XKCDMentions(commands.Cog):
             embeds.append(omitted)
         return ProcessedMessage(embeds=embeds, item_count=len(embeds))
 
+    @commands.Cog.listener("on_message")
     async def handle_xkcd_mentions(self, message: dc.Message) -> None:
         if message.author.bot:
             return
