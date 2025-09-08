@@ -49,14 +49,14 @@ class BotStatus:
             closed=closed,
         )
 
-    def _get_github_data(self) -> SimpleNamespace:
+    async def _get_github_data(self) -> SimpleNamespace:
         match gh.auth:
             case TokenAuthStrategy(token) if token.startswith(("gh", "github")):
                 correct_token = True
             case _:
                 correct_token = False
         try:
-            resp = gh.rest.users.get_authenticated()
+            resp = await gh.rest.users.async_get_authenticated()
             api_ok = resp.status_code == 200
         except RequestFailed:
             api_ok = False
@@ -77,11 +77,11 @@ class BotStatus:
         except subprocess.CalledProcessError:
             return "Unknown"
 
-    def status_message(self) -> str:
+    async def status_message(self) -> str:
         assert self.last_login_time is not None
         assert self.last_sitemap_refresh is not None
         scan = self._get_scan_data()
-        gh_stats = self._get_github_data()
+        gh_stats = await self._get_github_data()
         return f"""
         ### Commit
         {self._get_commit_hash}

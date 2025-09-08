@@ -31,7 +31,7 @@ class Extras(commands.Cog):
         member = self.bot.guilds[0].get_member(user.id)
         if member is None or not is_mod(member):
             return
-        await try_dm(user, self.bot.ghostty_status.status_message())
+        await try_dm(user, await self.bot.ghostty_status.status_message())
 
 
 async def setup(bot: "GhosttyBot") -> None:

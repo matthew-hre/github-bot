@@ -50,7 +50,7 @@ class Docs(commands.Cog):
     @override
     async def cog_load(self) -> None:
         try:
-            self.refresh_sitemap()
+            await self.refresh_sitemap()
         except RequestFailed:
             logger.warning(
                 "Github fetching failed, running bot with limited functionality"
@@ -94,12 +94,14 @@ class Docs(commands.Cog):
             if item["type"] == "folder":
                 self._load_children(sitemap, f"{path}-{page}", item.get("children", []))
 
-    def _get_file(self, path: str) -> str:
-        return self.bot.gh.rest.repos.get_content(
-            self.bot.config.github_org,
-            "website",
-            path,
-            headers={"Accept": "application/vnd.github.raw+json"},
+    async def _get_file(self, path: str) -> str:
+        return (
+            await self.bot.gh.rest.repos.async_get_content(
+                self.bot.config.github_org,
+                "website",
+                path,
+                headers={"Accept": "application/vnd.github.raw+json"},
+            )
         ).text
 
     @dc.app_commands.command(name="refresh-docs", description="Refresh sitemap docs")
@@ -111,13 +113,13 @@ class Docs(commands.Cog):
             )
             return
         await interaction.response.defer(ephemeral=True, thinking=True)
-        self.refresh_sitemap()
+        await self.refresh_sitemap()
         await interaction.followup.send("Sitemap has been refreshed", ephemeral=True)
 
-    def refresh_sitemap(self) -> None:
+    async def refresh_sitemap(self) -> None:
         # Reading vt/, install/, help/, config/, config/keybind/ subpages by reading
         # nav.json
-        nav: list[Entry] = json.loads(self._get_file("docs/nav.json"))["items"]
+        nav: list[Entry] = json.loads(await self._get_file("docs/nav.json"))["items"]
         for entry in nav:
             if entry["type"] != "folder":
                 continue
@@ -132,7 +134,9 @@ class Docs(commands.Cog):
         ):
             self.sitemap[key] = [
                 line.removeprefix("## ").strip("`")
-                for line in self._get_file(f"docs/config/{config_path}").splitlines()
+                for line in (
+                    await self._get_file(f"docs/config/{config_path}")
+                ).splitlines()
                 if line.startswith("## ")
             ]
 
