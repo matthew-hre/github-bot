@@ -59,4 +59,3 @@ discord = "dc"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["FBT", "SLF001"]
-"./app/components/github_integration/__init__.py" = ["PLC0415"]

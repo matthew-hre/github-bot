@@ -1,7 +1,13 @@
 import asyncio
 from typing import TYPE_CHECKING
 
+from .code_links import CodeLinks
+from .comments import CommentIntegration
+from .commits import Commits
+from .emoji import load_emojis
+from .mentions import MentionIntegration
 from .mentions import fmt as fmt
+from .webhooks import Discussions, Issues, PRHook, monalisten_client
 from app.errors import handle_task_error
 
 if TYPE_CHECKING:
@@ -9,13 +15,6 @@ if TYPE_CHECKING:
 
 
 async def setup(bot: "GhosttyBot") -> None:
-    from .code_links import CodeLinks
-    from .comments import CommentIntegration
-    from .commits import Commits
-    from .emoji import load_emojis
-    from .mentions import MentionIntegration
-    from .webhooks import Discussions, Issues, PRHook, monalisten_client
-
     await load_emojis(bot)
 
     await bot.add_cog(Discussions(bot, monalisten_client))
