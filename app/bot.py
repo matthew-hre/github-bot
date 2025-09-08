@@ -46,12 +46,16 @@ class GhosttyBot(commands.Bot):
 
     @override
     async def setup_hook(self) -> None:
-        for ext in (
-            f"app.components.{filename[:-3]}"
-            for filename in os.listdir("./app/components")  # noqa: PTH208
-            if filename.endswith(".py") and not filename.startswith("_")
-        ):
-            await self.load_extension(ext)
+        await asyncio.gather(
+            *(
+                self.load_extension(ext)
+                for ext in (
+                    f"app.components.{filename.rstrip('.py')}"
+                    for filename in os.listdir("./app/components")  # noqa: PTH208
+                    if not filename.startswith("_")
+                )
+            )
+        )
 
     async def on_ready(self) -> None:
         # Creating a strong reference

@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 from .code_links import CodeLinks
 from .comments import CommentIntegration
 from .commits import Commits
-from .emoji import load_emojis
 from .mentions import MentionIntegration
 from .mentions import fmt as fmt
 from .webhooks import Discussions, Issues, PRHook, monalisten_client
@@ -15,16 +14,16 @@ if TYPE_CHECKING:
 
 
 async def setup(bot: "GhosttyBot") -> None:
-    await load_emojis(bot)
-
-    await bot.add_cog(Discussions(bot, monalisten_client))
-    await bot.add_cog(Issues(bot, monalisten_client))
-    await bot.add_cog(PRHook(bot, monalisten_client))
-
-    await bot.add_cog(Commits(bot, monalisten_client))
-    await bot.add_cog(CodeLinks(bot))
-    await bot.add_cog(MentionIntegration(bot))
-    await bot.add_cog(CommentIntegration(bot))
+    cogs = [
+        bot.add_cog(Discussions(bot, monalisten_client)),
+        bot.add_cog(Issues(bot, monalisten_client)),
+        bot.add_cog(PRHook(bot, monalisten_client)),
+        bot.add_cog(Commits(bot, monalisten_client)),
+        bot.add_cog(CodeLinks(bot)),
+        bot.add_cog(MentionIntegration(bot)),
+        bot.add_cog(CommentIntegration(bot)),
+    ]
+    await asyncio.gather(*cogs)
 
     monalisten_task = asyncio.create_task(monalisten_client.listen())
     monalisten_task.add_done_callback(handle_task_error)

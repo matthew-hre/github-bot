@@ -18,7 +18,7 @@ from app.common.hooks import (
     create_edit_hook,
     remove_view_after_delay,
 )
-from app.components.github_integration.emoji import emojis
+from app.components.github_integration.emoji import emojis, load_emojis
 from app.components.github_integration.mentions.resolution import (
     resolve_repo_signature,
 )
@@ -128,6 +128,10 @@ class Commits(commands.Cog):
         self.commit_linker = MessageLinker()
         CommitActions.linker = MessageLinker()
         self.commit_cache = CommitCache(self.bot.gh)
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        await load_emojis(self.bot)
 
     @override
     async def cog_load(self) -> None:
