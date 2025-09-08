@@ -2,12 +2,13 @@ import inspect
 import logging
 import os
 import sys
-from typing import override
+from typing import TYPE_CHECKING, override
 
 import sentry_sdk
 from loguru import logger
 
-from app.config import Config
+if TYPE_CHECKING:
+    from app.config import Config
 
 
 # Both discord.py and httpx use the standard logging module; redirect them to Loguru.
@@ -38,7 +39,7 @@ class _InterceptHandler(logging.Handler):
         )
 
 
-def setup(config: Config) -> None:
+def setup(config: "Config") -> None:
     logging.basicConfig(handlers=[_InterceptHandler()], level=0, force=True)
 
     logger.remove()

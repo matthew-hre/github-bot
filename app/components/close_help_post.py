@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Literal, cast, final, override
+from typing import TYPE_CHECKING, Literal, cast, final
 
 import discord as dc
 from discord import app_commands
@@ -29,34 +29,6 @@ class Close(commands.GroupCog, group_name="close"):
         self.description = "Mark current post as resolved."
         self.bot = bot
 
-    @override
-    def interaction_check(self, interaction: dc.Interaction, /) -> bool:
-        return (
-            isinstance((post := interaction.channel), dc.Thread)
-            and post.parent_id == self.bot.config.help_channel_id
-        )
-
-    @override
-    async def cog_command_error(
-        self, ctx: commands.Context[Any], error: Exception
-    ) -> None:
-        if isinstance(error, commands.CheckFailure) and (
-            interaction := ctx.interaction
-        ):
-            # Triggers if self.interaction_check fails
-            await interaction.response.send_message(
-                (
-                    "This command can only be used in"
-                    f" <#{self.bot.config.help_channel_id}> "
-                    "posts."
-                ),
-                ephemeral=True,
-            )
-            return None
-        return await super().cog_command_error(ctx, error)
-
-    # async def cog_command_error(self, ctx, error): ...
-
     @app_commands.command(name="solved", description="Mark post as solved.")
     @app_commands.describe(config_option="Config option name (optional)")
     async def solved(
@@ -70,7 +42,6 @@ class Close(commands.GroupCog, group_name="close"):
                 )
                 return
             try:
-                # TODO(Joshie): validate this works the way I think
                 additional_reply = docs.get_docs_link("option", config_option)
             except ValueError:
                 await interaction.response.send_message(
@@ -142,16 +113,23 @@ class Close(commands.GroupCog, group_name="close"):
         additional_reply: str | None = None,
     ) -> None:
         post = interaction.channel
-        assert isinstance(post, dc.Thread)
-        assert post.parent_id == self.bot.config.help_channel_id
-
         user = interaction.user
+
         assert not is_dm(user)
-        if not (is_mod(user) or is_helper(user) or user.id == post.owner_id):
+        if not isinstance(post, dc.Thread) or not (
+            is_mod(user) or is_helper(user) or user.id == post.owner_id
+        ):
             await interaction.response.send_message(
-                "You don't have permission to resolve this post.", ephemeral=True
+                (
+                    "This command can only be used in"
+                    f" <#{self.bot.config.help_channel_id}> "
+                    "posts, by helpers or the thread owner."
+                ),
+                ephemeral=True,
             )
             return
+        assert isinstance(post, dc.Thread)
+        assert post.parent_id == self.bot.config.help_channel_id
 
         help_tags = {
             tag

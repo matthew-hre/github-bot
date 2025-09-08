@@ -10,6 +10,22 @@ from githubkit.exception import RequestFailed
 from app.config import config, gh
 from app.utils import dynamic_timestamp
 
+STATUS_MESSAGE_TEMPLATE = """
+### Commit
+{commit_hash}
+### Uptime
+* Launch time: {launch_time}
+* Last login time: {last_login_time}
+### {help_channel} post scan status
+* Last scan: {scan.scanned} scanned, {scan.closed} closed ({scan.time_since})
+* Next scan: {scan.time_until_next}
+### GitHub status
+* Auth: {gh.auth}
+* API: {gh.api}
+### Sitemap
+* Last refresh: {last_sitemap_refresh}
+"""
+
 
 @final
 class BotStatus:
@@ -77,23 +93,24 @@ class BotStatus:
         except subprocess.CalledProcessError:
             return "Unknown"
 
-    async def status_message(self) -> str:
+    async def export(self) -> dict[str, str | SimpleNamespace]:
+        """
+        Make sure the bot has finished initializing before calling this, using the
+        `initialized` property.
+        """
         assert self.last_login_time is not None
         assert self.last_sitemap_refresh is not None
-        scan = self._get_scan_data()
-        gh_stats = await self._get_github_data()
-        return f"""
-        ### Commit
-        {self._get_commit_hash}
-        ### Uptime
-        * Launch time: {dynamic_timestamp(self.launch_time, "R")}
-        * Last login time: {dynamic_timestamp(self.last_login_time, "R")}
-        ### <#{config.help_channel_id}> post scan status
-        * Last scan: {scan.scanned} scanned, {scan.closed} closed ({scan.time_since})
-        * Next scan: {scan.time_until_next}
-        ### GitHub status
-        * Auth: {gh_stats.auth}
-        * API: {gh_stats.api}
-        ### Sitemap
-        * Last refresh: {dynamic_timestamp(self.last_sitemap_refresh, "R")}
-        """
+        return {
+            "commit_hash": self._get_commit_hash(),
+            "launch_time": dynamic_timestamp(self.launch_time, "R"),
+            "last_login_time": dynamic_timestamp(self.last_login_time, "R"),
+            "last_sitemap_refresh": dynamic_timestamp(self.last_sitemap_refresh, "R"),
+            "help_channel": f"<#{config.help_channel_id}>",
+            "scan": self._get_scan_data(),
+            "gh": await self._get_github_data(),
+        }
+
+    async def status_message(self) -> str:
+        if not self.initialized:
+            return "The bot has not finished initializing yet; try again shortly."
+        return STATUS_MESSAGE_TEMPLATE.format(**(await self.export()))

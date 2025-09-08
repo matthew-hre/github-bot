@@ -25,12 +25,13 @@ class Extras(commands.Cog):
         await try_dm(ctx.author, "Command tree synced.")
 
     @dc.app_commands.command(name="status")
-    @dc.app_commands.dm_only()
     async def ghostty_bot_status(self, interaction: dc.Interaction) -> None:
         user = interaction.user
-        member = self.bot.guilds[0].get_member(user.id)
+        member = self.bot.ghostty_guild.get_member(user.id)
         if member is None or not is_mod(member):
-            return
+            await interaction.response.send_message(
+                "Sorry, only mods can use this command", ephemeral=True
+            )
         await interaction.response.send_message(
             await self.bot.ghostty_status.status_message()
         )
