@@ -52,8 +52,6 @@ class GhosttyBot(commands.Bot):
         await asyncio.gather(*map(self.load_extension, extensions))
 
     async def on_ready(self) -> None:
-        # Creating a strong reference
-
         self.ghostty_status.last_login_time = dt.datetime.now(tz=dt.UTC)
         logger.info("logged in as {}", self.user)
 

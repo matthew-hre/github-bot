@@ -26,6 +26,7 @@ async def setup(bot: GhosttyBot) -> None:
         bot.add_cog(CommentIntegration(bot)),
     )
 
+    # Creating a strong reference
     monalisten_task = asyncio.create_task(monalisten_client.listen())
     monalisten_task.add_done_callback(handle_task_error)
     bot.background_tasks.add(monalisten_task)

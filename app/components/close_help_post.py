@@ -50,17 +50,15 @@ class Close(commands.GroupCog, group_name="close"):
     async def cog_app_command_error(
         self, interaction: dc.Interaction, error: app_commands.AppCommandError
     ) -> None:
-        if type(error) is app_commands.CheckFailure:
-            # Triggers if self.interaction_check fails
-            await interaction.response.send_message(
-                "This command can only be used in "
-                f"<#{self.bot.config.help_channel_id}> "
-                "posts, by helpers or the post's author.",
-                ephemeral=True,
-            )
-            interaction.extras["error_handled"] = True
-            return
-        raise error
+        if type(error) is not app_commands.CheckFailure:
+            raise error
+        # Triggers if self.interaction_check fails
+        await interaction.response.send_message(
+            f"This command can only be used in {self.bot.help_channel.mention} "
+            "posts, by helpers or the post's author.",
+            ephemeral=True,
+        )
+        interaction.extras["error_handled"] = True
 
     @app_commands.command(name="solved", description="Mark post as solved.")
     @app_commands.describe(config_option="Config option name (optional)")

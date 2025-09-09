@@ -789,7 +789,7 @@ class MoveMessage(commands.Cog):
             await interaction.response.send_message(
                 (
                     "System messages cannot be turned into "
-                    f"<#{self.bot.config.help_channel_id}> posts."
+                    f"{self.bot.help_channel.mention} posts."
                 ),
                 ephemeral=True,
                 view=DeleteInstead(message),

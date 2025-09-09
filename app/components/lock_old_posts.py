@@ -34,9 +34,9 @@ class LockOldPosts(commands.Cog):
             or (
                 (starter := post.starter_message) is not None
                 # Also check the post starter message, whose timestamp is readily
-                # available without fetching messages from Discord.
-                # This reduces ratelimits due to a high volume of fetches when messages
-                # are sent in the #help channel.
+                # available without fetching messages from Discord. This reduces
+                # ratelimits due to a high volume of fetches when messages are sent in
+                # the #help channel.
                 and starter.created_at > one_month_ago
             )
         ):
