@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, NoReturn, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypedDict
 
 import discord as dc
 from loguru import logger
@@ -41,21 +41,6 @@ client = Monalisten(
     if config.github_webhook_secret
     else None,
 )
-
-
-class Test(Monalisten):
-    def __init__(self, source: str, *, token: str | None = None) -> None:
-        super().__init__(source, token=token)
-
-    async def on_error(self) -> None:
-        @self.on_internal("error")
-        async def _(
-            event_data: dict[str, Any],
-            message: str,
-            pydantic_errors: list[ErrorDetails] | None,
-        ) -> NoReturn:
-            msg = f"{message}\n{event_data}\n{pydantic_errors or []}"
-            raise RuntimeError(msg)
 
 
 @client.on_internal("error")

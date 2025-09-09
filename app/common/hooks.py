@@ -150,7 +150,6 @@ def create_edit_hook(
     view_type: Callable[[dc.Message, int], dc.ui.View],
     view_timeout: float = 30.0,
 ) -> Callable[[dc.Message, dc.Message], Awaitable[None]]:
-    # TODO(Joshie): refactor similar to `linker.delete`
     async def edit_hook(before: dc.Message, after: dc.Message) -> None:
         if before.content == after.content:
             return
