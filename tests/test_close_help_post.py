@@ -55,25 +55,24 @@ gh_env = kp.KitPoser({
 })
 
 
-# TODO(Joshie): re-enable after fixing whatever is causing this to fail
-# @pytest.mark.parametrize(
-#     ("entity_id", "kind"),
-#     [(189, "Issue"), (1234, "Pull Request"), (2354, "Discussion")],
-# )
-# @pytest.mark.asyncio
-# async def test_mention_entity(
-#     entity_id: int,
-#     kind: str,
-#     monkeypatch: pytest.MonkeyPatch,
-# ) -> None:
-#     mentions_subpkg_path = "app.components.github_integration.mentions"
-#     monkeypatch.setattr(f"{mentions_subpkg_path}.cache.gh", gh_env)
-#     monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
-#
-#     msg_content = await Close.mention_entity(entity_id)
-#
-#     assert msg_content is not None
-#     assert f"{kind} [#{entity_id}]" in msg_content
+@pytest.mark.parametrize(
+    ("entity_id", "kind"),
+    [(189, "Issue"), (1234, "Pull Request"), (2354, "Discussion")],
+)
+@pytest.mark.asyncio
+async def test_mention_entity(
+    entity_id: int,
+    kind: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mentions_subpkg_path = "app.components.github_integration.mentions"
+    monkeypatch.setattr(f"{mentions_subpkg_path}.cache.entity_cache.gh", gh_env)
+    monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
+
+    msg_content = await Close.mention_entity(entity_id)
+
+    assert msg_content is not None
+    assert f"{kind} [#{entity_id}]" in msg_content
 
 
 @pytest.mark.parametrize("entity_id", [-13, 1023, 8192])
@@ -82,7 +81,7 @@ async def test_mention_missing_entity(
     entity_id: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     mentions_subpkg_path = "app.components.github_integration.mentions"
-    monkeypatch.setattr(f"{mentions_subpkg_path}.cache.gh", gh_env)
+    monkeypatch.setattr(f"{mentions_subpkg_path}.cache.entity_cache.gh", gh_env)
     monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
 
     msg_content = await Close.mention_entity(entity_id)
