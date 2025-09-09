@@ -14,7 +14,7 @@ class Extras(commands.Cog):
     def __init__(self, bot: "GhosttyBot") -> None:
         self.bot = bot
 
-    @commands.command(name="sync", description="Accept a pending tester invite.")
+    @commands.command(name="sync", description="Sync command tree.")
     @commands.guild_only()
     async def sync(self, ctx: commands.Context[Any]) -> None:
         assert not is_dm(ctx.author)
@@ -24,7 +24,9 @@ class Extras(commands.Cog):
         await self.bot.tree.sync()
         await try_dm(ctx.author, "Command tree synced.")
 
-    @dc.app_commands.command(name="status")
+    @dc.app_commands.command(
+        name="status", description="Export Ghostty Bot Status Message"
+    )
     async def ghostty_bot_status(self, interaction: dc.Interaction) -> None:
         user = interaction.user
         member = self.bot.ghostty_guild.get_member(user.id)
