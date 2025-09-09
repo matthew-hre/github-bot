@@ -109,7 +109,8 @@ class ZigCodeblocks(commands.Cog):
         self.codeblock_linker = MessageLinker()
         CodeblockActions.linker = self.codeblock_linker
 
-    async def _collect_attachments(self, message: dc.Message) -> list[dc.File]:
+    @staticmethod
+    async def _collect_attachments(message: dc.Message) -> list[dc.File]:
         attachments: list[dc.File] = []
         for att in message.attachments:
             if not att.filename.endswith(".zig") or att.size > MAX_ZIG_FILE_SIZE:
@@ -128,7 +129,8 @@ class ZigCodeblocks(commands.Cog):
             )
         return attachments
 
-    def _tallest_codeblock_to_file(self, codeblocks: list[CodeBlock]) -> dc.File:
+    @staticmethod
+    def _tallest_codeblock_to_file(codeblocks: list[CodeBlock]) -> dc.File:
         tallest_codeblock = max(
             codeblocks,
             key=lambda cb: (len(cb.body.splitlines()), len(cb.body)),
@@ -139,8 +141,9 @@ class ZigCodeblocks(commands.Cog):
             filename=f"{''.join(choices(string.ascii_letters, k=6))}.ansi",
         )
 
+    @staticmethod
     def _add_user_notes(
-        self, content: str, omitted_codeblocks: int, attachments: Collection[dc.File]
+        content: str, omitted_codeblocks: int, attachments: Collection[dc.File]
     ) -> str:
         if attachments:
             content += FILE_HIGHLIGHT_NOTE

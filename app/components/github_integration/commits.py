@@ -185,7 +185,8 @@ class Commits(commands.Cog):
                 Footer("commit", f"Commit {sha}: {commit_title}"),
             )
 
-    def _format_commit_mention(self, commit: CommitSummary) -> str:
+    @staticmethod
+    def _format_commit_mention(commit: CommitSummary) -> str:
         emoji = emojis.get("commit")
         title = commit.message.splitlines()[0]
         heading = f"{emoji} **Commit [`{commit.sha[:7]}`](<{commit.url}>):** {title}"
@@ -221,8 +222,8 @@ class Commits(commands.Cog):
 
         return heading + subtext
 
+    @staticmethod
     async def resolve_repo_signatures(
-        self,
         sigs: Iterable[tuple[str, str, str, str, str]],
     ) -> AsyncGenerator[CommitKey]:
         valid_signatures = 0

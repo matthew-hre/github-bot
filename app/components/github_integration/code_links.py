@@ -119,7 +119,8 @@ class CodeLinks(commands.Cog):
                 content_range,
             )
 
-    def _format_snippet(self, snippet: Snippet, *, include_body: bool = True) -> str:
+    @staticmethod
+    def _format_snippet(snippet: Snippet, *, include_body: bool = True) -> str:
         repo_url = f"https://github.com/{snippet.repo}"
         tree_url = f"{repo_url}/tree/{snippet.rev}"
         file_url = f"{repo_url}/blob/{snippet.rev}/{snippet.path}"

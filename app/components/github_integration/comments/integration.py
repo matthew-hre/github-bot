@@ -48,7 +48,8 @@ class CommentIntegration(commands.Cog):
         self.comment_linker = MessageLinker()
         CommentActions.linker = self.comment_linker
 
-    def comment_to_embed(self, comment: Comment) -> dc.Embed:
+    @staticmethod
+    def comment_to_embed(comment: Comment) -> dc.Embed:
         emoji = get_entity_emoji(comment.entity) or "❓"
         title = f"{emoji} {comment.entity.title}"
         formatted_reactions = comment.reactions and [

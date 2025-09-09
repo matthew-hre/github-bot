@@ -71,8 +71,8 @@ class LockOldPosts(commands.Cog):
         )
         await post.edit(locked=True, archived=True)
 
+    @staticmethod
     async def _get_message(
-        self,
         thread: dc.Thread,
         n: int,
         *,

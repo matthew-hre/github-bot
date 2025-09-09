@@ -129,7 +129,7 @@ def _format_reply(reply: dc.Message) -> dc.Embed:
     )
 
 
-async def _format_context_menu_command(reply: dc.Message) -> dc.Embed:
+def _format_context_menu_command(reply: dc.Message) -> dc.Embed:
     return _format_reply(reply).set_author(
         name=f"⚡ Acting on {reply.author.display_name}'s message",
         icon_url=reply.author.display_avatar,
@@ -227,7 +227,7 @@ async def _get_reply_embed(message: dc.Message) -> dc.Embed | None:
     if message.reference.type is dc.MessageReferenceType.reply:
         return _format_reply(ref)
     if message.type is dc.MessageType.context_menu_command:
-        return await _format_context_menu_command(ref)
+        return _format_context_menu_command(ref)
     return None
 
 

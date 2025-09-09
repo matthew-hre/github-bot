@@ -350,7 +350,8 @@ class PRHook(commands.Cog):
             pr_footer(pr, from_review=True),
         )
 
-    def _reduce_diff_hunk(self, hunk: str) -> str:
+    @staticmethod
+    def _reduce_diff_hunk(hunk: str) -> str:
         def missing_diff_marker(line: str) -> bool:
             return not line.startswith(("-", "+"))
 

@@ -65,7 +65,8 @@ class BotStatus:
             closed=closed,
         )
 
-    async def _get_github_data(self) -> SimpleNamespace:
+    @staticmethod
+    async def _get_github_data() -> SimpleNamespace:
         match gh.auth:
             case TokenAuthStrategy(token) if token.startswith(("gh", "github")):
                 correct_token = True
