@@ -20,7 +20,6 @@ from app.components.github_integration.webhooks.core import (
     EmbedContent,
     Footer,
     SubhookStore,
-    client,
     make_subhook_registrar,
     reraise_with_payload,
     send_embed,
@@ -64,8 +63,8 @@ type WebhookPullRequestReviewRequestRemoved = (
 
 HUNK_CODEBLOCK_OVERHEAD = len("```diff\n\n```\n")
 
-pr_subhooks: SubhookStore[PullRequestEvent] = {}
-pr_review_subhooks: SubhookStore[PullRequestReviewEvent] = {}
+pr_subhooks: SubhookStore[PRHook, PullRequestEvent] = {}
+pr_review_subhooks: SubhookStore[PRHook, PullRequestReviewEvent] = {}
 
 register_pr_subhook = make_subhook_registrar(pr_subhooks)
 register_pr_review_subhook = make_subhook_registrar(pr_review_subhooks)
@@ -98,13 +97,6 @@ def pr_embed_content(
     return EmbedContent(template.format(f"PR #{pr.number}"), pr.html_url, body)
 
 
-@client.on("pull_request")
-async def handle_pr_event(event: PullRequestEvent) -> None:
-    if subhook := pr_subhooks.get(event.action):
-        with reraise_with_payload(event):
-            await subhook(event)
-
-
 @final
 class PRHook(commands.Cog):
     def __init__(self, bot: GhosttyBot, monalisten_client: Monalisten) -> None:
@@ -123,7 +115,13 @@ class PRHook(commands.Cog):
         async def _(event: PullRequestReviewEvent) -> None:
             if subhook := pr_review_subhooks.get(event.action):
                 with reraise_with_payload(event):
-                    await subhook(event)
+                    await subhook(self, event)
+
+        @self.monalisten_client.on("pull_request")
+        async def _(event: PullRequestEvent) -> None:
+            if subhook := pr_subhooks.get(event.action):
+                with reraise_with_payload(event):
+                    await subhook(self, event)
 
     @register_pr_subhook("opened")
     async def handle_opened_pr(self, event: WebhookPullRequestOpened) -> None:

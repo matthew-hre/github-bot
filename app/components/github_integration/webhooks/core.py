@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from app.config import WebhookFeedType
 
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]
-type SubhookStore[E] = dict[str, Callable[[E], Awaitable[None]]]
+type SubhookStore[C, E] = dict[str, Callable[[C, E], Awaitable[None]]]
 
 EMBED_COLORS: dict[EmbedColor, int] = {
     "green": 0x3FB950,

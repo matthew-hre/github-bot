@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from app.bot import GhosttyBot
     from app.components.github_integration.emoji import EmojiName
 
-issue_subhooks: SubhookStore[IssuesEvent] = {}
+issue_subhooks: SubhookStore[Issues, IssuesEvent] = {}
 
 register_issue_subhook = make_subhook_registrar(issue_subhooks)
 
@@ -105,7 +105,7 @@ class Issues(commands.Cog):
         async def _(event: IssuesEvent) -> None:
             if subhook := issue_subhooks.get(event.action):
                 with reraise_with_payload(event):
-                    await subhook(event)
+                    await subhook(self, event)
 
     @register_issue_subhook("opened")
     async def handle_opened_issue(self, event: WebhookIssuesOpened) -> None:
