@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import datetime as dt
 from contextlib import suppress
@@ -125,7 +127,7 @@ UPLOADING = "⌛ Uploading attachments (this may take some time)…"
 
 
 async def _apply_edit_from_thread(
-    bot: "GhosttyBot",
+    bot: GhosttyBot,
     moved_message: MovedMessage,
     message: dc.Message,
     new_content: str,
@@ -178,7 +180,7 @@ class ThreadState:
 @final
 class SelectChannel(SafeView):
     def __init__(
-        self, bot: "GhosttyBot", message: dc.Message, executor: dc.Member
+        self, bot: GhosttyBot, message: dc.Message, executor: dc.Member
     ) -> None:
         super().__init__()
         self.bot = bot
@@ -253,7 +255,7 @@ class HelpPostTitle(SafeModal, title="Turn into #help post"):
         label="#help post title", style=dc.TextStyle.short, max_length=100
     )
 
-    def __init__(self, bot: "GhosttyBot", message: dc.Message) -> None:
+    def __init__(self, bot: GhosttyBot, message: dc.Message) -> None:
         super().__init__()
         self.bot = bot
         self._message = message
@@ -283,7 +285,7 @@ class ChooseMessageAction(SafeView):
     thread_button: dc.ui.Button[Self]
     help_button: dc.ui.Button[Self]
 
-    def __init__(self, message_cog: "MoveMessage", message: MovedMessage) -> None:
+    def __init__(self, message_cog: MoveMessage, message: MovedMessage) -> None:
         super().__init__()
         self._message_cog = message_cog
         self._message = message
@@ -450,7 +452,7 @@ class EditMessage(SafeModal, title="Edit Message"):
     )
 
     def __init__(
-        self, bot: "GhosttyBot", message: MovedMessage, split_subtext: SplitSubtext
+        self, bot: GhosttyBot, message: MovedMessage, split_subtext: SplitSubtext
     ) -> None:
         super().__init__()
         self.bot = bot
@@ -510,7 +512,7 @@ class DeleteAttachments(SafeView):
 
 @final
 class CancelEditing(SafeView):
-    def __init__(self, message_cog: "MoveMessage", thread: dc.Thread) -> None:
+    def __init__(self, message_cog: MoveMessage, thread: dc.Thread) -> None:
         super().__init__()
         self._message_cog = message_cog
         self._thread = thread
@@ -535,7 +537,7 @@ class CancelEditing(SafeView):
 
 @final
 class ContinueEditing(SafeView):
-    def __init__(self, message_cog: "MoveMessage", thread: dc.Thread) -> None:
+    def __init__(self, message_cog: MoveMessage, thread: dc.Thread) -> None:
         super().__init__()
         self._message_cog = message_cog
         self._thread = thread
@@ -566,7 +568,7 @@ class ContinueEditing(SafeView):
 class SkipLargeAttachments(SafeView):
     def __init__(
         self,
-        message_cog: "MoveMessage",
+        message_cog: MoveMessage,
         message: dc.Message,
         state: ThreadState,
         new_content: str,
@@ -606,7 +608,7 @@ class SkipLargeAttachments(SafeView):
 @final
 class AttachmentChoice(SafeView):
     def __init__(
-        self, message_cog: "MoveMessage", message: dc.Message, state: ThreadState
+        self, message_cog: MoveMessage, message: dc.Message, state: ThreadState
     ) -> None:
         super().__init__()
         self._message_cog = message_cog
@@ -639,7 +641,7 @@ class AttachmentChoice(SafeView):
 
 @final
 class MoveMessage(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         # A dictionary mapping edit thread IDs to their state. An ID is used instead of
         # the thread itself because there is a thread available already at all places
         # this is used, and because it isn't obvious how threads are hashed.
@@ -906,5 +908,5 @@ class MoveMessage(commands.Cog):
         )
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(MoveMessage(bot))

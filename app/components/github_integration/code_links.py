@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import asyncio
 import re
 import string
 import urllib.parse
-from collections.abc import AsyncGenerator
 from io import BytesIO
 from pathlib import Path
 from textwrap import dedent
@@ -24,6 +25,8 @@ from app.components.zig_codeblocks import THEME
 from app.utils import suppress_embeds_after_delay
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from githubkit import GitHub, TokenAuthStrategy
 
     from app.bot import GhosttyBot
@@ -57,7 +60,7 @@ class Snippet(NamedTuple):
 
 
 class ContentCache(TTRCache[SnippetPath, str]):
-    def __init__(self, gh: "GitHub[TokenAuthStrategy]", **ttr: float) -> None:
+    def __init__(self, gh: GitHub[TokenAuthStrategy], **ttr: float) -> None:
         super().__init__(**ttr)
         self.gh: GitHub[TokenAuthStrategy] = gh
 
@@ -81,7 +84,7 @@ class CodeLinkActions(ItemActions):
 
 @final
 class CodeLinks(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.code_linker = MessageLinker()
         CodeLinkActions.linker = self.code_linker

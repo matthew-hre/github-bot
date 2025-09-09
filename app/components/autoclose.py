@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import datetime as dt
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, final, override
 
 import discord as dc
@@ -8,12 +9,14 @@ from discord.ext import commands, tasks
 from app.utils import post_is_solved
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from app.bot import GhosttyBot
 
 
 @final
 class AutoClose(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
 
         self.autoclose_solved_posts.start()
@@ -70,5 +73,5 @@ class AutoClose(commands.Cog):
         )
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(AutoClose(bot))

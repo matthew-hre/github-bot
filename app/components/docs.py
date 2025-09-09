@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime as dt
 import json
 from typing import TYPE_CHECKING, NotRequired, Self, TypedDict, cast, final, override
@@ -43,7 +45,7 @@ class Entry(TypedDict):
 class Docs(commands.Cog):
     sitemap: dict[str, list[str]]
 
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.sitemap = {}
 
@@ -194,5 +196,5 @@ class Docs(commands.Cog):
         )
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(Docs(bot))

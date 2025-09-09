@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import datetime as dt
 import re
@@ -67,7 +69,7 @@ class XKCDActions(ItemActions):
 
 @final
 class XKCDMentions(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.xkcd_mention_linker = MessageLinker()
         XKCDActions.linker = self.xkcd_mention_linker
@@ -124,5 +126,5 @@ class XKCDMentions(commands.Cog):
         )(before, after)
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(XKCDMentions(bot))

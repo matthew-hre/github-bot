@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal, cast, get_args
 
-import discord as dc
-
 if TYPE_CHECKING:
+    import discord as dc
+
     from app.bot import GhosttyBot
 
 EmojiName = Literal[
@@ -23,7 +25,7 @@ _emojis: dict[EmojiName, dc.Emoji] = {}
 emojis = MappingProxyType(_emojis)
 
 
-async def load_emojis(bot: "GhosttyBot") -> None:
+async def load_emojis(bot: GhosttyBot) -> None:
     valid_emoji_names = frozenset(get_args(EmojiName))
 
     for emoji in bot.ghostty_guild.emojis:

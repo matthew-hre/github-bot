@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import secrets
 from typing import TYPE_CHECKING, final, override
 
@@ -20,7 +22,7 @@ STATUSES = (
 
 @final
 class ActivityStatus(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
 
         self.randomize_activity_status.start()
@@ -38,5 +40,5 @@ class ActivityStatus(commands.Cog):
         await self.bot.wait_until_ready()
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(ActivityStatus(bot))

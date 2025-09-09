@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, final
 
 import discord as dc
@@ -11,7 +13,7 @@ if TYPE_CHECKING:
 
 @final
 class AcceptInvite(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
 
     @dc.app_commands.command(
@@ -34,5 +36,5 @@ class AcceptInvite(commands.Cog):
         )
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(AcceptInvite(bot))

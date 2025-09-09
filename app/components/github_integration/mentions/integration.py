@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from collections import defaultdict
 from itertools import chain
@@ -40,7 +42,7 @@ class MentionActions(ItemActions):
 
 @final
 class MentionIntegration(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.mention_linker = MessageLinker()
         MentionActions.linker = self.mention_linker

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, final
 
 import discord as dc
@@ -11,7 +13,7 @@ if TYPE_CHECKING:
 
 @final
 class Extras(commands.Cog):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
 
     @commands.command(name="sync", description="Sync command tree.")
@@ -39,5 +41,5 @@ class Extras(commands.Cog):
         )
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(Extras(bot))

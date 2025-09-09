@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import re
-from collections.abc import Callable
 from typing import TYPE_CHECKING, NamedTuple, cast, final
 
 import discord as dc
@@ -9,6 +10,8 @@ from app.common.message_moving import format_or_file
 from app.utils import try_dm
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from app.bot import GhosttyBot
 
 _URL_REGEX = re.compile(
@@ -37,7 +40,7 @@ class MessageFilterTuple(NamedTuple):
 class MessageFilter(commands.Cog):
     message_filters: tuple[MessageFilterTuple, ...]
 
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
 
         self.message_filters = (
@@ -88,5 +91,5 @@ class MessageFilter(commands.Cog):
         return False
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(MessageFilter(bot))

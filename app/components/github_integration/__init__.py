@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from typing import TYPE_CHECKING
 
@@ -13,8 +15,8 @@ if TYPE_CHECKING:
     from app.bot import GhosttyBot
 
 
-async def setup(bot: "GhosttyBot") -> None:
-    cogs = [
+async def setup(bot: GhosttyBot) -> None:
+    await asyncio.gather(
         bot.add_cog(Discussions(bot, monalisten_client)),
         bot.add_cog(Issues(bot, monalisten_client)),
         bot.add_cog(PRHook(bot, monalisten_client)),
@@ -22,8 +24,7 @@ async def setup(bot: "GhosttyBot") -> None:
         bot.add_cog(CodeLinks(bot)),
         bot.add_cog(MentionIntegration(bot)),
         bot.add_cog(CommentIntegration(bot)),
-    ]
-    await asyncio.gather(*cogs)
+    )
 
     monalisten_task = asyncio.create_task(monalisten_client.listen())
     monalisten_task.add_done_callback(handle_task_error)

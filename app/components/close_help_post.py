@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Literal, cast, final
 
@@ -25,7 +27,7 @@ POST_TITLE_TOO_LONG = (
 @final
 @app_commands.guild_only()
 class Close(commands.GroupCog, group_name="close"):
-    def __init__(self, bot: "GhosttyBot") -> None:
+    def __init__(self, bot: GhosttyBot) -> None:
         self.description = "Mark current post as resolved."
         self.bot = bot
 
@@ -195,5 +197,5 @@ class Close(commands.GroupCog, group_name="close"):
         return output.content or None
 
 
-async def setup(bot: "GhosttyBot") -> None:
+async def setup(bot: GhosttyBot) -> None:
     await bot.add_cog(Close(bot))
