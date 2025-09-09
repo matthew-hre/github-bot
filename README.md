@@ -194,23 +194,25 @@ This bot runs on Python 3.13+ and is managed with [uv]. To get started:
 ```mermaid
 flowchart LR;
 
-setup{{setup.py}} --> utils(utils/) --> core([core.py])
-setup --> components(components/)
-utils --> components
-setup --> core
-components --> core
-core --> main{{\_\_main__.py}}
+config{{config.py}} --> bot{{bot.py}}
+config --> components(components/)
+config --> main{{\_\_main__.py}}
+log{{log.py}} --> main
+bot --> main
+bot --> components
+utils([utils/]) --> components
 ```
 
-* `components/` is a place for all dedicated features, such as message filters
+* `components/` is a place for all dedicated features ([cogs]), such as message filters
   or entity mentions. Most new features should become modules belonging to this
-  package.
-* `core.py` loads the `components` package and houses the code for handling the
-  most standard bot events (e.g. `on_ready`, `on_message`, `on_error`).
-* `setup.py` handles reading and parsing the environment variables and the
-  local `.env` file, and creates the Discord and GitHub clients.
+  package. Events (e.g. `on_ready`, `on_message`, `on_error`) should be defined within the component.
+* `bot.py` contains custom attributes and behaviors for the overall discord bot 
+  and then loads extensions found in `components` .
+* `config.py` handles reading and parsing the environment variables and the
+  local `.env` file, and creates the GitHub client.
 * `utils/` contains helper functions/classes not tied to any specific feature.
-* `__main__.py` initializes Sentry (optional) and starts the bot.
+* `log.py` setups up logging and optionally Sentry.
+* `__main__.py` initializes logging and starts the bot.
 
 
 # Features
@@ -400,3 +402,4 @@ https://github.com/user-attachments/assets/8c8ed1cf-db00-414f-937f-43e565ae9d15
 [uv]: https://docs.astral.sh/uv/
 [website-repo]: https://github.com/ghostty-org/website
 [zig-codeblocks-repo]: https://github.com/trag1c/zig-codeblocks
+[cogs]: (https://discordpy.readthedocs.io/en/stable/ext/commands/cogs.html)
