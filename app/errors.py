@@ -29,6 +29,8 @@ def handle_error(error: BaseException) -> None:
 async def interaction_error_handler(
     interaction: dc.Interaction, error: Exception, /
 ) -> None:
+    if interaction.extras.get("error_handled", False):
+        return
     if not interaction.response.is_done():
         await interaction.response.send_message(
             "Something went wrong :(", ephemeral=True

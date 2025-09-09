@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Literal, cast, final
+from typing import TYPE_CHECKING, Literal, cast, final, override
 
 import discord as dc
 from discord import app_commands
@@ -30,6 +30,39 @@ class Close(commands.GroupCog, group_name="close"):
     def __init__(self, bot: GhosttyBot) -> None:
         self.description = "Mark current post as resolved."
         self.bot = bot
+
+    @override
+    def interaction_check(self, interaction: dc.Interaction, /) -> bool:
+        user = interaction.user
+        if is_dm(user):
+            return False
+        if not (
+            isinstance((post := interaction.channel), dc.Thread)
+            and post.parent_id == self.bot.config.help_channel_id
+        ):
+            # Can only close help post channel
+            return False
+
+        # Only mods or author can close posts
+        return is_mod(user) or is_helper(user) or user.id == post.owner_id
+
+    @override
+    async def cog_app_command_error(
+        self, interaction: dc.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        if type(error) is app_commands.CheckFailure:
+            # Triggers if self.interaction_check fails
+            await interaction.response.send_message(
+                (
+                    "This command can only be used in"
+                    f" <#{self.bot.config.help_channel_id}> "
+                    "posts, by helps or thread owner."
+                ),
+                ephemeral=True,
+            )
+            interaction.extras["error_handled"] = True
+            return
+        raise error
 
     @app_commands.command(name="solved", description="Mark post as solved.")
     @app_commands.describe(config_option="Config option name (optional)")
@@ -115,21 +148,7 @@ class Close(commands.GroupCog, group_name="close"):
         additional_reply: str | None = None,
     ) -> None:
         post = interaction.channel
-        user = interaction.user
 
-        assert not is_dm(user)
-        if not isinstance(post, dc.Thread) or not (
-            is_mod(user) or is_helper(user) or user.id == post.owner_id
-        ):
-            await interaction.response.send_message(
-                (
-                    "This command can only be used in"
-                    f" <#{self.bot.config.help_channel_id}> "
-                    "posts, by helpers or the thread owner."
-                ),
-                ephemeral=True,
-            )
-            return
         assert isinstance(post, dc.Thread)
         assert post.parent_id == self.bot.config.help_channel_id
 
