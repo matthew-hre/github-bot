@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import datetime as dt
 import sys
@@ -20,7 +22,7 @@ if TYPE_CHECKING:
 
 @final
 class GhosttyBot(commands.Bot):
-    def __init__(self, config: "Config", gh: "GitHub[TokenAuthStrategy]") -> None:
+    def __init__(self, config: Config, gh: GitHub[TokenAuthStrategy]) -> None:
         intents = dc.Intents.default()
         intents.members = True
         intents.message_content = True
@@ -74,7 +76,7 @@ class GhosttyBot(commands.Bot):
         return channel
 
     @dc.utils.cached_property
-    def webhook_channels(self) -> dict["WebhookFeedType", dc.TextChannel]:
+    def webhook_channels(self) -> dict[WebhookFeedType, dc.TextChannel]:
         channels: dict[WebhookFeedType, dc.TextChannel] = {}
         for feed_type, id_ in self.config.webhook_channel_ids.items():
             channel = self.ghostty_guild.get_channel(id_)

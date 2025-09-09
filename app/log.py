@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import os
@@ -39,7 +41,7 @@ class _InterceptHandler(logging.Handler):
         )
 
 
-def setup(config: "Config") -> None:
+def setup(config: Config) -> None:
     logging.basicConfig(handlers=[_InterceptHandler()], level=0, force=True)
 
     logger.remove()
