@@ -11,7 +11,6 @@ from githubkit.exception import RequestFailed
 from loguru import logger
 
 from app.common.message_moving import get_or_create_webhook
-from app.utils import is_mod
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -108,8 +107,11 @@ class Docs(commands.Cog):
 
     @dc.app_commands.command(name="refresh-docs", description="Refresh sitemap docs.")
     @dc.app_commands.guild_only()
+    @dc.app_commands.default_permissions(
+        ban_members=True
+    )  # Hide interaction from non-mods
     async def refresh_docs(self, interaction: dc.Interaction) -> None:
-        if is_mod(cast("dc.Member", interaction.user)):
+        if not self.bot.is_ghostty_mod(interaction.user):
             await interaction.response.send_message(
                 "Only mods can run this command", ephemeral=True
             )

@@ -10,7 +10,7 @@ from loguru import logger
 
 from app.errors import handle_error, interaction_error_handler
 from app.status import BotStatus
-from app.utils import try_dm
+from app.utils import is_mod, try_dm
 
 if TYPE_CHECKING:
     from githubkit import GitHub, TokenAuthStrategy
@@ -87,6 +87,10 @@ class GhosttyBot(commands.Bot):
                 raise TypeError(msg.format(feed_type))
             channels[feed_type] = channel
         return channels
+
+    def is_ghostty_mod(self, user: dc.User | dc.Member) -> bool:
+        member = self.ghostty_guild.get_member(user.id)
+        return member is not None and is_mod(member)
 
     @override
     async def on_message(self, message: dc.Message, /) -> None:

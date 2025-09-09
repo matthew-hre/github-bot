@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, final
 import discord as dc
 from discord.ext import commands
 
-from app.utils import is_dm, is_mod, try_dm
+from app.utils import try_dm
 
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
@@ -17,20 +17,20 @@ class Developer(commands.Cog):
         self.bot = bot
 
     @commands.command(name="sync", description="Sync command tree.")
-    @commands.guild_only()
     async def sync(self, ctx: commands.Context[Any]) -> None:
-        assert not is_dm(ctx.author)
-        if not is_mod(ctx.author):
+        if not self.bot.is_ghostty_mod(ctx.author):
             return
 
         await self.bot.tree.sync()
         await try_dm(ctx.author, "Command tree synced.")
 
     @dc.app_commands.command(name="status", description="View Ghostty Bot's status.")
+    @dc.app_commands.guild_only()
+    @dc.app_commands.default_permissions(
+        ban_members=True
+    )  # Hide interaction from non-mods
     async def ghostty_bot_status(self, interaction: dc.Interaction) -> None:
-        user = interaction.user
-        member = self.bot.ghostty_guild.get_member(user.id)
-        if member is None or not is_mod(member):
+        if not self.bot.is_ghostty_mod(interaction.user):
             await interaction.response.send_message(
                 "Only mods can use this command.", ephemeral=True
             )
