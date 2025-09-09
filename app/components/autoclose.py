@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 class AutoClose(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
-
         self.autoclose_solved_posts.start()
 
     @override

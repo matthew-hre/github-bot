@@ -40,10 +40,10 @@ class Close(commands.GroupCog, group_name="close"):
             isinstance((post := interaction.channel), dc.Thread)
             and post.parent_id == self.bot.config.help_channel_id
         ):
-            # Can only close help post channel
+            # Can only close posts in #help
             return False
 
-        # Only mods or author can close posts
+        # Only helpers and the author can close posts
         return is_mod(user) or is_helper(user) or user.id == post.owner_id
 
     @override
@@ -53,11 +53,9 @@ class Close(commands.GroupCog, group_name="close"):
         if type(error) is app_commands.CheckFailure:
             # Triggers if self.interaction_check fails
             await interaction.response.send_message(
-                (
-                    "This command can only be used in"
-                    f" <#{self.bot.config.help_channel_id}> "
-                    "posts, by helps or thread owner."
-                ),
+                "This command can only be used in "
+                f"<#{self.bot.config.help_channel_id}> "
+                "posts, by helpers or the post's author.",
                 ephemeral=True,
             )
             interaction.extras["error_handled"] = True

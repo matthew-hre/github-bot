@@ -59,6 +59,25 @@ def _unattachable_embed(unattachable_elem: str, **kwargs: Any) -> dc.Embed:
     return dc.Embed(**kwargs).set_footer(text=f"Unable to attach {unattachable_elem}.")
 
 
+def convert_nitro_emojis(bot: GhosttyBot, content: str, *, force: bool = False) -> str:
+    """
+    Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
+    emojis in the current guild too.
+    """
+
+    def replace_nitro_emoji(match: re.Match[str]) -> str:
+        animated, name, id_ = match.groups()
+        emoji = bot.get_emoji(int(id_))
+        if not force and emoji and emoji.guild_id == bot.ghostty_guild.id:
+            return match[0]
+
+        ext = "gif" if animated else "webp"
+        tag = animated and "&animated=true"
+        return f"[{name}](<https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name}>)"
+
+    return _EMOJI_REGEX.sub(replace_nitro_emoji, content)
+
+
 async def _get_sticker_embed(sticker: dc.StickerItem) -> dc.Embed:
     description = (await sticker.fetch()).description
     if sticker.format is dc.StickerFormatType.lottie:
@@ -86,25 +105,6 @@ async def _get_sticker_embed(sticker: dc.StickerItem) -> dc.Embed:
                 embed.color = dc.Color.orange()
             return embed.set_footer(text=footer)
     return _unattachable_embed("sticker", title=sticker.name, description=description)
-
-
-def convert_nitro_emojis(bot: GhosttyBot, content: str, *, force: bool = False) -> str:
-    """
-    Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
-    emojis in the current guild too.
-    """
-
-    def replace_nitro_emoji(match: re.Match[str]) -> str:
-        animated, name, id_ = match.groups()
-        emoji = bot.get_emoji(int(id_))
-        if not force and emoji and emoji.guild_id == bot.ghostty_guild.id:
-            return match[0]
-
-        ext = "gif" if animated else "webp"
-        tag = animated and "&animated=true"
-        return f"[{name}](<https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name}>)"
-
-    return _EMOJI_REGEX.sub(replace_nitro_emoji, content)
 
 
 def _format_reply(reply: dc.Message) -> dc.Embed:

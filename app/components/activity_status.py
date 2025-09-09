@@ -24,7 +24,6 @@ STATUSES = (
 class ActivityStatus(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
-
         self.randomize_activity_status.start()
 
     @override
