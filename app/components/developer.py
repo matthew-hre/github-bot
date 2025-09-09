@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 @final
-class Extras(commands.Cog):
+class Developer(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
 
@@ -35,9 +35,9 @@ class Extras(commands.Cog):
                 "Only mods can use this command.", ephemeral=True
             )
         await interaction.response.send_message(
-            await self.bot.ghostty_status.status_message()
+            await self.bot.ghostty_status.status_message(), ephemeral=True
         )
 
 
 async def setup(bot: GhosttyBot) -> None:
-    await bot.add_cog(Extras(bot))
+    await bot.add_cog(Developer(bot))
