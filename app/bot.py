@@ -1,7 +1,7 @@
 import asyncio
 import datetime as dt
-import os
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast, final, override
 
 import discord as dc
@@ -42,16 +42,12 @@ class GhosttyBot(commands.Bot):
 
     @override
     async def setup_hook(self) -> None:
-        await asyncio.gather(
-            *(
-                self.load_extension(ext)
-                for ext in (
-                    f"app.components.{filename.rstrip('.py')}"
-                    for filename in os.listdir("./app/components")  # noqa: PTH208
-                    if not filename.startswith("_")
-                )
-            )
+        extensions = (
+            f"app.components.{file.stem}"
+            for file in (Path(__file__).parent / "components").iterdir()
+            if not file.name.startswith("_")
         )
+        await asyncio.gather(*map(self.load_extension, extensions))
 
     async def on_ready(self) -> None:
         # Creating a strong reference
