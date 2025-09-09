@@ -11,6 +11,7 @@ from app.common.message_moving import (
     MovedMessage,
     MovedMessageLookupFailed,
     SplitSubtext,
+    convert_nitro_emojis,
     get_or_create_webhook,
     message_can_be_moved,
     move_message_via_webhook,
@@ -130,7 +131,7 @@ async def _apply_edit_from_thread(
     new_content: str,
 ) -> None:
     channel = moved_message.channel
-    if len(converted_content := bot.convert_nitro_emojis(new_content)) <= 2000:
+    if len(converted_content := convert_nitro_emojis(bot, new_content)) <= 2000:
         new_content = converted_content
     # Suppress NotFound in case the user attempts to commit an edit to a message that
     # was deleted in the meantime.
@@ -462,7 +463,7 @@ class EditMessage(SafeModal, title="Edit Message"):
     @override
     async def on_submit(self, interaction: dc.Interaction) -> None:
         content = f"{self.new_text.value}\n{self._split_subtext.subtext}"
-        converted_content = self.bot.convert_nitro_emojis(content)
+        converted_content = convert_nitro_emojis(self.bot, content)
         await self._message.edit(
             content=converted_content if len(converted_content) <= 2000 else content,
             allowed_mentions=dc.AllowedMentions.none(),

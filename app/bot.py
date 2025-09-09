@@ -1,7 +1,6 @@
 import asyncio
 import datetime as dt
 import os
-import re
 import sys
 from typing import TYPE_CHECKING, Any, cast, final, override
 
@@ -17,9 +16,6 @@ if TYPE_CHECKING:
     from githubkit import GitHub, TokenAuthStrategy
 
     from app.config import Config, WebhookFeedType
-
-
-EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 
 
 @final
@@ -108,21 +104,3 @@ class GhosttyBot(commands.Bot):
             return
 
         await self.process_commands(message)
-
-    def convert_nitro_emojis(self, content: str, *, force: bool = False) -> str:
-        """
-        Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
-        emojis in the current guild too.
-        """
-
-        def replace_nitro_emoji(match: re.Match[str]) -> str:
-            animated, name, id_ = match.groups()
-            emoji = self.get_emoji(int(id_))
-            if not force and emoji and emoji.guild_id == self.ghostty_guild.id:
-                return match[0]
-
-            ext = "gif" if animated else "webp"
-            tag = animated and "&animated=true"
-            return f"[{name}](<https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name}>)"
-
-        return EMOJI_REGEX.sub(replace_nitro_emoji, content)

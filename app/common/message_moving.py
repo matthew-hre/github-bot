@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from app.bot import GhosttyBot
 
-EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
+_EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 _REACTION_REGEX = re.compile(r"([^\s×]+) ×(\d+)", re.ASCII)  # noqa: RUF001
 _SNOWFLAKE_REGEX = re.compile(r"<(\D{0,2})(\d+)>", re.ASCII)
 
@@ -88,6 +88,25 @@ async def _get_sticker_embed(sticker: dc.StickerItem) -> dc.Embed:
     return _unattachable_embed("sticker", title=sticker.name, description=description)
 
 
+def convert_nitro_emojis(bot: GhosttyBot, content: str, *, force: bool = False) -> str:
+    """
+    Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
+    emojis in the current guild too.
+    """
+
+    def replace_nitro_emoji(match: re.Match[str]) -> str:
+        animated, name, id_ = match.groups()
+        emoji = bot.get_emoji(int(id_))
+        if not force and emoji and emoji.guild_id == bot.ghostty_guild.id:
+            return match[0]
+
+        ext = "gif" if animated else "webp"
+        tag = animated and "&animated=true"
+        return f"[{name}](<https://cdn.discordapp.com/emojis/{id_}.{ext}?size=48{tag}&name={name}>)"
+
+    return _EMOJI_REGEX.sub(replace_nitro_emoji, content)
+
+
 def _format_reply(reply: dc.Message) -> dc.Embed:
     if reply is dc.utils.MISSING:
         return _unattachable_embed("reply")
@@ -121,7 +140,7 @@ async def _format_forward(
     bot: GhosttyBot,
     forward: dc.MessageSnapshot,
 ) -> tuple[list[dc.Embed], list[dc.File]]:
-    content = bot.convert_nitro_emojis(forward.content)
+    content = convert_nitro_emojis(bot, forward.content)
     if len(content) > 4096:
         content = forward.content
 
@@ -579,7 +598,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
     content, file = format_or_file(
         _format_interaction(message),
         template=f"{{}}\n{subtext}",
-        transform=bot.convert_nitro_emojis,
+        transform=lambda full_message: convert_nitro_emojis(bot, full_message),
     )
     if file:
         msg_data.files.append(file)
