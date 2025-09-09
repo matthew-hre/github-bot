@@ -13,20 +13,14 @@ from app.common.hooks import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Callable
 
     import discord as dc
 
-type DeleteHook = Callable[[dc.Message], Awaitable[None]]
 
 NUM_PAT = re.compile(r"\b\d+\b")
 
 linker = pytest.fixture(lambda: MessageLinker())
-
-
-@pytest.fixture
-def delete_hook(linker: MessageLinker) -> DeleteHook:
-    return linker.delete
 
 
 async def extract_numbers_then_hex(msg: dc.Message) -> ProcessedMessage:
