@@ -12,7 +12,7 @@ from loguru import logger
 
 from app.errors import handle_error, interaction_error_handler
 from app.status import BotStatus
-from app.utils import is_mod, try_dm
+from app.utils import Account, is_mod, try_dm
 
 if TYPE_CHECKING:
     from githubkit import GitHub, TokenAuthStrategy
@@ -35,7 +35,7 @@ class GhosttyBot(commands.Bot):
         self.tree.on_error = interaction_error_handler
         self.config = config
         self.gh = gh
-        self.ghostty_status = BotStatus()
+        self.bot_status = BotStatus()
         self.background_tasks = set[asyncio.Task[None]]()
 
     @override
@@ -52,7 +52,7 @@ class GhosttyBot(commands.Bot):
         await asyncio.gather(*map(self.load_extension, extensions))
 
     async def on_ready(self) -> None:
-        self.ghostty_status.last_login_time = dt.datetime.now(tz=dt.UTC)
+        self.bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
         logger.info("logged in as {}", self.user)
 
     @dc.utils.cached_property
@@ -88,7 +88,7 @@ class GhosttyBot(commands.Bot):
             channels[feed_type] = channel
         return channels
 
-    def is_ghostty_mod(self, user: dc.User | dc.Member) -> bool:
+    def is_ghostty_mod(self, user: Account) -> bool:
         member = self.ghostty_guild.get_member(user.id)
         return member is not None and is_mod(member)
 

@@ -203,11 +203,12 @@ bot --> components
 utils([utils/]) --> components
 ```
 
-* `components/` is a place for all dedicated features ([cogs]), such as message filters
-  or entity mentions. Most new features should become modules belonging to this
-  package. Events (e.g. `on_ready`, `on_message`, `on_error`) should be defined within the component.
-* `bot.py` contains custom attributes and behaviors for the overall discord bot 
-  and then loads extensions found in `components` .
+* `components/` is a place for all dedicated features ([cogs]), such as message
+  filters or entity mentions. Most new features should become modules belonging
+  to this package. Events (e.g. `on_ready`, `on_message`, `on_error`) should be
+  defined within the component.
+* `bot.py` contains custom attributes and behaviors for the overall Discord bot
+  and then loads extensions found in `components`.
 * `config.py` handles reading and parsing the environment variables and the
   local `.env` file, and creates the GitHub client.
 * `utils/` contains helper functions/classes not tied to any specific feature.
@@ -402,4 +403,4 @@ https://github.com/user-attachments/assets/8c8ed1cf-db00-414f-937f-43e565ae9d15
 [uv]: https://docs.astral.sh/uv/
 [website-repo]: https://github.com/ghostty-org/website
 [zig-codeblocks-repo]: https://github.com/trag1c/zig-codeblocks
-[cogs]: (https://discordpy.readthedocs.io/en/stable/ext/commands/cogs.html)
+[cogs]: https://discordpy.readthedocs.io/en/stable/ext/commands/cogs.html

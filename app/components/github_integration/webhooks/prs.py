@@ -280,8 +280,8 @@ class PRHook(commands.Cog):
 
         if review.state == "commented" and not review.body:
             # We most definitely have some pull_request_review_comment event(s)
-            # happening at the same time, so an empty review like this can be ignored
-            # to reduce spam.
+            # happening at the same time, so an empty review like this can be ignored to
+            # reduce spam.
             return
 
         match review.state:

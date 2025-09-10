@@ -160,31 +160,6 @@ class Commits(commands.Cog):
                 Footer("commit", f"Commit {sha}: {commit_title}"),
             )
 
-        @self.monalisten_client.on("commit_comment")
-        async def _(event: CommitCommentEvent) -> None:
-            full_sha = event.comment.commit_id
-            sha = full_sha[:7]
-
-            owner, _, repo_name = event.repository.full_name.partition("/")
-            if commit_summary := await self.commit_cache.get(
-                CommitKey(owner, repo_name, full_sha)
-            ):
-                commit_title = commit_summary.message.splitlines()[0]
-            else:
-                logger.warning(f"no commit summary found for {full_sha}")
-                commit_title = "(no commit message found)"
-
-            await send_embed(
-                self.bot,
-                event.sender,
-                EmbedContent(
-                    f"commented on commit `{sha}`",
-                    event.comment.html_url,
-                    event.comment.body,
-                ),
-                Footer("commit", f"Commit {sha}: {commit_title}"),
-            )
-
     @staticmethod
     def _format_commit_mention(commit: CommitSummary) -> str:
         emoji = emojis.get("commit")
@@ -192,9 +167,9 @@ class Commits(commands.Cog):
         heading = f"{emoji} **Commit [`{commit.sha[:7]}`](<{commit.url}>):** {title}"
 
         if commit.committer and commit.committer.name == "web-flow":
-            # `web-flow` is GitHub's committer account for all web commits
-            # (like merge or revert) made on GitHub.com,
-            # so let's pretend the commit author is actually the committer.
+            # `web-flow` is GitHub's committer account for all web commits (like merge
+            # or revert) made on GitHub.com, so let's pretend the commit author is
+            # actually the committer.
             commit = copy.replace(commit, committer=commit.author)
 
         subtext = "\n-# authored by "

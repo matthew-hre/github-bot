@@ -49,10 +49,10 @@ class BotStatus:
     def _get_scan_data(self) -> SimpleNamespace:
         if not self.help_scan_loop:
             return SimpleNamespace(
-                time_since="Disabled",
-                time_until_next="Disabled",
-                scanned=-1,
-                closed=-1,
+                time_since="**disabled**",
+                time_until_next="**disabled**",
+                scanned=0,
+                closed=0,
             )
 
         next_scan = cast("dt.datetime", self.help_scan_loop.next_iteration)

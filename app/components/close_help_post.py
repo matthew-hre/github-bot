@@ -34,9 +34,7 @@ class Close(commands.GroupCog, group_name="close"):
     @override
     def interaction_check(self, interaction: dc.Interaction, /) -> bool:
         user = interaction.user
-        if is_dm(user):
-            return False
-        if not (
+        if is_dm(user) or not (
             isinstance((post := interaction.channel), dc.Thread)
             and post.parent_id == self.bot.config.help_channel_id
         ):
@@ -54,11 +52,19 @@ class Close(commands.GroupCog, group_name="close"):
             raise error
         # Triggers if self.interaction_check fails
         await interaction.response.send_message(
-            f"This command can only be used in {self.bot.help_channel.mention} "
-            "posts, by helpers or the post's author.",
+            f"This command can only be used in {self.bot.help_channel.mention} posts, "
+            "by helpers or the post's author.",
             ephemeral=True,
         )
         interaction.extras["error_handled"] = True
+
+    @staticmethod
+    async def mention_entity(entity_id: int) -> str | None:
+        output = await fmt.entity_message(
+            # Forging a message to use the entity mention logic
+            cast("dc.Message", SimpleNamespace(content=f"#{entity_id}"))
+        )
+        return output.content or None
 
     @app_commands.command(name="solved", description="Mark post as solved.")
     @app_commands.describe(config_option="Config option name (optional)")
@@ -202,14 +208,6 @@ class Close(commands.GroupCog, group_name="close"):
             await post.send(additional_reply)
 
         await interaction.followup.send(followup, ephemeral=True)
-
-    @staticmethod
-    async def mention_entity(entity_id: int) -> str | None:
-        output = await fmt.entity_message(
-            # Forging a message to use the entity mention logic
-            cast("dc.Message", SimpleNamespace(content=f"#{entity_id}"))
-        )
-        return output.content or None
 
 
 async def setup(bot: GhosttyBot) -> None:

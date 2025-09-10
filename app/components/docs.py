@@ -54,7 +54,7 @@ class Docs(commands.Cog):
             await self.refresh_sitemap()
         except RequestFailed:
             logger.warning(
-                "Github fetching failed, running bot with limited functionality"
+                "refreshing sitemap failed, running bot with limited functionality"
             )
 
     @dc.app_commands.command(name="docs", description="Link a documentation page.")
@@ -107,10 +107,10 @@ class Docs(commands.Cog):
 
     @dc.app_commands.command(name="refresh-docs", description="Refresh sitemap docs.")
     @dc.app_commands.guild_only()
-    @dc.app_commands.default_permissions(
-        ban_members=True
-    )  # Hide interaction from non-mods
+    # Hide interaction from non-mods
+    @dc.app_commands.default_permissions(ban_members=True)
     async def refresh_docs(self, interaction: dc.Interaction) -> None:
+        # The client-side check with `default_permissions` isn't guaranteed to work.
         if not self.bot.is_ghostty_mod(interaction.user):
             await interaction.response.send_message(
                 "Only mods can run this command", ephemeral=True
@@ -118,7 +118,7 @@ class Docs(commands.Cog):
             return
         await interaction.response.defer(ephemeral=True, thinking=True)
         await self.refresh_sitemap()
-        await interaction.followup.send("Sitemap has been refreshed", ephemeral=True)
+        await interaction.followup.send("Sitemap refreshed.", ephemeral=True)
 
     async def refresh_sitemap(self) -> None:
         # Reading vt/, install/, help/, config/, config/keybind/ subpages by reading
@@ -150,7 +150,7 @@ class Docs(commands.Cog):
         del self.sitemap["install-release-notes"]
         for vt_section in (s for s in SECTIONS if s.startswith("vt-")):
             self.sitemap["vt"].remove(vt_section.removeprefix("vt-"))
-        self.bot.ghostty_status.last_sitemap_refresh = dt.datetime.now(tz=dt.UTC)
+        self.bot.bot_status.last_sitemap_refresh = dt.datetime.now(tz=dt.UTC)
 
     @docs.autocomplete("section")
     async def section_autocomplete(

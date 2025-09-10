@@ -23,7 +23,7 @@ class AutoClose(commands.Cog):
     @override
     async def cog_unload(self) -> None:
         self.autoclose_solved_posts.cancel()
-        self.bot.ghostty_status.help_scan_loop = None
+        self.bot.bot_status.help_scan_loop = None
 
     @tasks.loop(hours=1)
     async def autoclose_solved_posts(self) -> None:
@@ -46,7 +46,7 @@ class AutoClose(commands.Cog):
                     failures.append(post)
                     continue
 
-        self.bot.ghostty_status.last_scan_results = (
+        self.bot.bot_status.last_scan_results = (
             dt.datetime.now(tz=dt.UTC),
             open_posts,
             len(closed_posts),
@@ -61,7 +61,7 @@ class AutoClose(commands.Cog):
     @autoclose_solved_posts.before_loop
     async def before_autoclose_solved_posts(self) -> None:
         await self.bot.wait_until_ready()
-        self.bot.ghostty_status.help_scan_loop = self.autoclose_solved_posts
+        self.bot.bot_status.help_scan_loop = self.autoclose_solved_posts
 
     @staticmethod
     def _post_list(posts: Sequence[dc.Thread]) -> str:

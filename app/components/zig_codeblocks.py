@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import string
+from functools import partial
 from io import BytesIO
 from random import choices
 from typing import TYPE_CHECKING, Self, final
@@ -20,6 +21,7 @@ from app.common.hooks import (
     ItemActions,
     MessageLinker,
     ProcessedMessage,
+    create_edit_hook,
     remove_view_after_delay,
 )
 from app.common.message_moving import get_or_create_webhook, move_message_via_webhook
@@ -72,6 +74,7 @@ class CodeblockActions(ItemActions):
 
     def __init__(self, bot: GhosttyBot, message: dc.Message, item_count: int) -> None:
         super().__init__(message, item_count)
+        self.bot = bot
         replaced_content = _apply_discord_wa_in_ansi_codeblocks(
             process_markdown(message.content, THEME)
         )
@@ -79,7 +82,6 @@ class CodeblockActions(ItemActions):
             self.replace.disabled = True
         else:
             self._replaced_message_content = replaced_content
-        self.bot = bot
 
     @dc.ui.button(label="Replace my message", emoji="🔄")
     async def replace(self, interaction: dc.Interaction, _: dc.ui.Button[Self]) -> None:
@@ -198,9 +200,8 @@ class ZigCodeblocks(commands.Cog):
 
             omitted_codeblocks += 1
 
-        code = self._add_user_notes(code, omitted_codeblocks, attachments)
         return ProcessedMessage(
-            content=code,
+            content=self._add_user_notes(code, omitted_codeblocks, attachments),
             files=attachments,
             item_count=len(highlighted_codeblocks) + len(attachments),
         )
@@ -227,52 +228,13 @@ class ZigCodeblocks(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: dc.Message, after: dc.Message) -> None:
-        if before.content == after.content:
-            return
-
-        if self.codeblock_linker.is_expired(before):
-            # The original message wasn't updated recently enough
-            self.codeblock_linker.unlink(before)
-            return
-
-        old_output = await self.codeblock_processor(before)
-        new_output = await self.codeblock_processor(after)
-        if old_output == new_output:
-            # Message changed but objects are the same
-            return
-
-        if not (reply := self.codeblock_linker.get(before)):
-            if self.codeblock_linker.is_frozen(before):
-                return
-            if old_output.item_count > 0:
-                # The message was removed from the linker at some point (most likely
-                # when the reply was deleted)
-                return
-            # There were no objects before, so treat this as a new message
-            await self.check_for_zig_code(after)
-            return
-
-        if self.codeblock_linker.is_frozen(before):
-            return
-
-        # Some processors use negative values to symbolize special error values, so this
-        # can't be `== 0`. An example of this is the snippet_message() function in the
-        # file app/components/github_integration/code_links.py
-        if new_output.item_count <= 0:
-            # All objects were edited out
-            self.codeblock_linker.unlink(before)
-            await reply.delete()
-            return
-
-        await reply.edit(
-            content=new_output.content,
-            embeds=new_output.embeds,
-            attachments=new_output.files,
-            suppress=not new_output.embeds,
-            view=CodeblockActions(self.bot, after, new_output.item_count),
-            allowed_mentions=dc.AllowedMentions.none(),
-        )
-        await remove_view_after_delay(reply, delay=60)
+        return await create_edit_hook(
+            linker=self.codeblock_linker,
+            message_processor=self.codeblock_processor,
+            interactor=self.check_for_zig_code,
+            view_type=partial(CodeblockActions, self.bot),
+            view_timeout=60,
+        )(before, after)
 
 
 async def setup(bot: GhosttyBot) -> None:

@@ -94,9 +94,11 @@ class MentionIntegration(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def reply_with_entities(self, message: dc.Message) -> None:
-        if not ENTITY_REGEX.search(message.content):
-            return
-        if message.author.bot or message.type in IGNORED_MESSAGE_TYPES:
+        if (
+            message.author.bot
+            or message.type in IGNORED_MESSAGE_TYPES
+            or not ENTITY_REGEX.search(message.content)
+        ):
             return
 
         if is_dm(message.author):

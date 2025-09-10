@@ -9,12 +9,6 @@ from sentry_sdk import capture_exception
 from app.config import config
 
 
-def handle_task_error(task: asyncio.Task[None]) -> None:
-    with suppress(asyncio.CancelledError):
-        if exc := task.exception():
-            handle_error(exc)
-
-
 def handle_error(error: BaseException) -> None:
     if config.sentry_dsn is not None:
         capture_exception(error)
@@ -24,6 +18,12 @@ def handle_error(error: BaseException) -> None:
         logger.error(note)
     if isinstance(error, dc.app_commands.CommandInvokeError):
         handle_error(error.original)
+
+
+def handle_task_error(task: asyncio.Task[None]) -> None:
+    with suppress(asyncio.CancelledError):
+        if exc := task.exception():
+            handle_error(exc)
 
 
 async def interaction_error_handler(

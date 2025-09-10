@@ -30,7 +30,7 @@ _COPY_TEXT_HINT = (
 _REGULAR_MESSAGE_TYPES = frozenset({dc.MessageType.default, dc.MessageType.reply})
 
 
-class MessageFilterTuple(NamedTuple):
+class _MessageFilterTuple(NamedTuple):
     channel_id: int
     filter: Callable[[dc.Message], object]
     template_fillers: tuple[str, str]
@@ -38,20 +38,20 @@ class MessageFilterTuple(NamedTuple):
 
 @final
 class MessageFilter(commands.Cog):
-    message_filters: tuple[MessageFilterTuple, ...]
+    message_filters: tuple[_MessageFilterTuple, ...]
 
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
 
         self.message_filters = (
             # Delete non-image messages in #showcase
-            MessageFilterTuple(
+            _MessageFilterTuple(
                 self.bot.config.showcase_channel_id,
                 lambda msg: cast("dc.Message", msg).attachments,
                 ("any attachments", "a screenshot or a video"),
             ),
             # Delete non-link messages in #media
-            MessageFilterTuple(
+            _MessageFilterTuple(
                 self.bot.config.media_channel_id,
                 lambda msg: _URL_REGEX.search(cast("dc.Message", msg).content),
                 ("a link", "a link"),
@@ -59,7 +59,9 @@ class MessageFilter(commands.Cog):
         )
 
     @commands.Cog.listener("on_message")
-    async def check_message_filters(self, message: dc.Message) -> bool:
+    async def check_message_filters(self, message: dc.Message) -> None:
+        if message.author == self.bot.user:
+            return
         for msg_filter in self.message_filters:
             if message.channel.id != msg_filter.channel_id or msg_filter.filter(
                 message
@@ -68,8 +70,7 @@ class MessageFilter(commands.Cog):
 
             await message.delete()
 
-            # Don't DM the user if it's a system message (e.g. "@user started
-            # a thread")
+            # Don't DM the user if it's a system message (e.g. "@user started a thread")
             if message.type not in _REGULAR_MESSAGE_TYPES:
                 continue
 
@@ -87,8 +88,7 @@ class MessageFilter(commands.Cog):
                 await try_dm(message.author, content, file=file)
                 await try_dm(message.author, _COPY_TEXT_HINT, silent=True)
 
-            return True
-        return False
+            return
 
 
 async def setup(bot: GhosttyBot) -> None:

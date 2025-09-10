@@ -38,14 +38,14 @@ if TYPE_CHECKING:
 
 
 # From https://discord.com/developers/docs/topics/opcodes-and-status-codes#json-json-error-codes.
-MAXIMUM_NUMBER_OF_ACTIVE_THREADS_REACHED = 160006
+_MAXIMUM_NUMBER_OF_ACTIVE_THREADS_REACHED = 160006
 
-MOVED_MESSAGE_MODIFICATION_CUTOFF = dt.datetime(
+_MOVED_MESSAGE_MODIFICATION_CUTOFF = dt.datetime(
     year=2025, month=6, day=18, hour=23, minute=10, tzinfo=dt.UTC
 )
 
-EDIT_METHOD_PROMPT = "What would you like to do?"
-MESSAGE_EDIT_HELP = (
+_EDIT_METHOD_PROMPT = "What would you like to do?"
+_MESSAGE_EDIT_HELP = (
     "*Edit via modal* displays a text box that allows you to edit the contents of your "
     "message easily and conveniently. However, Discord's text box is only intended for "
     "plain text, not Discord messages. There is no Markdown syntax highlighting in "
@@ -65,94 +65,65 @@ MESSAGE_EDIT_HELP = (
     "medium length messages with minimal Markdown and when you are not touching emojis "
     "or channel/user mentions, and *Edit in thread* in all other cases."
 )
-ALREADY_EDITING = (
+_ALREADY_EDITING = (
     "You are already editing a message in a thread! You can only edit one message in "
     "a thread at a time, to prevent abuse. Please finish editing the message at "
     "<#{thread_id}> first, or use the modal."
 )
-NO_THREAD_PERMS = (
+_NO_THREAD_PERMS = (
     "⚠️ I don't have the required permissions to create private "  # test: allow-vs16
     "threads; please contact a moderator! In the meantime, use the modal instead."
 )
-TOO_MANY_THREADS = (
+_TOO_MANY_THREADS = (
     "⚠️ There are too many active threads in this server! Use the "  # test: allow-vs16
     "modal instead, or try again later."
 )
-NO_CONTENT_TO_EDIT = (
+_NO_CONTENT_TO_EDIT = (
     "{}, your message does not currently have any content. Sending a message would add "
     "the specified content to the message. Any attachments you upload are also added "
     "to your message."
 )
-EDIT_IN_THREAD_HINT = (
+_EDIT_IN_THREAD_HINT = (
     "Please send a message containing the message's new content.\n"
     "-# **Hint:** you can copy your message's content by pressing "
     '"Copy Text" in the context menu. Any attachments you upload are '
     "also added to your message."
 )
-NEW_CONTENT_TOO_LONG = (
+_NEW_CONTENT_TOO_LONG = (
     "⚠️ Your message is too long! Please try again.\n"  # test: allow-vs16
     "-# **Hint:** the maximum number of characters you can enter is **{limit}** to "
     "account for the subtext, while your message is {length} characters long, which is "
     "**{difference} too many**."
 )
-TOO_MANY_ATTACHMENTS = (
+_TOO_MANY_ATTACHMENTS = (
     "⚠️ Your message contains too many attachments! Please remove "  # test: allow-vs16
     "at least {num_over_limit}.\n"
     "-# **Hint:** you can only add {remaining_slots} more."
 )
-ATTACHMENTS_TOO_LARGE = (
+_ATTACHMENTS_TOO_LARGE = (
     "⚠️ Some of your attachments are too large! The following "  # test: allow-vs16
     "attachments exceed the limit of 64 MiB:\n"
     "{offenders}\n"
     "Please try again without those attachments, or press *Skip* to continue without "
     "the offending attachments."
 )
-ALL_ATTACHMENTS_TOO_LARGE = (
+_ALL_ATTACHMENTS_TOO_LARGE = (
     "⚠️ All of your attachments are too large! The limit for the "  # test: allow-vs16
     "size of attachments is 64 MiB. Please try again with smaller attachments."
 )
-NO_ATTACHMENTS_LEFT = (
+_NO_ATTACHMENTS_LEFT = (
     "Every attachment was selected, but your message only contains attachments, which "
     "would make the message empty. Would you like to delete your message instead?"
 )
-ATTACHMENTS_ONLY = (
+_ATTACHMENTS_ONLY = (
     "Your new message only contains attachments! Doing so will result in your "
     "message's previous content being removed. Is that what you meant to do?"
 )
-EDITING_TIMEOUT_ALMOST_REACHED = (
+_EDITING_TIMEOUT_ALMOST_REACHED = (
     "{}, are you still editing this message? This thread will be deleted "
     "{in_five_minutes} if it remains inactive."
 )
-UPLOADING = "⌛ Uploading attachments (this may take some time)…"
-
-
-async def _apply_edit_from_thread(
-    bot: GhosttyBot,
-    moved_message: MovedMessage,
-    message: dc.Message,
-    new_content: str,
-) -> None:
-    channel = moved_message.channel
-    if len(converted_content := convert_nitro_emojis(bot, new_content)) <= 2000:
-        new_content = converted_content
-    # Suppress NotFound in case the user attempts to commit an edit to a message that
-    # was deleted in the meantime.
-    with safe_edit:
-        await moved_message.edit(
-            content=new_content,
-            attachments=[
-                # It is possible that our message to edit is stale if the user removed
-                # an attachment from the message after they started editing it. Thus,
-                # re-fetch the message before grabbing its attachments to avoid an
-                # HTTPException from missing attachments. It is not stored to a variable
-                # beforehand because fetch_message() returns a Message which can't be
-                # used to edit a webhook message, so we use the old MovedMessage to
-                # perform the edit itself.
-                *(await channel.fetch_message(moved_message.id)).attachments,
-                *(await MessageData.scrape(message)).files,
-            ],
-            allowed_mentions=dc.AllowedMentions.none(),
-        )
+_UPLOADING = "⌛ Uploading attachments (this may take some time)…"
 
 
 @final
@@ -285,9 +256,9 @@ class ChooseMessageAction(SafeView):
     thread_button: dc.ui.Button[Self]
     help_button: dc.ui.Button[Self]
 
-    def __init__(self, message_cog: MoveMessage, message: MovedMessage) -> None:
+    def __init__(self, cog: MoveMessage, message: MovedMessage) -> None:
         super().__init__()
-        self._message_cog = message_cog
+        self._cog = cog
         self._message = message
         self._split_subtext = SplitSubtext(message)
         self._attachment_button_added = False
@@ -309,7 +280,7 @@ class ChooseMessageAction(SafeView):
         self, interaction: dc.Interaction, _button: dc.ui.Button[Self]
     ) -> None:
         await interaction.response.send_modal(
-            EditMessage(self._message_cog.bot, self._message, self._split_subtext)
+            EditMessage(self._cog.bot, self._message, self._split_subtext)
         )
         await interaction.delete_original_response()
 
@@ -377,17 +348,14 @@ class ChooseMessageAction(SafeView):
     async def edit_in_thread(self, interaction: dc.Interaction) -> None:
         # Guaranteed by _add_thread_button().
         assert isinstance(self._channel, dc.TextChannel)
-        if (
-            existing_thread := self._message_cog.edit_thread_creators.get(
-                interaction.user.id
-            )
-        ) is not None:
-            # While the better solution would be to disable this button up front and
-            # show this message through other means (such as a tooltip), Discord doesn't
-            # let you do that :(.
+        existing_thread = self._cog.edit_thread_creators.get(interaction.user.id)
+        if existing_thread is not None:
+            # While the better solution would be to disable this button upfront and show
+            # this message through other means (such as a tooltip), Discord doesn't let
+            # you do that :(.
             self.thread_button.disabled = True
             await interaction.response.edit_message(
-                content=ALREADY_EDITING.format(thread_id=existing_thread), view=self
+                content=_ALREADY_EDITING.format(thread_id=existing_thread), view=self
             )
             return
         try:
@@ -399,14 +367,16 @@ class ChooseMessageAction(SafeView):
             )
         except dc.Forbidden:
             self.thread_button.disabled = True
-            await interaction.response.edit_message(content=NO_THREAD_PERMS, view=self)
+            await interaction.response.edit_message(content=_NO_THREAD_PERMS, view=self)
             raise  # Also log it in Sentry.
         except dc.HTTPException as e:
-            if e.code != MAXIMUM_NUMBER_OF_ACTIVE_THREADS_REACHED:
+            if e.code != _MAXIMUM_NUMBER_OF_ACTIVE_THREADS_REACHED:
                 # None of the other errors are relevant here.
                 raise
             self.thread_button.disabled = True
-            await interaction.response.edit_message(content=TOO_MANY_THREADS, view=self)
+            await interaction.response.edit_message(
+                content=_TOO_MANY_THREADS, view=self
+            )
             return
         # Notify the user as soon as possible to prevent the need to defer() to avoid
         # issues on days when the API is slower.
@@ -421,25 +391,23 @@ class ChooseMessageAction(SafeView):
                 self._split_subtext.content, allowed_mentions=dc.AllowedMentions.none()
             )
             await thread.send(
-                EDIT_IN_THREAD_HINT, view=CancelEditing(self._message_cog, thread)
+                _EDIT_IN_THREAD_HINT, view=CancelEditing(self._cog, thread)
             )
         else:
             await thread.send(
-                NO_CONTENT_TO_EDIT.format(interaction.user.mention),
-                view=CancelEditing(self._message_cog, thread),
+                _NO_CONTENT_TO_EDIT.format(interaction.user.mention),
+                view=CancelEditing(self._cog, thread),
             )
-        self._message_cog.edit_threads[thread.id] = ThreadState(
+        self._cog.edit_threads[thread.id] = ThreadState(
             self._message, self._split_subtext, dt.datetime.now(tz=dt.UTC)
         )
-        self._message_cog.edit_thread_creators[interaction.user.id] = thread.id
-        await self._message_cog.remove_edit_thread_after_timeout(
-            thread, interaction.user
-        )
+        self._cog.edit_thread_creators[interaction.user.id] = thread.id
+        await self._cog.remove_edit_thread_after_timeout(thread, interaction.user)
 
     async def show_help(self, interaction: dc.Interaction) -> None:
         self.help_button.disabled = True
         await interaction.response.edit_message(
-            content=f"{MESSAGE_EDIT_HELP}\n\n{EDIT_METHOD_PROMPT}", view=self
+            content=f"{_MESSAGE_EDIT_HELP}\n\n{_EDIT_METHOD_PROMPT}", view=self
         )
 
 
@@ -501,7 +469,7 @@ class DeleteAttachments(SafeView):
             self._message, preprocessed_content=self._content
         ):
             await interaction.response.edit_message(
-                content=NO_ATTACHMENTS_LEFT, view=DeleteInstead(self._message)
+                content=_NO_ATTACHMENTS_LEFT, view=DeleteInstead(self._message)
             )
             return
         await self._message.edit(attachments=remaining)
@@ -512,9 +480,9 @@ class DeleteAttachments(SafeView):
 
 @final
 class CancelEditing(SafeView):
-    def __init__(self, message_cog: MoveMessage, thread: dc.Thread) -> None:
+    def __init__(self, cog: MoveMessage, thread: dc.Thread) -> None:
         super().__init__()
-        self._message_cog = message_cog
+        self._cog = cog
         self._thread = thread
 
     @dc.ui.button(label="Cancel", emoji="❌")
@@ -528,7 +496,7 @@ class CancelEditing(SafeView):
         # never sees "Something went wrong." before the thread is gone and the user is
         # moved out of the thread.
         await interaction.response.defer()
-        await self._message_cog.remove_edit_thread(
+        await self._cog.remove_edit_thread(
             self._thread, interaction.user, action="canceled editing of"
         )
         # We can't actually followup on the deferred response here because doing so
@@ -537,18 +505,16 @@ class CancelEditing(SafeView):
 
 @final
 class ContinueEditing(SafeView):
-    def __init__(self, message_cog: MoveMessage, thread: dc.Thread) -> None:
+    def __init__(self, cog: MoveMessage, thread: dc.Thread) -> None:
         super().__init__()
-        self._message_cog = message_cog
+        self._cog = cog
         self._thread = thread
 
     @dc.ui.button(label="Continue Editing", emoji="📜")
     async def continue_editing(
         self, interaction: dc.Interaction, _button: dc.ui.Button[Self]
     ) -> None:
-        self._message_cog.edit_threads[self._thread.id].last_update = dt.datetime.now(
-            tz=dt.UTC
-        )
+        self._cog.edit_threads[self._thread.id].last_update = dt.datetime.now(tz=dt.UTC)
         assert interaction.message is not None
         await interaction.message.delete()
 
@@ -559,7 +525,7 @@ class ContinueEditing(SafeView):
         # See the comments in CancelEditing.cancel_editing() for the reasoning behind
         # deferring here.
         await interaction.response.defer()
-        await self._message_cog.remove_edit_thread(
+        await self._cog.remove_edit_thread(
             self._thread, interaction.user, action="canceled editing of"
         )
 
@@ -568,13 +534,13 @@ class ContinueEditing(SafeView):
 class SkipLargeAttachments(SafeView):
     def __init__(
         self,
-        message_cog: MoveMessage,
+        cog: MoveMessage,
         message: dc.Message,
         state: ThreadState,
         new_content: str,
     ) -> None:
         super().__init__()
-        self._message_cog = message_cog
+        self._cog = cog
         self._message = message
         self._state = state
         self._moved_message = state.moved_message
@@ -589,18 +555,18 @@ class SkipLargeAttachments(SafeView):
             self._moved_message, preprocessed_content=self._state.split_subtext.content
         ):
             await interaction.response.edit_message(
-                content=ATTACHMENTS_ONLY,
-                view=AttachmentChoice(self._message_cog, self._message, self._state),
+                content=_ATTACHMENTS_ONLY,
+                view=AttachmentChoice(self._cog, self._message, self._state),
             )
             return
 
         button.disabled = True
-        await interaction.response.edit_message(content=UPLOADING, view=self)
-        await _apply_edit_from_thread(
-            self._message_cog.bot, self._moved_message, self._message, self._new_content
+        await interaction.response.edit_message(content=_UPLOADING, view=self)
+        await self._cog.apply_edit_from_thread(
+            self._moved_message, self._message, self._new_content
         )
         assert isinstance(self._message.channel, dc.Thread)
-        await self._message_cog.remove_edit_thread(
+        await self._cog.remove_edit_thread(
             self._message.channel, self._message.author, action="finished editing"
         )
 
@@ -608,10 +574,10 @@ class SkipLargeAttachments(SafeView):
 @final
 class AttachmentChoice(SafeView):
     def __init__(
-        self, message_cog: MoveMessage, message: dc.Message, state: ThreadState
+        self, cog: MoveMessage, message: dc.Message, state: ThreadState
     ) -> None:
         super().__init__()
-        self._message_cog = message_cog
+        self._cog = cog
         self._message = message
         self._state = state
 
@@ -629,12 +595,12 @@ class AttachmentChoice(SafeView):
 
     async def _edit(self, interaction: dc.Interaction, content: str) -> None:
         self._state.last_update = dt.datetime.now(tz=dt.UTC)
-        await interaction.response.edit_message(content=UPLOADING, view=None)
-        await _apply_edit_from_thread(
-            self._message_cog.bot, self._state.moved_message, self._message, content
+        await interaction.response.edit_message(content=_UPLOADING, view=None)
+        await self._cog.apply_edit_from_thread(
+            self._state.moved_message, self._message, content
         )
         assert isinstance(self._message.channel, dc.Thread)
-        await self._message_cog.remove_edit_thread(
+        await self._cog.remove_edit_thread(
             self._message.channel, self._message.author, action="finished editing"
         )
 
@@ -642,6 +608,8 @@ class AttachmentChoice(SafeView):
 @final
 class MoveMessage(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
+        self.bot = bot
+
         # A dictionary mapping edit thread IDs to their state. An ID is used instead of
         # the thread itself because there is a thread available already at all places
         # this is used, and because it isn't obvious how threads are hashed.
@@ -650,11 +618,9 @@ class MoveMessage(commands.Cog):
         # editing in. IDs are used for the same reason as above.
         self.edit_thread_creators: dict[int, int] = {}
 
-        self.bot = bot
-
         self.context_menus = (
             dc.app_commands.ContextMenu(
-                name="Move Message",
+                name="Move message",
                 callback=self.move_message,
             ),
             dc.app_commands.ContextMenu(
@@ -674,12 +640,43 @@ class MoveMessage(commands.Cog):
         for ctx_menu in self.context_menus:
             self.bot.tree.remove_command(ctx_menu.name, type=ctx_menu.type)
 
+    async def apply_edit_from_thread(
+        self,
+        moved_message: MovedMessage,
+        message: dc.Message,
+        new_content: str,
+    ) -> None:
+        channel = moved_message.channel
+        if (
+            len(converted_content := convert_nitro_emojis(self.bot, new_content))
+            <= 2000
+        ):
+            new_content = converted_content
+        # Suppress NotFound in case the user attempts to commit an edit to a message
+        # that was deleted in the meantime.
+        with safe_edit:
+            await moved_message.edit(
+                content=new_content,
+                attachments=[
+                    # It is possible that our message to edit is stale if the user
+                    # removed an attachment from the message after they started editing
+                    # it. Thus, re-fetch the message before grabbing its attachments to
+                    # avoid an HTTPException from missing attachments. It is not stored
+                    # to a variable beforehand because fetch_message() returns a Message
+                    # which can't be used to edit a webhook message, so we use the old
+                    # MovedMessage to perform the edit itself.
+                    *(await channel.fetch_message(moved_message.id)).attachments,
+                    *(await MessageData.scrape(message)).files,
+                ],
+                allowed_mentions=dc.AllowedMentions.none(),
+            )
+
     async def remove_edit_thread(
         self, thread: dc.Thread, author: Account, *, action: str
     ) -> None:
         # Suppress NotFound and KeyError to prevent an exception thrown if the user
-        #  attempts to remove the edit thread through multiple means (such as the
-        # cancel button and sending an edited message) at the same time.
+        # attempts to remove the edit thread through multiple means (such as the cancel
+        # button and sending an edited message) at the same time.
         with suppress(dc.NotFound, KeyError):
             await thread.delete(reason=f"{author.name} {action} a moved message")
             del self.edit_threads[thread.id]
@@ -692,14 +689,14 @@ class MoveMessage(commands.Cog):
         # don't need to pass the remaining time around.
         elapsed = dt.datetime.now(tz=dt.UTC) - self.edit_threads[thread.id].last_update
         time_to_warning = dt.timedelta(minutes=10) - elapsed
-        # Keep sleeping until we have a zero or negative time to the warning.
-        # This has to be a while loop because other coroutines may have touched the
-        # last update time of this edit thread while we were sleeping.
+        # Keep sleeping until we have a zero or negative time to the warning. This has
+        # to be a while loop because other coroutines may have touched the last update
+        # time of this edit thread while we were sleeping.
         while time_to_warning > dt.timedelta():
             await asyncio.sleep(time_to_warning.total_seconds())
             if thread.id not in self.edit_threads:
-                # The user finished or canceled editing of the thread
-                # while we were asleep.
+                # The user finished or canceled editing of the thread while we were
+                # asleep.
                 return
             # Re-calculate how much of the timeout has been elapsed to account for the
             # last thread update time once again.
@@ -711,7 +708,7 @@ class MoveMessage(commands.Cog):
         # update, so send a warning to the user.
         remaining = dt.timedelta(minutes=5)
         await thread.send(
-            EDITING_TIMEOUT_ALMOST_REACHED.format(
+            _EDITING_TIMEOUT_ALMOST_REACHED.format(
                 author.mention,
                 in_five_minutes=dynamic_timestamp(
                     dt.datetime.now(tz=dt.UTC) + remaining, "R"
@@ -723,8 +720,8 @@ class MoveMessage(commands.Cog):
         if thread.id not in self.edit_threads:
             # The user finished or canceled editing of the thread while we were asleep.
             return
-        # We once again need to re-calculate how much of the timeout has been elapsed
-        # to account for the last thread update time. This is especially important this
+        # We once again need to re-calculate how much of the timeout has been elapsed to
+        # account for the last thread update time. This is especially important this
         # time around since it's how the "Continue Editing" button signals to us that
         # the user opted to continue.
         elapsed = dt.datetime.now(tz=dt.UTC) - self.edit_threads[thread.id].last_update
@@ -737,6 +734,7 @@ class MoveMessage(commands.Cog):
         # time left to sleep.
         await self.remove_edit_thread_after_timeout(thread, author)
 
+    # Context menu that is setup in __init__
     @dc.app_commands.default_permissions(manage_messages=True)
     @dc.app_commands.guild_only()
     async def move_message(
@@ -768,14 +766,15 @@ class MoveMessage(commands.Cog):
             ephemeral=True,
         )
 
+    # Context menu that is setup in __init__
     @dc.app_commands.default_permissions(manage_messages=True)
     @dc.app_commands.guild_only()
     async def turn_into_help_post(
         self, interaction: dc.Interaction, message: dc.Message
     ) -> None:
         """
-        An extension of the move_message function that creates a #help post and then
-        moves the message to that channel.
+        An extension of "move message" that creates a #help post and then moves the
+        moves the message to that thread.
         """
         assert not is_dm(interaction.user)
 
@@ -787,10 +786,8 @@ class MoveMessage(commands.Cog):
 
         if not message_can_be_moved(message):
             await interaction.response.send_message(
-                (
-                    "System messages cannot be turned into "
-                    f"{self.bot.help_channel.mention} posts."
-                ),
+                "System messages cannot be turned into "
+                f"{self.bot.help_channel.mention} posts.",
                 ephemeral=True,
                 view=DeleteInstead(message),
             )
@@ -798,13 +795,14 @@ class MoveMessage(commands.Cog):
 
         await interaction.response.send_modal(HelpPostTitle(self.bot, message))
 
+    # Context menu that is setup in __init__
     @dc.app_commands.guild_only()
     async def moved_message_actions(
         self, interaction: dc.Interaction, message: dc.Message
     ) -> None:
         assert not is_dm(interaction.user)
 
-        if message.created_at < MOVED_MESSAGE_MODIFICATION_CUTOFF or (
+        if message.created_at < _MOVED_MESSAGE_MODIFICATION_CUTOFF or (
             (moved_message := await MovedMessage.from_message(message))
             is MovedMessageLookupFailed.NOT_FOUND
         ):
@@ -826,7 +824,7 @@ class MoveMessage(commands.Cog):
             return
 
         await interaction.response.send_message(
-            EDIT_METHOD_PROMPT,
+            _EDIT_METHOD_PROMPT,
             view=ChooseMessageAction(self, moved_message),
             ephemeral=True,
         )
@@ -852,7 +850,7 @@ class MoveMessage(commands.Cog):
             max_length = 2000 - len(split_subtext.subtext) - 1
             content_length = len(message.content)
             await message.reply(
-                NEW_CONTENT_TOO_LONG.format(
+                _NEW_CONTENT_TOO_LONG.format(
                     limit=max_length,
                     length=content_length,
                     difference=content_length - max_length,
@@ -864,7 +862,7 @@ class MoveMessage(commands.Cog):
         num_attachments = num_existing_attachments + len(message.attachments)
         if num_attachments > 10:
             await message.reply(
-                TOO_MANY_ATTACHMENTS.format(
+                _TOO_MANY_ATTACHMENTS.format(
                     num_over_limit=num_attachments - 10,
                     remaining_slots=10 - num_existing_attachments,
                 )
@@ -878,7 +876,7 @@ class MoveMessage(commands.Cog):
             a for a in message.attachments if a.size > MAX_ATTACHMENT_SIZE
         ]:
             if len(too_large) == len(message.attachments):
-                await message.reply(ALL_ATTACHMENTS_TOO_LARGE)
+                await message.reply(_ALL_ATTACHMENTS_TOO_LARGE)
                 return
             offenders = "\n".join(
                 # HACK: replace all backticks with reverse primes to avoid incorrect
@@ -887,7 +885,7 @@ class MoveMessage(commands.Cog):
                 for a in too_large
             )
             await message.reply(
-                ATTACHMENTS_TOO_LARGE.format(offenders=offenders),
+                _ATTACHMENTS_TOO_LARGE.format(offenders=offenders),
                 view=SkipLargeAttachments(self, message, state, new_content),
             )
             return
@@ -896,13 +894,13 @@ class MoveMessage(commands.Cog):
             moved_message, preprocessed_content=split_subtext.content
         ):
             await message.reply(
-                ATTACHMENTS_ONLY, view=AttachmentChoice(self, message, state)
+                _ATTACHMENTS_ONLY, view=AttachmentChoice(self, message, state)
             )
             return
 
         if message.attachments:
-            await message.reply(UPLOADING, mention_author=False)
-        await _apply_edit_from_thread(self.bot, moved_message, message, new_content)
+            await message.reply(_UPLOADING, mention_author=False)
+        await self.apply_edit_from_thread(moved_message, message, new_content)
         await self.remove_edit_thread(
             message.channel, message.author, action="finished editing"
         )
