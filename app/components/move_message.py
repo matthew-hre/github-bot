@@ -831,7 +831,7 @@ class MoveMessage(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def check_for_edit_response(self, message: dc.Message) -> None:
-        if not (
+        if message.author == self.bot.user or not (
             # While the channel_type check covers this isinstance() check, Pyright needs
             # this isinstance() check to know that the type is definitely a Thread.
             isinstance(message.channel, dc.Thread)

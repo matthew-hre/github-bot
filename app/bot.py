@@ -44,12 +44,12 @@ class GhosttyBot(commands.Bot):
 
     @override
     async def setup_hook(self) -> None:
-        extensions = (
-            f"app.components.{file.stem}"
+        coros = (
+            self.load_extension(f"app.components.{file.stem}")
             for file in (Path(__file__).parent / "components").iterdir()
             if not file.name.startswith("_")
         )
-        await asyncio.gather(*map(self.load_extension, extensions))
+        await asyncio.gather(*coros)
 
     async def on_ready(self) -> None:
         self.bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
