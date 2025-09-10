@@ -515,7 +515,7 @@ class MovedMessage(ExtensibleMessage, dc.WebhookMessage):  # pyright: ignore[rep
 
 
 @overload
-async def move_message_via_webhook(
+async def move_message(
     bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
@@ -528,7 +528,7 @@ async def move_message_via_webhook(
 
 
 @overload
-async def move_message_via_webhook(
+async def move_message(
     bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
@@ -540,7 +540,7 @@ async def move_message_via_webhook(
 ) -> dc.WebhookMessage: ...
 
 
-async def move_message_via_webhook(  # noqa: PLR0913
+async def move_message(  # noqa: PLR0913
     bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
