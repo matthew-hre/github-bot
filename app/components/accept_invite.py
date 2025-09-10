@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, final
 
 import discord as dc
 from discord.ext import commands
+from loguru import logger
 
-from app.utils import is_dm, try_dm
+from app.utils import is_dm, pretty_print_account, try_dm
 
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
@@ -30,6 +31,7 @@ class AcceptInvite(commands.Cog):
         )
         await interaction.response.send_message("Check your DMs!", ephemeral=True)
 
+        logger.debug("{} accepted the invite", pretty_print_account(interaction.user))
         await self.bot.log_channel.send(
             f"{interaction.user.mention} accepted the invite!",
             allowed_mentions=dc.AllowedMentions.none(),
