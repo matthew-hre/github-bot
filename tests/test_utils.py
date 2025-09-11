@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import datetime as dt
+import subprocess
+import sys
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import Mock
@@ -13,6 +15,7 @@ from hypothesis import strategies as st
 from app.config import config
 from app.utils import (
     aenumerate,
+    async_process_check_output,
     dynamic_timestamp,
     format_diff_note,
     is_attachment_only,
@@ -231,3 +234,33 @@ def test_format_diff_note(additions: int, deletions: int, changed_files: int) ->
 
 def test_format_diff_note_unavailable() -> None:
     assert format_diff_note(0, 0, 0) is None
+
+
+@pytest.mark.skipif(not sys.executable, reason="cannot find python interpreter path")
+@pytest.mark.parametrize(
+    ("code", "output"),
+    [
+        ("print('Hello, world!')", "Hello, world!\n"),
+        ("", ""),
+        ("import sys; print('Hello, world!', file=sys.stderr)", ""),
+    ],
+)
+@pytest.mark.asyncio
+async def test_async_process_check_output_succeeds(code: str, output: str) -> None:
+    stdout = await async_process_check_output(sys.executable, "-c", code)
+    assert stdout == output
+
+
+@pytest.mark.skipif(not sys.executable, reason="cannot find python interpreter path")
+@pytest.mark.asyncio
+async def test_async_process_check_output_fails() -> None:
+    with pytest.raises(subprocess.CalledProcessError):
+        await async_process_check_output(
+            sys.executable, "-c", "import sys; sys.exit(1)"
+        )
+
+
+@pytest.mark.asyncio
+async def test_async_process_check_output_invalid_argument() -> None:
+    with pytest.raises(ValueError, match="stdout argument not allowed"):
+        await async_process_check_output("", stdout=subprocess.DEVNULL)

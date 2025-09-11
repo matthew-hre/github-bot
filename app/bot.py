@@ -62,6 +62,8 @@ class GhosttyBot(commands.Bot):
 
     @override
     async def setup_hook(self) -> None:
+        await self.bot_status.load_git_data()
+
         coros = (
             self.load_extension(f"app.components.{file.stem}")
             for file in (Path(__file__).parent / "components").iterdir()
