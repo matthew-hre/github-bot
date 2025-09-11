@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
 
 COMMENT_PATTERN = re.compile(
-    r"https?://(?:www\.)?github\.com/([a-z0-9\-]+)/([a-z0-9\-\._]+)/"
+    r"https?://(?:www\.)?github\.com/([a-zA-Z0-9\-]+)/([a-zA-Z0-9\-\._]+)/"
     r"(issues|discussions|pull)/(\d+)/?#(\w+?-?)(\d+)"
 )
 STATE_TO_COLOR = {
