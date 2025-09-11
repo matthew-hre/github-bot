@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import asyncio
 import datetime as dt
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import ClassVar, Self, final
+from typing import TYPE_CHECKING, ClassVar, Self, final
 
 import discord as dc
 
 from app.errors import SafeView
 from app.utils import is_dm, is_mod, safe_edit
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -1,15 +1,21 @@
-import re
-from collections.abc import AsyncGenerator
-from functools import reduce
-from typing import override
+from __future__ import annotations
 
-import discord as dc
+import re
+from functools import reduce
+from typing import TYPE_CHECKING, override
+
 from githubkit.exception import RequestFailed
 from zig_codeblocks import extract_codeblocks
 
-from .cache import EntitySignature
 from app.common.cache import TTRCache
 from app.config import REPO_ALIASES, config, gh
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    import discord as dc
+
+    from .cache import EntitySignature
 
 ENTITY_REGEX = re.compile(
     r"(?P<site>\bhttps?://(?:www\.)?github\.com/)?"

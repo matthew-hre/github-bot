@@ -10,7 +10,6 @@ from app.common.hooks import ProcessedMessage
 from app.components.github_integration.emoji import emojis
 from app.components.github_integration.models import (
     Discussion,
-    Entity,
     Issue,
     PullRequest,
 )
@@ -18,6 +17,8 @@ from app.utils import dynamic_timestamp, escape_special, format_diff_note
 
 if TYPE_CHECKING:
     import discord as dc
+
+    from app.components.github_integration.models import Entity
 
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
 

@@ -7,7 +7,7 @@ import discord as dc
 from loguru import logger
 from monalisten import Monalisten
 
-from app.components.github_integration.emoji import EmojiName, emojis
+from app.components.github_integration.emoji import emojis
 from app.components.github_integration.models import GitHubUser
 from app.config import config
 from app.utils import truncate
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from pydantic_core import ErrorDetails
 
     from app.bot import GhosttyBot
+    from app.components.github_integration.emoji import EmojiName
     from app.config import WebhookFeedType
 
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]

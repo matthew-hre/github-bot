@@ -1,7 +1,11 @@
 """Toolkit for monkeypatching githubkit requests"""
 
-from collections.abc import Awaitable
-from typing import Any, Self, cast, final, override
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Self, cast, final, override
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 
 class PoserSetupError(RuntimeError):

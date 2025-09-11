@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import datetime as dt
-from collections.abc import AsyncGenerator
 from types import SimpleNamespace
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import discord as dc
@@ -9,7 +10,6 @@ import pytest
 
 from app.config import config
 from app.utils import (
-    Account,
     aenumerate,
     dynamic_timestamp,
     is_attachment_only,
@@ -20,6 +20,11 @@ from app.utils import (
     post_is_solved,
     truncate,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from app.utils import Account
 
 
 @pytest.mark.parametrize(("type_", "result"), [(dc.Member, False), (dc.User, True)])

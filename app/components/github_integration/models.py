@@ -1,8 +1,9 @@
 # pyright: reportUnannotatedClassAttribute=false
-import datetime as dt
-from typing import Annotated, Literal, NamedTuple, Self, cast, override
+from __future__ import annotations
 
-from githubkit.versions.latest.models import IssuePropLabelsItemsOneof1
+import datetime as dt
+from typing import TYPE_CHECKING, Annotated, Literal, NamedTuple, Self, cast, override
+
 from pydantic import (
     AliasChoices,
     BaseModel,
@@ -13,6 +14,9 @@ from pydantic import (
 )
 
 from app.utils import truncate
+
+if TYPE_CHECKING:
+    from githubkit.versions.latest.models import IssuePropLabelsItemsOneof1
 
 
 def state_validator(value: object) -> bool:
