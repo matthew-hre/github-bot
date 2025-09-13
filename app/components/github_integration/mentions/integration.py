@@ -37,7 +37,7 @@ class MentionActions(ItemActions):
 
 
 @final
-class MentionIntegration(commands.Cog):
+class Mentions(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.linker = MessageLinker()

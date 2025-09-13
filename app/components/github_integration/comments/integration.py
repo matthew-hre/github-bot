@@ -41,7 +41,7 @@ class CommentActions(ItemActions):
 
 
 @final
-class CommentIntegration(commands.Cog):
+class Comments(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.linker = MessageLinker()
