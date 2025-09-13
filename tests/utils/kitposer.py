@@ -23,7 +23,7 @@ class KitResponse[T]:
 
 
 async def fake_request[T](obj: T) -> Awaitable[T]:
-    return obj  # pyright: ignore [reportReturnType]
+    return obj  # pyright: ignore[reportReturnType]
 
 
 @final

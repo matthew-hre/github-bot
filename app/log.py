@@ -48,7 +48,7 @@ def setup(config: Config) -> None:
     logger.add(
         sys.stderr,
         # While $LOGURU_LEVEL is checked at import time, it doesn't override this value,
-        # so  manually handle it.
+        # so manually handle it.
         level=os.getenv("LOGURU_LEVEL") or os.getenv("LOG_LEVEL") or "INFO",
         filter={
             # httpx logs are quite noisy: it logs every single REST request under INFO.

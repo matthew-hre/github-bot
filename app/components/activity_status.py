@@ -35,7 +35,7 @@ class ActivityStatus(commands.Cog):
         await self.bot.change_presence(activity=secrets.choice(STATUSES))
 
     @randomize_activity_status.before_loop
-    async def before_randomize_activity_satatus(self) -> None:
+    async def before_randomize_activity_status(self) -> None:
         await self.bot.wait_until_ready()
 
 
