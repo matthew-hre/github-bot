@@ -207,7 +207,7 @@ class ZigCodeblocks(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def check_for_zig_code(self, message: dc.Message) -> None:
-        if message.author.bot:
+        if message.author.bot or self.bot.fails_message_filters(message):
             return
         output = await self.process(message)
         if not output.item_count:
