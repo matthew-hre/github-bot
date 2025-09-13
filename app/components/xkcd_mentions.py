@@ -70,11 +70,11 @@ class XKCDActions(ItemActions):
 class XKCDMentions(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
-        self.xkcd_mention_linker = MessageLinker()
-        XKCDActions.linker = self.xkcd_mention_linker
-        self.xkcd_mention_cache = XKCDMentionCache(hours=12)
+        self.linker = MessageLinker()
+        XKCDActions.linker = self.linker
+        self.cache = XKCDMentionCache(hours=12)
 
-    async def xkcd_mention_message(self, message: dc.Message) -> ProcessedMessage:
+    async def process(self, message: dc.Message) -> ProcessedMessage:
         embeds = []
         matches = list(
             dict.fromkeys(m[1] for m in XKCD_REGEX.finditer(message.content))
@@ -86,18 +86,16 @@ class XKCDMentions(commands.Cog):
             )
             # Nine instead of ten to account for the `omitted` embed.
             matches = matches[:9]
-        embeds = await asyncio.gather(
-            *(self.xkcd_mention_cache.get(int(m)) for m in matches)
-        )
+        embeds = await asyncio.gather(*(self.cache.get(int(m)) for m in matches))
         if omitted:
             embeds.append(omitted)
         return ProcessedMessage(embeds=embeds, item_count=len(embeds))
 
     @commands.Cog.listener("on_message")
-    async def handle_xkcd_mentions(self, message: dc.Message) -> None:
+    async def handle_mentions(self, message: dc.Message) -> None:
         if message.author.bot:
             return
-        output = await self.xkcd_mention_message(message)
+        output = await self.process(message)
         if output.item_count < 1:
             return
         try:
@@ -108,20 +106,20 @@ class XKCDMentions(commands.Cog):
             )
         except dc.HTTPException:
             return
-        self.xkcd_mention_linker.link(message, sent_message)
+        self.linker.link(message, sent_message)
         await remove_view_after_delay(sent_message)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: dc.Message) -> None:
-        await self.xkcd_mention_linker.delete(message)
+        await self.linker.delete(message)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: dc.Message, after: dc.Message) -> None:
-        await self.xkcd_mention_linker.edit(
+        await self.linker.edit(
             before,
             after,
-            message_processor=self.xkcd_mention_message,
-            interactor=self.handle_xkcd_mentions,
+            message_processor=self.process,
+            interactor=self.handle_mentions,
             view_type=XKCDActions,
         )
 
