@@ -90,7 +90,7 @@ class MessageLinker:
             else:
                 # We don't need to do any unlinking here because reply.delete() triggers
                 # on_message_delete which runs the current hook again, and since replies
-                # are bot messages, linker.unlink(original) above handles it for us.
+                # are bot messages, self.unlink(original) above handles it for us.
                 await reply.delete()
         self.unfreeze(message)
 
