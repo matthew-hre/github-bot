@@ -21,7 +21,6 @@ from app.common.message_moving import (
 from app.errors import SafeModal, SafeView
 from app.utils import (
     MAX_ATTACHMENT_SIZE,
-    Account,
     GuildTextChannel,
     MessageData,
     dynamic_timestamp,
@@ -35,6 +34,7 @@ from app.utils import (
 
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
+    from app.utils import Account
 
 
 # From https://discord.com/developers/docs/topics/opcodes-and-status-codes#json-json-error-codes.

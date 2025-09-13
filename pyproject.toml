@@ -23,7 +23,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "ruff==0.12.10",
+  "ruff==0.13.0",
   "basedpyright==1.31.4",
   "taplo==0.9.3",
   "pytest==8.4.1",
@@ -46,6 +46,7 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = ["COM", "ERA", "D", "FIX", "S", "ANN401", "ISC001", "TD003", "PLR2004"]
+future-annotations = true
 mccabe.max-complexity = 20
 pylint.max-branches = 20
 pylint.max-returns = 15
@@ -56,6 +57,14 @@ preview = true
 
 [tool.ruff.lint.flake8-import-conventions.aliases]
 discord = "dc"
+datetime = "dt"
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+runtime-evaluated-base-classes = [
+  "pydantic.BaseModel",
+  "pydantic_settings.BaseSettings",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["FBT", "SLF001"]

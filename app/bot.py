@@ -12,12 +12,13 @@ from loguru import logger
 
 from app.errors import handle_error, interaction_error_handler
 from app.status import BotStatus
-from app.utils import Account, is_mod, try_dm
+from app.utils import is_mod, try_dm
 
 if TYPE_CHECKING:
     from githubkit import GitHub, TokenAuthStrategy
 
     from app.config import Config, WebhookFeedType
+    from app.utils import Account
 
 
 @final

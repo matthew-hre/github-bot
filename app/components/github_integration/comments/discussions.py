@@ -1,7 +1,13 @@
-from base64 import urlsafe_b64encode
+from __future__ import annotations
 
-from app.components.github_integration.models import Comment, Discussion, EntityGist
+from base64 import urlsafe_b64encode
+from typing import TYPE_CHECKING
+
+from app.components.github_integration.models import Comment, Discussion
 from app.config import gh
+
+if TYPE_CHECKING:
+    from app.components.github_integration.models import EntityGist
 
 DISCUSSION_COMMENT_QUERY = """
 query getDiscussionComment($id: ID!) {

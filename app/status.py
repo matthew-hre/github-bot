@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import datetime as dt
 import subprocess
 from types import SimpleNamespace
-from typing import Any, cast, final
+from typing import TYPE_CHECKING, Any, cast, final
 
-from discord.ext import tasks
 from githubkit import TokenAuthStrategy
 from githubkit.exception import RequestFailed
 
 from app.config import config, gh
 from app.utils import dynamic_timestamp
+
+if TYPE_CHECKING:
+    from discord.ext import tasks
 
 STATUS_MESSAGE_TEMPLATE = """
 ### Commit

@@ -6,15 +6,7 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, cast, override
 
 from githubkit.exception import RequestFailed
-from githubkit.versions.latest.models import (
-    Issue,
-    IssueEvent,
-    IssueEventDismissedReview,
-    IssueEventRename,
-    IssuePropPullRequest,
-    PullRequestReviewComment,
-    ReactionRollup,
-)
+from githubkit.versions.latest.models import IssuePropPullRequest, ReactionRollup
 from zig_codeblocks import extract_codeblocks
 
 from app.common.cache import TTRCache
@@ -36,6 +28,13 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
 
     from githubkit.typing import Missing
+    from githubkit.versions.latest.models import (
+        Issue,
+        IssueEvent,
+        IssueEventDismissedReview,
+        IssueEventRename,
+        PullRequestReviewComment,
+    )
     from pydantic import BaseModel
 
 COMMENT_PATTERN = re.compile(

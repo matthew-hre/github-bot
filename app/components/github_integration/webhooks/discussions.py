@@ -8,7 +8,6 @@ from app.components.github_integration.models import GitHubUser
 from app.components.github_integration.webhooks.core import (
     EmbedContent,
     Footer,
-    SubhookStore,
     make_subhook_registrar,
     reraise_with_payload,
     send_embed,
@@ -34,6 +33,7 @@ if TYPE_CHECKING:
 
     from app.bot import GhosttyBot
     from app.components.github_integration.emoji import EmojiName
+    from app.components.github_integration.webhooks.core import SubhookStore
 
 discussion_subhooks: SubhookStore[Discussions, DiscussionEvent] = {}
 
