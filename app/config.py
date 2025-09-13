@@ -63,5 +63,5 @@ if "pytest" in sys.modules:
 
 
 # https://github.com/pydantic/pydantic-settings/issues/201
-config = Config()  # pyright: ignore [reportCallIssue]
+config = Config()  # pyright: ignore[reportCallIssue]
 gh = GitHub(config.github_token.get_secret_value())
