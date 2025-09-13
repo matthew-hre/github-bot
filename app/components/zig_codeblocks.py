@@ -24,7 +24,7 @@ from app.common.hooks import (
     create_edit_hook,
     remove_view_after_delay,
 )
-from app.common.message_moving import get_or_create_webhook, move_message_via_webhook
+from app.common.message_moving import get_or_create_webhook, move_message
 
 if TYPE_CHECKING:
     from collections.abc import Collection
@@ -99,7 +99,7 @@ class CodeblockActions(ItemActions):
 
         webhook = await get_or_create_webhook(webhook_channel)
         self.message.content = self._replaced_message_content
-        await move_message_via_webhook(
+        await move_message(
             self.bot, webhook, self.message, thread=thread, include_move_marks=False
         )
 

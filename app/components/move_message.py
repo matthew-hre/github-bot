@@ -16,7 +16,7 @@ from app.common.message_moving import (
     convert_nitro_emojis,
     get_or_create_webhook,
     message_can_be_moved,
-    move_message_via_webhook,
+    move_message,
 )
 from app.errors import SafeModal, SafeView
 from app.utils import (
@@ -188,7 +188,7 @@ class SelectChannel(SafeView):
         assert isinstance(webhook_channel, dc.TextChannel | dc.ForumChannel)
 
         webhook = await get_or_create_webhook(webhook_channel)
-        await move_message_via_webhook(
+        await move_message(
             self.bot, webhook, self.message, self.executor, thread=thread
         )
         await interaction.edit_original_response(
@@ -236,7 +236,7 @@ class HelpPostTitle(SafeModal, title="Turn into #help post"):
         await interaction.response.defer(ephemeral=True, thinking=True)
 
         webhook = await get_or_create_webhook(self.bot.help_channel)
-        msg = await move_message_via_webhook(
+        msg = await move_message(
             self.bot,
             webhook,
             self._message,
