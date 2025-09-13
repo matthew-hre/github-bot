@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
+from functools import partial
 from itertools import chain
 from typing import TYPE_CHECKING, final, override
 
@@ -80,7 +81,7 @@ class MentionIntegration(commands.Cog):
             reply = self.mention_linker.get(msg)
             assert reply is not None
 
-            new_output = await entity_message(msg)
+            new_output = await entity_message(self.bot, msg)
 
             with safe_edit:
                 await reply.edit(
@@ -108,7 +109,7 @@ class MentionIntegration(commands.Cog):
             )
             return
 
-        output = await entity_message(message)
+        output = await entity_message(self.bot, message)
         if not output.item_count:
             return
 
@@ -139,7 +140,7 @@ class MentionIntegration(commands.Cog):
     async def on_message_edit(self, before: dc.Message, after: dc.Message) -> None:
         return await create_edit_hook(
             linker=self.mention_linker,
-            message_processor=entity_message,
+            message_processor=partial(entity_message, self.bot),
             interactor=self.reply_with_entities,
             view_type=MentionActions,
         )(before, after)

@@ -49,8 +49,7 @@ if TYPE_CHECKING:
         PullRequestReviewEvent,
     )
 
-    from app.bot import GhosttyBot
-    from app.components.github_integration.emoji import EmojiName
+    from app.bot import EmojiName, GhosttyBot
     from app.components.github_integration.webhooks.core import SubhookStore
 
 type WebhookPullRequestReviewRequested = (

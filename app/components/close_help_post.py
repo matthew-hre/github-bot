@@ -58,11 +58,11 @@ class Close(commands.GroupCog, group_name="close"):
         )
         interaction.extras["error_handled"] = True
 
-    @staticmethod
-    async def mention_entity(entity_id: int) -> str | None:
+    async def mention_entity(self, entity_id: int) -> str | None:
         output = await fmt.entity_message(
+            self.bot,
             # Forging a message to use the entity mention logic
-            cast("dc.Message", SimpleNamespace(content=f"#{entity_id}"))
+            cast("dc.Message", SimpleNamespace(content=f"#{entity_id}")),
         )
         return output.content or None
 

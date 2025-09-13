@@ -4,7 +4,8 @@ import asyncio
 import datetime as dt
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast, final, override
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Literal, cast, final, get_args, override
 
 import discord as dc
 from discord.ext import commands
@@ -19,6 +20,19 @@ if TYPE_CHECKING:
 
     from app.config import Config, WebhookFeedType
     from app.utils import Account
+
+EmojiName = Literal[
+    "commit",
+    "discussion",
+    "discussion_answered",
+    "issue_closed_completed",
+    "issue_closed_unplanned",
+    "issue_open",
+    "pull_closed",
+    "pull_draft",
+    "pull_merged",
+    "pull_open",
+]
 
 
 @final
@@ -39,6 +53,9 @@ class GhosttyBot(commands.Bot):
         self.bot_status = BotStatus()
         self.background_tasks = set[asyncio.Task[None]]()
 
+        self._ghostty_emojis: dict[EmojiName, dc.Emoji] = {}
+        self.ghostty_emojis = MappingProxyType(self._ghostty_emojis)
+
     @override
     async def on_error(self, event_method: str, /, *args: Any, **kwargs: Any) -> None:
         handle_error(cast("BaseException", sys.exception()))
@@ -54,7 +71,21 @@ class GhosttyBot(commands.Bot):
 
     async def on_ready(self) -> None:
         self.bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
+        await self._load_emojis()
         logger.info("logged in as {}", self.user)
+
+    async def _load_emojis(self) -> None:
+        valid_emoji_names = frozenset(get_args(EmojiName))
+
+        for emoji in self.ghostty_guild.emojis:
+            if emoji.name in valid_emoji_names:
+                self._ghostty_emojis[cast("EmojiName", emoji.name)] = emoji
+
+        if missing_emojis := valid_emoji_names - self._ghostty_emojis.keys():
+            await self.log_channel.send(
+                "Failed to load the following emojis: " + ", ".join(missing_emojis)
+            )
+            self._ghostty_emojis |= dict.fromkeys(missing_emojis, "❓")
 
     @dc.utils.cached_property
     def ghostty_guild(self) -> dc.Guild:
