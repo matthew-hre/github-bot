@@ -18,7 +18,6 @@ from app.common.hooks import (
     create_edit_hook,
     remove_view_after_delay,
 )
-from app.components.github_integration.emoji import emojis, load_emojis
 from app.components.github_integration.mentions.resolution import (
     resolve_repo_signature,
 )
@@ -129,10 +128,6 @@ class Commits(commands.Cog):
         CommitActions.linker = MessageLinker()
         self.commit_cache = CommitCache(self.bot.gh)
 
-    @commands.Cog.listener()
-    async def on_ready(self) -> None:
-        await load_emojis(self.bot)
-
     @override
     async def cog_load(self) -> None:
         @self.monalisten_client.on("commit_comment")
@@ -160,9 +155,8 @@ class Commits(commands.Cog):
                 Footer("commit", f"Commit {sha}: {commit_title}"),
             )
 
-    @staticmethod
-    def _format_commit_mention(commit: CommitSummary) -> str:
-        emoji = emojis.get("commit")
+    def _format_commit_mention(self, commit: CommitSummary) -> str:
+        emoji = self.bot.ghostty_emojis["commit"]
         title = commit.message.splitlines()[0]
         heading = f"{emoji} **Commit [`{commit.sha[:7]}`](<{commit.url}>):** {title}"
 

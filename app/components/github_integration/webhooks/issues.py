@@ -31,8 +31,7 @@ if TYPE_CHECKING:
     from monalisten import Monalisten
     from monalisten.types import IssueCommentEvent, IssuesEvent
 
-    from app.bot import GhosttyBot
-    from app.components.github_integration.emoji import EmojiName
+    from app.bot import EmojiName, GhosttyBot
     from app.components.github_integration.webhooks.core import SubhookStore
 
 issue_subhooks: SubhookStore[Issues, IssuesEvent] = {}

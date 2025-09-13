@@ -1,12 +1,13 @@
 import datetime as dt
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast, get_args
 
 import pytest
 from githubkit.exception import RequestFailed
 
 from tests.utils import kitposer as kp
 
+from app.bot import EmojiName
 from app.components.close_help_post import Close
 from app.components.github_integration.mentions.discussions import DISCUSSION_QUERY
 from app.components.github_integration.models import GitHubUser
@@ -55,6 +56,14 @@ gh_env = kp.KitPoser({
 })
 
 
+emojis = cast(
+    "Close",
+    SimpleNamespace(
+        bot=SimpleNamespace(ghostty_emojis=dict.fromkeys(get_args(EmojiName), "❓"))
+    ),
+)
+
+
 @pytest.mark.parametrize(
     ("entity_id", "kind"),
     [(189, "Issue"), (1234, "Pull Request"), (2354, "Discussion")],
@@ -69,7 +78,7 @@ async def test_mention_entity(
     monkeypatch.setattr(f"{mentions_subpkg_path}.cache.entity_cache.gh", gh_env)
     monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
 
-    msg_content = await Close.mention_entity(entity_id)
+    msg_content = await Close.mention_entity(emojis, entity_id)
 
     assert msg_content is not None
     assert f"{kind} [#{entity_id}]" in msg_content
@@ -84,6 +93,6 @@ async def test_mention_missing_entity(
     monkeypatch.setattr(f"{mentions_subpkg_path}.cache.entity_cache.gh", gh_env)
     monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
 
-    msg_content = await Close.mention_entity(entity_id)
+    msg_content = await Close.mention_entity(emojis, entity_id)
 
     assert msg_content is None

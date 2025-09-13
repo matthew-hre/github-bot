@@ -7,7 +7,6 @@ import discord as dc
 from loguru import logger
 from monalisten import Monalisten
 
-from app.components.github_integration.emoji import emojis
 from app.components.github_integration.models import GitHubUser
 from app.config import config
 from app.utils import truncate
@@ -20,8 +19,7 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
     from pydantic_core import ErrorDetails
 
-    from app.bot import GhosttyBot
-    from app.components.github_integration.emoji import EmojiName
+    from app.bot import EmojiName, GhosttyBot
     from app.config import WebhookFeedType
 
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]
@@ -95,11 +93,10 @@ class Footer(NamedTuple):
     icon: EmojiName
     text: str
 
-    @property
-    def dict(self) -> dict[str, str | None]:
+    def dict(self, bot: GhosttyBot) -> dict[str, str | None]:
         return {
             "text": self.text,
-            "icon_url": emoji.url if (emoji := emojis.get(self.icon)) else None,
+            "icon_url": getattr(bot.ghostty_emojis[self.icon], "url", None),
         }
 
 
@@ -115,7 +112,7 @@ async def send_embed(  # noqa: PLR0913
     author = GitHubUser(**actor.model_dump())
     embed = (
         dc.Embed(color=color and EMBED_COLORS.get(color), **content.dict)
-        .set_footer(**footer.dict)
+        .set_footer(**footer.dict(bot))
         .set_author(**author.model_dump())
     )
     await bot.webhook_channels[feed_type].send(embed=embed)
