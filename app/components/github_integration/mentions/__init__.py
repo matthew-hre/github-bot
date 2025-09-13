@@ -1,15 +1,3 @@
-from .fmt import entity_message
-from .integration import (
-    entity_mention_delete_hook,
-    entity_mention_edit_hook,
-    reply_with_entities,
-)
-from .resolution import ENTITY_REGEX
+from .integration import MentionIntegration
 
-__all__ = (
-    "ENTITY_REGEX",
-    "entity_mention_delete_hook",
-    "entity_mention_edit_hook",
-    "entity_message",
-    "reply_with_entities",
-)
+__all__ = ("MentionIntegration",)

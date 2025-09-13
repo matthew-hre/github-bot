@@ -1,7 +1,6 @@
-from . import discussions as discussions
-from . import issues as issues
-from . import misc as misc
-from . import prs as prs
 from .core import client as monalisten_client
+from .discussions import Discussions
+from .issues import Issues
+from .prs import PRHook
 
-__all__ = ("monalisten_client",)
+__all__ = ("Discussions", "Issues", "PRHook", "monalisten_client")

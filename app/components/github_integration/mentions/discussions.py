@@ -1,5 +1,5 @@
 from app.components.github_integration.models import Discussion
-from app.setup import gh
+from app.config import gh
 
 DISCUSSION_QUERY = """
 query getDiscussion($number: Int!, $org: String!, $repo: String!) {

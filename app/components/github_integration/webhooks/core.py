@@ -9,7 +9,7 @@ from monalisten import Monalisten
 
 from app.components.github_integration.emoji import EmojiName, emojis
 from app.components.github_integration.models import GitHubUser
-from app.setup import WebhookFeedType, config
+from app.config import config
 from app.utils import truncate
 
 if TYPE_CHECKING:
@@ -20,8 +20,11 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
     from pydantic_core import ErrorDetails
 
+    from app.bot import GhosttyBot
+    from app.config import WebhookFeedType
+
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]
-type SubhookStore[E] = dict[str, Callable[[E], Awaitable[None]]]
+type SubhookStore[C, E] = dict[str, Callable[[C, E], Awaitable[None]]]
 
 EMBED_COLORS: dict[EmbedColor, int] = {
     "green": 0x3FB950,
@@ -99,7 +102,8 @@ class Footer(NamedTuple):
         }
 
 
-async def send_embed(
+async def send_embed(  # noqa: PLR0913
+    bot: GhosttyBot,
     actor: SimpleUser,
     content: EmbedContent,
     footer: Footer,
@@ -113,7 +117,7 @@ async def send_embed(
         .set_footer(**footer.dict)
         .set_author(**author.model_dump())
     )
-    await config.webhook_channels[feed_type].send(embed=embed)
+    await bot.webhook_channels[feed_type].send(embed=embed)
 
 
 def make_subhook_registrar[H](

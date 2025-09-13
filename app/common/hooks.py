@@ -80,6 +80,20 @@ class MessageLinker:
     def is_expired(self, message: dc.Message) -> bool:
         return message.created_at < self.expiry_threshold
 
+    async def delete(self, message: dc.Message) -> None:
+        if message.author.bot and (original := self.get_original_message(message)):
+            self.unlink(original)
+            self.unfreeze(original)
+        elif (reply := self.get(message)) and not self.is_frozen(message):
+            if self.is_expired(message):
+                self.unlink(message)
+            else:
+                # We don't need to do any unlinking here because reply.delete() triggers
+                # on_message_delete which runs the current hook again, and since replies
+                # are bot messages, linker.unlink(original) above handles it for us.
+                await reply.delete()
+        self.unfreeze(message)
+
 
 class ItemActions(SafeView):
     linker: ClassVar[MessageLinker]
@@ -185,23 +199,3 @@ def create_edit_hook(
         await remove_view_after_delay(reply, view_timeout)
 
     return edit_hook
-
-
-def create_delete_hook(
-    *, linker: MessageLinker
-) -> Callable[[dc.Message], Awaitable[None]]:
-    async def delete_hook(message: dc.Message) -> None:
-        if message.author.bot and (original := linker.get_original_message(message)):
-            linker.unlink(original)
-            linker.unfreeze(original)
-        elif (reply := linker.get(message)) and not linker.is_frozen(message):
-            if linker.is_expired(message):
-                linker.unlink(message)
-            else:
-                # We don't need to do any unlinking here because reply.delete() triggers
-                # on_message_delete which runs the current hook again, and since replies
-                # are bot messages, linker.unlink(original) above handles it for us.
-                await reply.delete()
-        linker.unfreeze(message)
-
-    return delete_hook

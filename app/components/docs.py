@@ -1,16 +1,21 @@
+from __future__ import annotations
+
 import datetime as dt
 import json
-from typing import TYPE_CHECKING, NotRequired, Self, TypedDict, cast
+from typing import TYPE_CHECKING, NotRequired, Self, TypedDict, cast, final, override
 
 import discord as dc
-from discord.app_commands import Choice, autocomplete
+from discord.app_commands import Choice
+from discord.ext import commands
+from githubkit.exception import RequestFailed
+from loguru import logger
 
 from app.common.message_moving import get_or_create_webhook
-from app.components.status import bot_status
-from app.setup import bot, config, gh
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from app.bot import GhosttyBot
 
 URL_TEMPLATE = "https://ghostty.org/docs/{section}{page}"
 
@@ -35,121 +40,163 @@ class Entry(TypedDict):
     children: NotRequired[list[Self]]
 
 
-def _load_children(
-    sitemap: dict[str, list[str]], path: str, children: list[Entry]
-) -> None:
-    sitemap[path] = []
-    for item in children:
-        sitemap[path].append((page := item["path"].lstrip("/")) or "overview")
-        if item["type"] == "folder":
-            _load_children(sitemap, f"{path}-{page}", item.get("children", []))
+@final
+class Docs(commands.Cog):
+    sitemap: dict[str, list[str]]
 
+    def __init__(self, bot: GhosttyBot) -> None:
+        self.bot = bot
+        self.sitemap = {}
 
-def _get_file(path: str) -> str:
-    return gh.rest.repos.get_content(
-        config.github_org,
-        "website",
-        path,
-        headers={"Accept": "application/vnd.github.raw+json"},
-    ).text
+    @override
+    async def cog_load(self) -> None:
+        try:
+            await self.refresh_sitemap()
+        except RequestFailed:
+            logger.warning(
+                "refreshing sitemap failed, running bot with limited functionality"
+            )
 
+    @dc.app_commands.command(name="docs", description="Link a documentation page.")
+    @dc.app_commands.guild_only()
+    async def docs(
+        self, interaction: dc.Interaction, section: str, page: str, message: str = ""
+    ) -> None:
+        try:
+            if not message or not isinstance(
+                interaction.channel, dc.TextChannel | dc.ForumChannel
+            ):
+                await interaction.response.send_message(
+                    self.get_docs_link(section, page)
+                )
+                return
+            webhook = await get_or_create_webhook(interaction.channel)
+            await webhook.send(
+                f"{message}\n{self.get_docs_link(section, page)}",
+                username=interaction.user.display_name,
+                avatar_url=interaction.user.display_avatar.url,
+            )
+            await interaction.response.send_message(
+                "Documentation linked.", ephemeral=True
+            )
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+        except dc.HTTPException:
+            await interaction.response.send_message(
+                "Message content too long.", ephemeral=True
+            )
 
-def refresh_sitemap() -> None:
-    # Reading vt/, install/, help/, config/, config/keybind/ subpages by reading
-    # nav.json
-    nav: list[Entry] = json.loads(_get_file("docs/nav.json"))["items"]
-    for entry in nav:
-        if entry["type"] != "folder":
-            continue
-        _load_children(sitemap, entry["path"].lstrip("/"), entry.get("children", []))
+    def _load_children(
+        self, sitemap: dict[str, list[str]], path: str, children: list[Entry]
+    ) -> None:
+        sitemap[path] = []
+        for item in children:
+            sitemap[path].append((page := item["path"].lstrip("/")) or "overview")
+            if item["type"] == "folder":
+                self._load_children(sitemap, f"{path}-{page}", item.get("children", []))
 
-    # Reading config references by parsing headings in .mdx files
-    for key, config_path in (
-        ("option", "reference.mdx"),
-        ("action", "keybind/reference.mdx"),
-    ):
-        sitemap[key] = [
-            line.removeprefix("## ").strip("`")
-            for line in _get_file(f"docs/config/{config_path}").splitlines()
-            if line.startswith("## ")
+    async def _get_file(self, path: str) -> str:
+        return (
+            await self.bot.gh.rest.repos.async_get_content(
+                self.bot.config.github_org,
+                "website",
+                path,
+                headers={"Accept": "application/vnd.github.raw+json"},
+            )
+        ).text
+
+    @dc.app_commands.command(name="refresh-docs", description="Refresh sitemap docs.")
+    @dc.app_commands.guild_only()
+    # Hide interaction from non-mods
+    @dc.app_commands.default_permissions(ban_members=True)
+    async def refresh_docs(self, interaction: dc.Interaction) -> None:
+        # The client-side check with `default_permissions` isn't guaranteed to work.
+        if not self.bot.is_ghostty_mod(interaction.user):
+            await interaction.response.send_message(
+                "Only mods can run this command", ephemeral=True
+            )
+            return
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        await self.refresh_sitemap()
+        await interaction.followup.send("Sitemap refreshed.", ephemeral=True)
+
+    async def refresh_sitemap(self) -> None:
+        # Reading vt/, install/, help/, config/, config/keybind/ subpages by reading
+        # nav.json
+        nav: list[Entry] = json.loads(await self._get_file("docs/nav.json"))["items"]
+        for entry in nav:
+            if entry["type"] != "folder":
+                continue
+            self._load_children(
+                self.sitemap, entry["path"].lstrip("/"), entry.get("children", [])
+            )
+
+        # Reading config references by parsing headings in .mdx files
+        for key, config_path in (
+            ("option", "reference.mdx"),
+            ("action", "keybind/reference.mdx"),
+        ):
+            self.sitemap[key] = [
+                line.removeprefix("## ").strip("`")
+                for line in (
+                    await self._get_file(f"docs/config/{config_path}")
+                ).splitlines()
+                if line.startswith("## ")
+            ]
+
+        # Manual adjustments
+        self.sitemap["install"].remove("release-notes")
+        self.sitemap["keybind"] = self.sitemap.pop("config-keybind")
+        del self.sitemap["install-release-notes"]
+        for vt_section in (s for s in SECTIONS if s.startswith("vt-")):
+            self.sitemap["vt"].remove(vt_section.removeprefix("vt-"))
+        self.bot.bot_status.last_sitemap_refresh = dt.datetime.now(tz=dt.UTC)
+
+    @docs.autocomplete("section")
+    async def section_autocomplete(
+        self, _: dc.Interaction, current: str
+    ) -> list[Choice[str]]:
+        return [
+            Choice(name=name, value=name)
+            for name in SECTIONS
+            if current.casefold() in name.casefold()
         ]
 
-    # Manual adjustments
-    sitemap["install"].remove("release-notes")
-    sitemap["keybind"] = sitemap.pop("config-keybind")
-    del sitemap["install-release-notes"]
-    for vt_section in (s for s in SECTIONS if s.startswith("vt-")):
-        sitemap["vt"].remove(vt_section.removeprefix("vt-"))
-    bot_status.last_sitemap_refresh = dt.datetime.now(tz=dt.UTC)
-
-
-sitemap: dict[str, list[str]] = {}
-
-
-async def section_autocomplete(_: dc.Interaction, current: str) -> list[Choice[str]]:
-    return [
-        Choice(name=name, value=name)
-        for name in SECTIONS
-        if current.casefold() in name.casefold()
-    ]
-
-
-async def page_autocomplete(
-    interaction: dc.Interaction, current: str
-) -> list[Choice[str]]:
-    if not interaction.data:
-        return []
-    options = cast("Iterable[dict[str, str]] | None", interaction.data.get("options"))
-    if not options:
-        return []
-    section = next(
-        (opt["value"] for opt in options if opt["name"] == "section"),
-        None,
-    )
-    if section is None:
-        return []
-    return [
-        Choice(name=name, value=name)
-        for name in sitemap.get(section, [])
-        if current.casefold() in name.casefold()
-    ][:25]  # Discord only allows 25 options for autocomplete
-
-
-@bot.tree.command(name="docs", description="Link a documentation page.")
-@autocomplete(section=section_autocomplete, page=page_autocomplete)
-@dc.app_commands.guild_only()
-async def docs(
-    interaction: dc.Interaction, section: str, page: str, message: str = ""
-) -> None:
-    try:
-        if not message or not isinstance(
-            interaction.channel, dc.TextChannel | dc.ForumChannel
-        ):
-            await interaction.response.send_message(get_docs_link(section, page))
-            return
-        webhook = await get_or_create_webhook(interaction.channel)
-        await webhook.send(
-            f"{message}\n{get_docs_link(section, page)}",
-            username=interaction.user.display_name,
-            avatar_url=interaction.user.display_avatar.url,
+    @docs.autocomplete("page")
+    async def page_autocomplete(
+        self, interaction: dc.Interaction, current: str
+    ) -> list[Choice[str]]:
+        if not interaction.data:
+            return []
+        options = cast(
+            "Iterable[dict[str, str]] | None", interaction.data.get("options")
         )
-        await interaction.response.send_message("Documentation linked.", ephemeral=True)
-    except ValueError as exc:
-        await interaction.response.send_message(str(exc), ephemeral=True)
-    except dc.HTTPException:
-        await interaction.response.send_message(
-            "Message content too long.", ephemeral=True
+        if not options:
+            return []
+        section = next(
+            (opt["value"] for opt in options if opt["name"] == "section"),
+            None,
+        )
+        if section is None:
+            return []
+        return [
+            Choice(name=name, value=name)
+            for name in self.sitemap.get(section, [])
+            if current.casefold() in name.casefold()
+        ][:25]  # Discord only allows 25 options for autocomplete
+
+    def get_docs_link(self, section: str, page: str) -> str:
+        if section not in SECTIONS:
+            msg = f"Invalid section {section!r}"
+            raise ValueError(msg)
+        if page not in self.sitemap.get(section, []):
+            msg = f"Invalid page {page!r}"
+            raise ValueError(msg)
+        return URL_TEMPLATE.format(
+            section=SECTIONS[section],
+            page=page if page != "overview" else "",
         )
 
 
-def get_docs_link(section: str, page: str) -> str:
-    if section not in SECTIONS:
-        msg = f"Invalid section {section!r}"
-        raise ValueError(msg)
-    if page not in sitemap.get(section, []):
-        msg = f"Invalid page {page!r}"
-        raise ValueError(msg)
-    return URL_TEMPLATE.format(
-        section=SECTIONS[section],
-        page=page if page != "overview" else "",
-    )
+async def setup(bot: GhosttyBot) -> None:
+    await bot.add_cog(Docs(bot))

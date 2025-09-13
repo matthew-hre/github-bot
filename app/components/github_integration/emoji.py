@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from types import MappingProxyType
-from typing import Literal, cast, get_args
+from typing import TYPE_CHECKING, Literal, cast, get_args
 
-import discord as dc
+if TYPE_CHECKING:
+    import discord as dc
 
-from app.setup import config
+    from app.bot import GhosttyBot
 
 EmojiName = Literal[
     "commit",
@@ -22,14 +25,14 @@ _emojis: dict[EmojiName, dc.Emoji] = {}
 emojis = MappingProxyType(_emojis)
 
 
-async def load_emojis() -> None:
+async def load_emojis(bot: GhosttyBot) -> None:
     valid_emoji_names = frozenset(get_args(EmojiName))
 
-    for emoji in config.ghostty_guild.emojis:
+    for emoji in bot.ghostty_guild.emojis:
         if emoji.name in valid_emoji_names:
             _emojis[cast("EmojiName", emoji.name)] = emoji
 
     if missing_emojis := valid_emoji_names - _emojis.keys():
-        await config.log_channel.send(
+        await bot.log_channel.send(
             "Failed to load the following emojis: " + ", ".join(missing_emojis)
         )

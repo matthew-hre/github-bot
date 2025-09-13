@@ -11,12 +11,13 @@ from typing import TYPE_CHECKING, Any, Literal, Self, final, overload
 import discord as dc
 import httpx
 
-from app.setup import bot, config
 from app.utils import GuildTextChannel, dynamic_timestamp, truncate
 from app.utils.message_data import ExtensibleMessage, MessageData, get_files
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from app.bot import GhosttyBot
 
 _EMOJI_REGEX = re.compile(r"<(a?):(\w+):(\d+)>", re.ASCII)
 _REACTION_REGEX = re.compile(r"([^\s×]+) ×(\d+)", re.ASCII)  # noqa: RUF001
@@ -58,7 +59,7 @@ def _unattachable_embed(unattachable_elem: str, **kwargs: Any) -> dc.Embed:
     return dc.Embed(**kwargs).set_footer(text=f"Unable to attach {unattachable_elem}.")
 
 
-def convert_nitro_emojis(content: str, *, force: bool = False) -> str:
+def convert_nitro_emojis(bot: GhosttyBot, content: str, *, force: bool = False) -> str:
     """
     Convert custom emojis to concealed hyperlinks.  Set `force` to True to convert
     emojis in the current guild too.
@@ -67,7 +68,7 @@ def convert_nitro_emojis(content: str, *, force: bool = False) -> str:
     def replace_nitro_emoji(match: re.Match[str]) -> str:
         animated, name, id_ = match.groups()
         emoji = bot.get_emoji(int(id_))
-        if not force and emoji and emoji.guild_id == config.ghostty_guild.id:
+        if not force and emoji and emoji.guild_id == bot.ghostty_guild.id:
             return match[0]
 
         ext = "gif" if animated else "webp"
@@ -128,7 +129,7 @@ def _format_reply(reply: dc.Message) -> dc.Embed:
     )
 
 
-async def _format_context_menu_command(reply: dc.Message) -> dc.Embed:
+def _format_context_menu_command(reply: dc.Message) -> dc.Embed:
     return _format_reply(reply).set_author(
         name=f"⚡ Acting on {reply.author.display_name}'s message",
         icon_url=reply.author.display_avatar,
@@ -136,9 +137,10 @@ async def _format_context_menu_command(reply: dc.Message) -> dc.Embed:
 
 
 async def _format_forward(
+    bot: GhosttyBot,
     forward: dc.MessageSnapshot,
 ) -> tuple[list[dc.Embed], list[dc.File]]:
-    content = convert_nitro_emojis(forward.content)
+    content = convert_nitro_emojis(bot, forward.content)
     if len(content) > 4096:
         content = forward.content
 
@@ -225,7 +227,7 @@ async def _get_reply_embed(message: dc.Message) -> dc.Embed | None:
     if message.reference.type is dc.MessageReferenceType.reply:
         return _format_reply(ref)
     if message.type is dc.MessageType.context_menu_command:
-        return await _format_context_menu_command(ref)
+        return _format_context_menu_command(ref)
     return None
 
 
@@ -514,6 +516,7 @@ class MovedMessage(ExtensibleMessage, dc.WebhookMessage):  # pyright: ignore[rep
 
 @overload
 async def move_message_via_webhook(
+    bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
     executor: dc.Member | None = None,
@@ -526,6 +529,7 @@ async def move_message_via_webhook(
 
 @overload
 async def move_message_via_webhook(
+    bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
     executor: dc.Member | None = None,
@@ -537,6 +541,7 @@ async def move_message_via_webhook(
 
 
 async def move_message_via_webhook(  # noqa: PLR0913
+    bot: GhosttyBot,
     webhook: dc.Webhook,
     message: dc.Message,
     executor: dc.Member | None = None,
@@ -561,7 +566,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
     if message.message_snapshots:
         # Only include the first message snapshot.
         snapshot = message.message_snapshots[0]
-        forward_embeds, forward_attachments = await _format_forward(snapshot)
+        forward_embeds, forward_attachments = await _format_forward(bot, snapshot)
         embeds = [*forward_embeds, *embeds]
         msg_data.files.extend(forward_attachments)
     elif reply_embed := await _get_reply_embed(message):
@@ -593,7 +598,7 @@ async def move_message_via_webhook(  # noqa: PLR0913
     content, file = format_or_file(
         _format_interaction(message),
         template=f"{{}}\n{subtext}",
-        transform=convert_nitro_emojis,
+        transform=lambda full_message: convert_nitro_emojis(bot, full_message),
     )
     if file:
         msg_data.files.append(file)

@@ -1,14 +1,14 @@
 import datetime as dt
 import subprocess
-from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast, final
 
+from discord.ext import tasks
 from githubkit import TokenAuthStrategy
 from githubkit.exception import RequestFailed
 
-from app.setup import bot, config, gh
-from app.utils import Account, dynamic_timestamp, is_dm, is_mod, try_dm
+from app.config import config, gh
+from app.utils import dynamic_timestamp
 
 STATUS_MESSAGE_TEMPLATE = """
 ### Commit
@@ -27,29 +27,16 @@ STATUS_MESSAGE_TEMPLATE = """
 """
 
 
-def get_github_data() -> SimpleNamespace:
-    match gh.auth:
-        case TokenAuthStrategy(token) if token.startswith(("gh", "github")):
-            correct_token = True
-        case _:
-            correct_token = False
-    try:
-        resp = gh.rest.users.get_authenticated()
-        api_ok = resp.status_code == 200
-    except RequestFailed:
-        api_ok = False
-    return SimpleNamespace(
-        auth="✅" if correct_token else "❌",
-        api="✅" if api_ok else "❌",
-    )
-
-
-@dataclass
+@final
 class BotStatus:
     launch_time: dt.datetime
+    help_scan_loop: tasks.Loop[Any] | None = None
     last_login_time: dt.datetime | None = None
     last_scan_results: tuple[dt.datetime, int, int] | None = None
     last_sitemap_refresh: dt.datetime | None = None
+
+    def __init__(self) -> None:
+        self.launch_time = dt.datetime.now(tz=dt.UTC)
 
     @property
     def initialized(self) -> bool:
@@ -60,11 +47,15 @@ class BotStatus:
         ))
 
     def _get_scan_data(self) -> SimpleNamespace:
-        # Avoid circular import
-        from app.components.autoclose import autoclose_solved_posts  # noqa: PLC0415
+        if not self.help_scan_loop:
+            return SimpleNamespace(
+                time_since="**disabled**",
+                time_until_next="**disabled**",
+                scanned=0,
+                closed=0,
+            )
 
-        next_scan = cast("dt.datetime", autoclose_solved_posts.next_iteration)
-
+        next_scan = cast("dt.datetime", self.help_scan_loop.next_iteration)
         assert self.last_scan_results is not None
         last_scan, scanned, closed = self.last_scan_results
         return SimpleNamespace(
@@ -74,7 +65,36 @@ class BotStatus:
             closed=closed,
         )
 
-    def export(self) -> dict[str, str | SimpleNamespace]:
+    @staticmethod
+    async def _get_github_data() -> SimpleNamespace:
+        match gh.auth:
+            case TokenAuthStrategy(token) if token.startswith(("gh", "github")):
+                correct_token = True
+            case _:
+                correct_token = False
+        try:
+            resp = await gh.rest.users.async_get_authenticated()
+            api_ok = resp.status_code == 200
+        except RequestFailed:
+            api_ok = False
+        return SimpleNamespace(
+            auth="✅" if correct_token else "❌",
+            api="✅" if api_ok else "❌",
+        )
+
+    @staticmethod
+    def _get_commit_hash() -> str:
+        try:
+            return (
+                subprocess.check_output(["git", "rev-parse", "HEAD"])
+                .decode()
+                .strip()
+                .join("``")
+            )
+        except subprocess.CalledProcessError:
+            return "Unknown"
+
+    async def export(self) -> dict[str, str | SimpleNamespace]:
         """
         Make sure the bot has finished initializing before calling this, using the
         `initialized` property.
@@ -82,43 +102,16 @@ class BotStatus:
         assert self.last_login_time is not None
         assert self.last_sitemap_refresh is not None
         return {
+            "commit_hash": self._get_commit_hash(),
             "launch_time": dynamic_timestamp(self.launch_time, "R"),
             "last_login_time": dynamic_timestamp(self.last_login_time, "R"),
             "last_sitemap_refresh": dynamic_timestamp(self.last_sitemap_refresh, "R"),
             "help_channel": f"<#{config.help_channel_id}>",
             "scan": self._get_scan_data(),
-            "gh": get_github_data(),
+            "gh": await self._get_github_data(),
         }
 
-
-bot_status = BotStatus(dt.datetime.now(tz=dt.UTC))
-
-
-def _get_commit_hash() -> str:
-    try:
-        return (
-            subprocess.check_output(["git", "rev-parse", "HEAD"])
-            .decode()
-            .strip()
-            .join("``")
-        )
-    except subprocess.CalledProcessError:
-        return "Unknown"
-
-
-def status_message() -> str:
-    if not bot_status.initialized:
-        return "The bot has not finished initializing yet; try again shortly."
-    return STATUS_MESSAGE_TEMPLATE.format(
-        commit_hash=_get_commit_hash(),
-        **bot_status.export(),
-    )
-
-
-async def report_status(user: Account) -> None:
-    if not is_dm(user):
-        return
-    member = bot.guilds[0].get_member(user.id)
-    if member is None or not is_mod(member):
-        return
-    await try_dm(user, status_message())
+    async def status_message(self) -> str:
+        if not self.initialized:
+            return "The bot has not finished initializing yet; try again shortly."
+        return STATUS_MESSAGE_TEMPLATE.format(**(await self.export()))

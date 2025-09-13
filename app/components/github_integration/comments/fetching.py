@@ -28,7 +28,7 @@ from app.components.github_integration.models import (
     GitHubUser,
     Reactions,
 )
-from app.setup import gh
+from app.config import gh
 from app.utils import escape_special
 
 if TYPE_CHECKING:

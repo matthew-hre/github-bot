@@ -1,7 +1,7 @@
 from base64 import urlsafe_b64encode
 
 from app.components.github_integration.models import Comment, Discussion, EntityGist
-from app.setup import gh
+from app.config import gh
 
 DISCUSSION_COMMENT_QUERY = """
 query getDiscussionComment($id: ID!) {

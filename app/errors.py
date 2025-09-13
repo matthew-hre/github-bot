@@ -1,19 +1,12 @@
 import asyncio
-import sys
 from contextlib import suppress
-from typing import Any, cast, override
+from typing import Any, override
 
 import discord as dc
 from loguru import logger
 from sentry_sdk import capture_exception
 
-from app.setup import bot, config
-
-
-def handle_task_error(task: asyncio.Task[None]) -> None:
-    with suppress(asyncio.CancelledError):
-        if exc := task.exception():
-            handle_error(exc)
+from app.config import config
 
 
 def handle_error(error: BaseException) -> None:
@@ -27,14 +20,17 @@ def handle_error(error: BaseException) -> None:
         handle_error(error.original)
 
 
-@bot.event
-async def on_error(*_: object) -> None:
-    handle_error(cast("BaseException", sys.exc_info()[1]))
+def handle_task_error(task: asyncio.Task[None]) -> None:
+    with suppress(asyncio.CancelledError):
+        if exc := task.exception():
+            handle_error(exc)
 
 
 async def interaction_error_handler(
     interaction: dc.Interaction, error: Exception, /
 ) -> None:
+    if interaction.extras.get("error_handled", False):
+        return
     if not interaction.response.is_done():
         await interaction.response.send_message(
             "Something went wrong :(", ephemeral=True
@@ -42,9 +38,6 @@ async def interaction_error_handler(
     else:
         await interaction.followup.send("Something went wrong :(", ephemeral=True)
     handle_error(error)
-
-
-bot.tree.on_error = interaction_error_handler
 
 
 class SafeModal(dc.ui.Modal):
