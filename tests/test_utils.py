@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import Mock
 
 import discord as dc
@@ -12,12 +12,14 @@ from app.config import config
 from app.utils import (
     aenumerate,
     dynamic_timestamp,
+    format_diff_note,
     is_attachment_only,
     is_dm,
     is_helper,
     is_mod,
     post_has_tag,
     post_is_solved,
+    suppress_embeds_after_delay,
     truncate,
 )
 
@@ -240,3 +242,34 @@ def test_truncate(s: str, length: int, suffix: str, result: str) -> None:
 )
 def test_dynamic_timestamp(dt: dt.datetime, fmt: str | None, result: str) -> None:
     assert dynamic_timestamp(dt, fmt) == result
+
+
+@pytest.mark.asyncio
+async def test_suppress_embeds_after_delay() -> None:
+    suppressed = False
+
+    async def edit(**kwargs: Any) -> None:
+        nonlocal suppressed
+        suppressed = kwargs.get("suppress", False)
+
+    fake_message = cast("dc.Message", SimpleNamespace(edit=edit))
+
+    await suppress_embeds_after_delay(fake_message, 0)
+
+    assert suppressed
+
+
+@pytest.mark.parametrize(
+    ("additions", "deletions", "changed_files"),
+    [(1, 2, 3), (2, 3, 4), (-12, 0, 0), (-43, -21, -17), (0, 0, 1)],
+)
+def test_format_diff_note(additions: int, deletions: int, changed_files: int) -> None:
+    formatted = format_diff_note(additions, deletions, changed_files)
+    assert formatted is not None
+    assert f"+{additions}" in formatted
+    assert f"-{deletions}" in formatted
+    assert str(changed_files) in formatted
+
+
+def test_format_diff_note_unavailable() -> None:
+    assert format_diff_note(0, 0, 0) is None
