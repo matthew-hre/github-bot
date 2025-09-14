@@ -7,6 +7,8 @@ from unittest.mock import Mock
 
 import discord as dc
 import pytest
+from hypothesis import assume, given
+from hypothesis import strategies as st
 
 from app.config import config
 from app.utils import (
@@ -41,24 +43,9 @@ def test_is_mod() -> None:
     assert is_mod(cast("dc.Member", fake_member))
 
 
-@pytest.mark.parametrize(
-    "id_",
-    [
-        1234124125125,
-        12846791824,
-        12749801924,
-        -1,
-        0,
-        1274687918204,
-        19267480912409,
-        2**200,
-        9999999999999999999999999,
-        1756274809124124,
-    ],
-)
+@given(st.integers().filter(lambda id_: id_ != config.mod_role_id))
 def test_is_not_mod(id_: int) -> None:
     fake_member = SimpleNamespace(get_role=lambda role: role if role == id_ else None)
-    assert id_ != config.mod_role_id
     assert not is_mod(cast("dc.Member", fake_member))
 
 
@@ -69,23 +56,9 @@ def test_is_helper() -> None:
     assert is_helper(cast("dc.Member", fake_member))
 
 
-@pytest.mark.parametrize(
-    "id_",
-    [
-        82980394892387980,
-        1253687810294082,
-        5627980395172,
-        173980942184,
-        0,
-        -1,
-        178409128412498124,
-        9999999999999999999999999,
-        10**50,
-    ],
-)
+@given(st.integers().filter(lambda id_: id_ != config.helper_role_id))
 def test_is_not_helper(id_: int) -> None:
     fake_member = SimpleNamespace(get_role=lambda role: role if role == id_ else None)
-    assert id_ != config.helper_role_id
     assert not is_helper(cast("dc.Member", fake_member))
 
 
@@ -146,20 +119,7 @@ def test_post_is_not_solved(names: list[str]) -> None:
     assert not post_is_solved(cast("dc.Thread", SimpleNamespace(applied_tags=tags)))
 
 
-@pytest.mark.parametrize(
-    "items",
-    [
-        [1, 2, 3, 4, 5],
-        ["spam", "eggs", "bacon", "ham"],
-        [False, True, True],
-        [{"a": 12}, {"b": 14, "c": 23}, {"d": 183, "e": 21}],
-        [..., ..., ...],
-        [None, None],
-        [[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6], [5, 6, 7]],
-        [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 6), (5, 6, 7)],
-    ],
-)
-@pytest.mark.parametrize("start", [0, 1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 102, -99, 41])
+@given(st.lists(st.from_type(type)), st.integers())
 @pytest.mark.asyncio
 async def test_aenumerate[T](items: list[T], start: int) -> None:
     async def async_iterator() -> AsyncGenerator[T]:
@@ -259,11 +219,9 @@ async def test_suppress_embeds_after_delay() -> None:
     assert suppressed
 
 
-@pytest.mark.parametrize(
-    ("additions", "deletions", "changed_files"),
-    [(1, 2, 3), (2, 3, 4), (-12, 0, 0), (-43, -21, -17), (0, 0, 1)],
-)
+@given(st.integers(), st.integers(), st.integers())
 def test_format_diff_note(additions: int, deletions: int, changed_files: int) -> None:
+    assume(changed_files and (additions or deletions))
     formatted = format_diff_note(additions, deletions, changed_files)
     assert formatted is not None
     assert f"+{additions}" in formatted

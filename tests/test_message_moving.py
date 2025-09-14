@@ -7,6 +7,8 @@ from unittest.mock import Mock
 
 import discord as dc
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from app.common.message_moving import (
     MovedMessage,
@@ -88,25 +90,14 @@ def test_message_can_be_moved(type_: dc.MessageType, result: bool) -> None:
     assert message_can_be_moved(fake_message) == result
 
 
-@pytest.mark.parametrize(
-    "elem",
-    [
-        "forward",
-        "reply",
-        "sticker",
-        "message",
-        "poll",
-        "attachment",
-        "embed",
-        "element",
-        "spider",
-        "terminal emulator",
-    ],
-)
+@given(st.text())
 def test_unattachable_embed(elem: str) -> None:
     # Require the (escaped) string to be in the returned embed. repr() on a string wraps
     # it in quotes, so remove those too.
-    assert repr(elem)[1:-1] in repr(_unattachable_embed(elem).to_dict()).casefold()
+    assert (
+        repr(elem)[1:-1].casefold()
+        in repr(_unattachable_embed(elem).to_dict()).casefold()
+    )
 
 
 @pytest.mark.parametrize(
