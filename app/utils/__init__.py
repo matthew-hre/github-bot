@@ -140,6 +140,6 @@ async def suppress_embeds_after_delay(message: dc.Message, delay: float = 5.0) -
 
 
 def format_diff_note(additions: int, deletions: int, changed_files: int) -> str | None:
-    if not (additions or deletions or changed_files):
+    if not (changed_files and (additions or deletions)):
         return None  # Diff size unavailable
     return f"diff size: `+{additions}` `-{deletions}` ({changed_files} files changed)"
