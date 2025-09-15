@@ -66,6 +66,7 @@ SUPPORTED_EVENTS: dict[str, str | Callable[[IssueEvent], str]] = {
     "issue_type_removed": "Removed the issue type",
     "milestoned": "Added this to the `{event.milestone.title}` milestone",
     "demilestoned": "Removed this from the `{event.milestone.title}` milestone",
+    "converted_from_draft": "Converted this from a draft issue",
     "convert_to_draft": "Marked this pull request as draft",
     "ready_for_review": "Marked this pull request as ready for review",
     "review_requested": "Requested a review from `{reviewer}`",
