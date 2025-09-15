@@ -97,6 +97,7 @@ SUPPORTED_EVENTS: dict[str, str | Callable[[IssueEvent], str]] = {
         }~~ {escape_special(rename.to)}"
     ),
     "added_to_merge_queue": "Added this pull request to the merge queue",
+    "removed_from_merge_queue": "Removed this pull request from the merge queue",
     "deployed": lambda event: (
         "Deployed this" + f" via {escape_special(event.performed_via_github_app.name)}"
         if event.performed_via_github_app is not None
