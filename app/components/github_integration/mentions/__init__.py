@@ -1,3 +1,3 @@
-from .integration import MentionIntegration
+from .integration import Mentions
 
-__all__ = ("MentionIntegration",)
+__all__ = ("Mentions",)

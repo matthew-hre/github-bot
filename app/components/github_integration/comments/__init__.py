@@ -1,3 +1,3 @@
-from .integration import CommentIntegration
+from .integration import Comments
 
-__all__ = ("CommentIntegration",)
+__all__ = ("Comments",)

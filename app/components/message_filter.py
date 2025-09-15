@@ -58,8 +58,8 @@ class MessageFilter(commands.Cog):
             ),
         )
 
-    @commands.Cog.listener("on_message")
-    async def check_message_filters(self, message: dc.Message) -> None:
+    @commands.Cog.listener()
+    async def on_message(self, message: dc.Message) -> None:
         if message.author == self.bot.user:
             return
         for msg_filter in self.message_filters:
