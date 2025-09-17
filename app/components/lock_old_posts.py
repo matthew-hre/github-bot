@@ -25,7 +25,8 @@ class LockOldPosts(commands.Cog):
         one_month_ago = now - dt.timedelta(days=30)
 
         if (
-            not isinstance(post, dc.Thread)
+            message.author.bot
+            or not isinstance(post, dc.Thread)
             or not post.parent
             or post.parent.id != self.bot.config.help_channel_id
             or post.locked
