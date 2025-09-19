@@ -93,6 +93,7 @@ class Mentions(commands.Cog):
         if (
             message.author.bot
             or message.type in IGNORED_MESSAGE_TYPES
+            or self.bot.fails_message_filters(message)
             or not ENTITY_REGEX.search(message.content)
         ):
             return

@@ -218,7 +218,7 @@ class Commits(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def reply_with_commit_details(self, message: dc.Message) -> None:
-        if message.author.bot:
+        if message.author.bot or self.bot.fails_message_filters(message):
             return
         output = await self.process(message)
         if output.item_count == 0:
