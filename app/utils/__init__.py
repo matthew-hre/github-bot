@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import subprocess
 from contextlib import suppress
 from textwrap import shorten
 from typing import TYPE_CHECKING, Any, TypeIs
@@ -143,3 +144,21 @@ def format_diff_note(additions: int, deletions: int, changed_files: int) -> str 
     if not (changed_files and (additions or deletions)):
         return None  # Diff size unavailable
     return f"diff size: `+{additions}` `-{deletions}` ({changed_files} files changed)"
+
+
+async def async_process_check_output(program: str, *args: str, **kwargs: Any) -> str:
+    if "stdout" in kwargs:
+        msg = "stdout argument not allowed, it will be overridden."
+        raise ValueError(msg)
+    proc = await asyncio.create_subprocess_exec(
+        program, *args, stdout=subprocess.PIPE, **kwargs
+    )
+    assert proc.stdout is not None  # set to PIPE above
+    if rc := await proc.wait():
+        raise subprocess.CalledProcessError(
+            returncode=rc,
+            cmd=[program, *args],
+            output=await proc.stdout.read(),
+            stderr=proc.stderr and await proc.stderr.read(),
+        )
+    return (await proc.stdout.read()).decode()

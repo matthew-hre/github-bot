@@ -4,7 +4,8 @@ import asyncio
 import copy
 import re
 import string
-from typing import TYPE_CHECKING, NamedTuple, final, override
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, NamedTuple, cast, final, override
 
 import discord as dc
 from discord.ext import commands
@@ -125,6 +126,15 @@ class Commits(commands.Cog):
         self.linker = MessageLinker()
         CommitActions.linker = MessageLinker()
         self.cache = CommitCache(self.bot.gh)
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        # Pass a commit mention of the current commit back to the bot's status
+        # functionality for display.
+        if commit_url := self.bot.bot_status.commit_url:
+            fake_message = cast("dc.Message", SimpleNamespace(content=commit_url))
+            if (links := await self.process(fake_message)).item_count:
+                self.bot.bot_status.commit_data = links.content
 
     @override
     async def cog_load(self) -> None:
