@@ -10,34 +10,14 @@ from loguru import logger
 from app.components.github_integration.webhooks.core import (
     EmbedContent,
     Footer,
-    make_subhook_registrar,
-    reraise_with_payload,
     send_embed,
 )
 
 if TYPE_CHECKING:
     from githubkit.typing import Missing
-    from githubkit.versions.latest.models import (
-        WebhookIssueCommentCreated,
-        WebhookIssuesClosed,
-        WebhookIssuesEdited,
-        WebhookIssuesLocked,
-        WebhookIssuesOpened,
-        WebhookIssuesPinned,
-        WebhookIssuesReopened,
-        WebhookIssuesUnlocked,
-        WebhookIssuesUnpinned,
-    )
-    from monalisten import Monalisten
-    from monalisten.types import IssueCommentEvent, IssuesEvent
+    from monalisten import Monalisten, events
 
     from app.bot import EmojiName, GhosttyBot
-    from app.components.github_integration.webhooks.core import SubhookStore
-
-issue_subhooks: SubhookStore[Issues, IssuesEvent] = {}
-
-register_issue_subhook = make_subhook_registrar(issue_subhooks)
-
 
 CONVERTED_DISCUSSION_HEADER = re.compile(
     r"\s*### Discussed in https://github.com/.*?/discussions/(?P<discussion_number>\d+)"
@@ -94,34 +74,26 @@ class Issues(commands.Cog):
 
     @override
     async def cog_load(self) -> None:
-        @self.monalisten_client.on("issue_comment")
-        async def _(event: IssueCommentEvent) -> None:
-            if event.action == "created":
-                with reraise_with_payload(event):
-                    await self.handle_created_issue_comment(event)
+        register_hooks(self.bot, self.monalisten_client)
 
-        @self.monalisten_client.on("issues")
-        async def _(event: IssuesEvent) -> None:
-            if subhook := issue_subhooks.get(event.action):
-                with reraise_with_payload(event):
-                    await subhook(self, event)
 
-    @register_issue_subhook("opened")
-    async def handle_opened_issue(self, event: WebhookIssuesOpened) -> None:
+def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: PLR0915
+    @webhook.event.issues.opened
+    async def _(event: events.IssuesOpened) -> None:
         issue = event.issue
         body = reformat_converted_discussion_header(
             issue.body, event.repository.html_url
         )
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, "opened {}", body),
             issue_footer(issue, emoji="issue_open"),
             color="green",
         )
 
-    @register_issue_subhook("closed")
-    async def handle_closed_issue(self, event: WebhookIssuesClosed) -> None:
+    @webhook.event.issues.closed
+    async def _(event: events.IssuesClosed) -> None:
         issue = event.issue
         match issue.state_reason:
             case "completed":
@@ -134,26 +106,26 @@ class Issues(commands.Cog):
 
         state_reason = cast("str", issue.state_reason).replace("_", " ")
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, f"closed {{}} as {state_reason}"),
             issue_footer(issue, emoji="issue_closed_" + emoji_kind),
             color=color,
         )
 
-    @register_issue_subhook("reopened")
-    async def handle_reopened_issue(self, event: WebhookIssuesReopened) -> None:
+    @webhook.event.issues.reopened
+    async def _(event: events.IssuesReopened) -> None:
         issue = event.issue
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, "reopened {}"),
             issue_footer(issue, emoji="issue_open"),
             color="green",
         )
 
-    @register_issue_subhook("edited")
-    async def handle_edited_issue(self, event: WebhookIssuesEdited) -> None:
+    @webhook.event.issues.edited
+    async def _(event: events.IssuesEdited) -> None:
         issue, changes = event.issue, event.changes
 
         if issue.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
@@ -176,60 +148,59 @@ class Issues(commands.Cog):
                 return
 
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, "edited {}", content),
             issue_footer(issue),
         )
 
-    @register_issue_subhook("locked")
-    async def handle_locked_issue(self, event: WebhookIssuesLocked) -> None:
+    @webhook.event.issues.locked
+    async def _(event: events.IssuesLocked) -> None:
         issue = event.issue
         reason = f" as {r}" if (r := issue.active_lock_reason) else ""
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, f"locked {{}}{reason}"),
             issue_footer(issue),
             color="orange",
         )
 
-    @register_issue_subhook("unlocked")
-    async def handle_unlocked_issue(self, event: WebhookIssuesUnlocked) -> None:
+    @webhook.event.issues.unlocked
+    async def _(event: events.IssuesUnlocked) -> None:
         issue = event.issue
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, "unlocked {}"),
             issue_footer(issue),
             color="blue",
         )
 
-    @register_issue_subhook("pinned")
-    async def handle_pinned_issue(self, event: WebhookIssuesPinned) -> None:
+    @webhook.event.issues.pinned
+    async def _(event: events.IssuesPinned) -> None:
         issue = event.issue
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, "pinned {}"),
             issue_footer(issue),
             color="blue",
         )
 
-    @register_issue_subhook("unpinned")
-    async def handle_unpinned_issue(self, event: WebhookIssuesUnpinned) -> None:
+    @webhook.event.issues.unpinned
+    async def _(event: events.IssuesUnpinned) -> None:
         issue = event.issue
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             issue_embed_content(issue, "unpinned {}"),
             issue_footer(issue),
             color="orange",
         )
 
-    async def handle_created_issue_comment(
-        self, event: WebhookIssueCommentCreated
-    ) -> None:
+    @webhook.event.issue_comment.created
+    async def _(event: events.IssueCommentCreated) -> None:
         issue = event.issue
         title = "commented on "
         if issue.pull_request:
@@ -246,7 +217,7 @@ class Issues(commands.Cog):
             emoji = get_issue_emoji(cast("IssueLike", issue))
 
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             EmbedContent(title, event.comment.html_url, event.comment.body),
             Footer(emoji, f"{entity}: {issue.title}"),
