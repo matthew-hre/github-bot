@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 from contextlib import suppress
 from typing import Self
 
@@ -19,18 +20,9 @@ class ExtensibleMessage(dc.Message):
     """
 
     def __init__(self, message: dc.Message) -> None:  # pyright: ignore[reportMissingSuperCall]
-        # Message doesn't expose a __dict__ that we can update() onto our __dict__, so
-        # use dir() to manually add them all.
-        for attr in dir(message):
-            val = getattr(type(self), attr)
-            if (
-                # Don't break the class.
-                attr == "__class__"
-                # Already acquired by the subclass declaration.
-                or isinstance(val, property)
-                or callable(val)
-            ):
-                continue
+        for attr in itertools.chain.from_iterable(
+            getattr(cls, "__slots__", ()) for cls in type(message).__mro__
+        ):
             with suppress(AttributeError):
                 # At the time of writing, the only things which cause an AttributeError
                 # to be thrown are `call` and everything that starts with `_cs_`.

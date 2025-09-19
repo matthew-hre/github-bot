@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, cast, final, override
-
-if TYPE_CHECKING:
-    from collections.abc import Awaitable
+from typing import Any, Self, cast, final, override
 
 
 class PoserSetupError(RuntimeError):
@@ -22,8 +19,8 @@ class KitResponse[T]:
         return self._value
 
 
-async def fake_request[T](obj: T) -> Awaitable[T]:
-    return obj  # pyright: ignore[reportReturnType]
+async def fake_request[T](obj: T) -> T:
+    return obj
 
 
 @final
