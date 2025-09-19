@@ -33,8 +33,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Iterable
 
     from githubkit import GitHub, TokenAuthStrategy
-    from monalisten import Monalisten
-    from monalisten.types import CommitCommentEvent
+    from monalisten import Monalisten, events
 
     from app.bot import GhosttyBot
 
@@ -129,8 +128,8 @@ class Commits(commands.Cog):
 
     @override
     async def cog_load(self) -> None:
-        @self.monalisten_client.on("commit_comment")
-        async def _(event: CommitCommentEvent) -> None:
+        @self.monalisten_client.event.commit_comment
+        async def _(event: events.CommitComment) -> None:
             full_sha = event.comment.commit_id
             sha = full_sha[:7]
 

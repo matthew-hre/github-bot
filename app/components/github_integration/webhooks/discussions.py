@@ -8,35 +8,14 @@ from app.components.github_integration.models import GitHubUser
 from app.components.github_integration.webhooks.core import (
     EmbedContent,
     Footer,
-    make_subhook_registrar,
-    reraise_with_payload,
     send_embed,
 )
 
 if TYPE_CHECKING:
-    from githubkit.versions.latest.models import (
-        DiscussionPropCategory,
-        SimpleUser,
-        WebhookDiscussionAnswered,
-        WebhookDiscussionClosed,
-        WebhookDiscussionCommentCreated,
-        WebhookDiscussionCreated,
-        WebhookDiscussionLocked,
-        WebhookDiscussionPinned,
-        WebhookDiscussionReopened,
-        WebhookDiscussionUnanswered,
-        WebhookDiscussionUnlocked,
-        WebhookDiscussionUnpinned,
-    )
-    from monalisten import Monalisten
-    from monalisten.types import DiscussionCommentEvent, DiscussionEvent
+    from githubkit.versions.latest.models import DiscussionPropCategory, SimpleUser
+    from monalisten import Monalisten, events
 
     from app.bot import EmojiName, GhosttyBot
-    from app.components.github_integration.webhooks.core import SubhookStore
-
-discussion_subhooks: SubhookStore[Discussions, DiscussionEvent] = {}
-
-register_discussion_subhook = make_subhook_registrar(discussion_subhooks)
 
 
 class DiscussionLike(Protocol):
@@ -77,23 +56,15 @@ class Discussions(commands.Cog):
 
     @override
     async def cog_load(self) -> None:
-        @self.monalisten_client.on("discussion_comment")
-        async def _(event: DiscussionCommentEvent) -> None:
-            if event.action == "created":
-                with reraise_with_payload(event):
-                    await self.handle_created_discussion_comment(event)
+        register_hooks(self.bot, self.monalisten_client)
 
-        @self.monalisten_client.on("discussion")
-        async def _(event: DiscussionEvent) -> None:
-            if subhook := discussion_subhooks.get(event.action):
-                with reraise_with_payload(event):
-                    await subhook(self, event)
 
-    @register_discussion_subhook("created")
-    async def handle_created_discussion(self, event: WebhookDiscussionCreated) -> None:
+def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
+    @webhook.event.discussion.created
+    async def _(event: events.DiscussionCreated) -> None:
         discussion = event.discussion
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "opened", discussion.body),
             discussion_footer(discussion, emoji="discussion"),
@@ -101,11 +72,11 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("closed")
-    async def handle_closed_discussion(self, event: WebhookDiscussionClosed) -> None:
+    @webhook.event.discussion.closed
+    async def _(event: events.DiscussionClosed) -> None:
         discussion = event.discussion
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "closed"),
             discussion_footer(discussion, emoji="discussion_answered"),
@@ -113,14 +84,12 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("reopened")
-    async def handle_reopened_discussion(
-        self, event: WebhookDiscussionReopened
-    ) -> None:
+    @webhook.event.discussion.reopened
+    async def _(event: events.DiscussionReopened) -> None:
         discussion = event.discussion
         emoji = "discussion_answered" if discussion.answer_html_url else "discussion"
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "reopened"),
             discussion_footer(discussion, emoji=emoji),
@@ -128,10 +97,8 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("answered")
-    async def handle_answered_discussion(
-        self, event: WebhookDiscussionAnswered
-    ) -> None:
+    @webhook.event.discussion.answered
+    async def _(event: events.DiscussionAnswered) -> None:
         discussion = event.discussion
         if answering_user := event.answer.user:
             gh_user = GitHubUser(**answering_user.model_dump())
@@ -139,7 +106,7 @@ class Discussions(commands.Cog):
         else:
             body = None
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "chose an answer for", body),
             discussion_footer(discussion, emoji="discussion_answered"),
@@ -147,14 +114,12 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("unanswered")
-    async def handle_unanswered_discussion(
-        self, event: WebhookDiscussionUnanswered
-    ) -> None:
+    @webhook.event.discussion.unanswered
+    async def _(event: events.DiscussionUnanswered) -> None:
         discussion = event.discussion
         emoji = "discussion_answered" if discussion.state == "closed" else "discussion"
         await send_embed(
-            self.bot,
+            bot,
             event.sender or cast("SimpleUser", GitHubUser.default()),
             discussion_embed_content(discussion, "unmarked an answer for"),
             discussion_footer(discussion, emoji=emoji),
@@ -162,12 +127,12 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("locked")
-    async def handle_locked_discussion(self, event: WebhookDiscussionLocked) -> None:
+    @webhook.event.discussion.locked
+    async def _(event: events.DiscussionLocked) -> None:
         discussion = event.discussion
         emoji = "discussion_answered" if discussion.answer_html_url else "discussion"
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "locked"),
             discussion_footer(discussion, emoji=emoji),
@@ -175,13 +140,11 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("unlocked")
-    async def handle_unlocked_discussion(
-        self, event: WebhookDiscussionUnlocked
-    ) -> None:
+    @webhook.event.discussion.unlocked
+    async def _(event: events.DiscussionUnlocked) -> None:
         discussion = event.discussion
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "unlocked"),
             discussion_footer(discussion),
@@ -189,11 +152,11 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("pinned")
-    async def handle_pinned_discussion(self, event: WebhookDiscussionPinned) -> None:
+    @webhook.event.discussion.pinned
+    async def _(event: events.DiscussionPinned) -> None:
         discussion = event.discussion
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "pinned"),
             discussion_footer(discussion),
@@ -201,13 +164,11 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    @register_discussion_subhook("unpinned")
-    async def handle_unpinned_discussion(
-        self, event: WebhookDiscussionUnpinned
-    ) -> None:
+    @webhook.event.discussion.unpinned
+    async def _(event: events.DiscussionUnpinned) -> None:
         discussion = event.discussion
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "unpinned"),
             discussion_footer(discussion),
@@ -215,12 +176,11 @@ class Discussions(commands.Cog):
             feed_type="discussions",
         )
 
-    async def handle_created_discussion_comment(
-        self, event: WebhookDiscussionCommentCreated
-    ) -> None:
+    @webhook.event.discussion_comment.created
+    async def _(event: events.DiscussionCommentCreated) -> None:
         discussion = event.discussion
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             discussion_embed_content(discussion, "commented on", event.comment.body),
             discussion_footer(discussion),

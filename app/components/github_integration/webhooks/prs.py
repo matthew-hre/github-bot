@@ -2,15 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 from itertools import dropwhile
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    Protocol,
-    cast,
-    final,
-    override,
-)
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast, final, override
 
 from discord.ext import commands
 from loguru import logger
@@ -19,54 +11,15 @@ from app.components.github_integration.models import GitHubUser
 from app.components.github_integration.webhooks.core import (
     EmbedContent,
     Footer,
-    make_subhook_registrar,
-    reraise_with_payload,
     send_embed,
 )
 
 if TYPE_CHECKING:
-    from githubkit.versions.latest.models import (
-        WebhookPullRequestClosed,
-        WebhookPullRequestConvertedToDraft,
-        WebhookPullRequestEdited,
-        WebhookPullRequestLocked,
-        WebhookPullRequestOpened,
-        WebhookPullRequestReadyForReview,
-        WebhookPullRequestReopened,
-        WebhookPullRequestReviewCommentCreated,
-        WebhookPullRequestReviewDismissed,
-        WebhookPullRequestReviewRequestedOneof0,
-        WebhookPullRequestReviewRequestedOneof1,
-        WebhookPullRequestReviewRequestRemovedOneof0,
-        WebhookPullRequestReviewRequestRemovedOneof1,
-        WebhookPullRequestReviewSubmitted,
-        WebhookPullRequestUnlocked,
-    )
-    from monalisten import Monalisten
-    from monalisten.types import (
-        PullRequestEvent,
-        PullRequestReviewCommentEvent,
-        PullRequestReviewEvent,
-    )
+    from monalisten import Monalisten, events
 
     from app.bot import EmojiName, GhosttyBot
-    from app.components.github_integration.webhooks.core import SubhookStore
-
-type WebhookPullRequestReviewRequested = (
-    WebhookPullRequestReviewRequestedOneof0 | WebhookPullRequestReviewRequestedOneof1
-)
-type WebhookPullRequestReviewRequestRemoved = (
-    WebhookPullRequestReviewRequestRemovedOneof0
-    | WebhookPullRequestReviewRequestRemovedOneof1
-)
 
 HUNK_CODEBLOCK_OVERHEAD = len("```diff\n\n```\n")
-
-pr_subhooks: SubhookStore[PRHook, PullRequestEvent] = {}
-pr_review_subhooks: SubhookStore[PRHook, PullRequestReviewEvent] = {}
-
-register_pr_subhook = make_subhook_registrar(pr_subhooks)
-register_pr_review_subhook = make_subhook_registrar(pr_review_subhooks)
 
 
 class PRLike(Protocol):
@@ -97,67 +50,53 @@ def pr_embed_content(
 
 
 @final
-class PRHook(commands.Cog):
+class PRs(commands.Cog):
     def __init__(self, bot: GhosttyBot, monalisten_client: Monalisten) -> None:
         self.bot = bot
         self.monalisten_client = monalisten_client
 
     @override
     async def cog_load(self) -> None:
-        @self.monalisten_client.on("pull_request_review_comment")
-        async def _(event: PullRequestReviewCommentEvent) -> None:
-            if event.action == "created":
-                with reraise_with_payload(event):
-                    await self.handle_pr_review_comment_created(event)
+        register_hooks(self.bot, self.monalisten_client)
 
-        @self.monalisten_client.on("pull_request_review")
-        async def _(event: PullRequestReviewEvent) -> None:
-            if subhook := pr_review_subhooks.get(event.action):
-                with reraise_with_payload(event):
-                    await subhook(self, event)
 
-        @self.monalisten_client.on("pull_request")
-        async def _(event: PullRequestEvent) -> None:
-            if subhook := pr_subhooks.get(event.action):
-                with reraise_with_payload(event):
-                    await subhook(self, event)
-
-    @register_pr_subhook("opened")
-    async def handle_opened_pr(self, event: WebhookPullRequestOpened) -> None:
+def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: C901, PLR0915
+    @webhook.event.pull_request.opened
+    async def _(event: events.PullRequestOpened) -> None:
         pr = event.pull_request
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "opened {}", pr.body),
             pr_footer(pr, emoji="pull_open"),
             color="green",
         )
 
-    @register_pr_subhook("closed")
-    async def handle_closed_pr(self, event: WebhookPullRequestClosed) -> None:
+    @webhook.event.pull_request.closed
+    async def _(event: events.PullRequestClosed) -> None:
         pr = event.pull_request
         action, color = ("merged", "purple") if pr.merged else ("closed", "red")
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, f"{action} {{}}"),
             pr_footer(pr, emoji="pull_" + action),
             color=color,
         )
 
-    @register_pr_subhook("reopened")
-    async def handle_reopened_pr(self, event: WebhookPullRequestReopened) -> None:
+    @webhook.event.pull_request.reopened
+    async def _(event: events.PullRequestReopened) -> None:
         pr = event.pull_request
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "reopened {}"),
             pr_footer(pr, emoji="pull_open"),
             color="green",
         )
 
-    @register_pr_subhook("edited")
-    async def handle_edited_pr(self, event: WebhookPullRequestEdited) -> None:
+    @webhook.event.pull_request.edited
+    async def _(event: events.PullRequestEdited) -> None:
         pr, changes = event.pull_request, event.changes
 
         if pr.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
@@ -179,102 +118,83 @@ class PRHook(commands.Cog):
 
         assert event.sender
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "edited {}", content),
             pr_footer(pr),
         )
 
-    @register_pr_subhook("converted_to_draft")
-    async def handle_drafted_pr(
-        self, event: WebhookPullRequestConvertedToDraft
-    ) -> None:
+    @webhook.event.pull_request.converted_to_draft
+    async def _(event: events.PullRequestConvertedToDraft) -> None:
         pr = event.pull_request
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "converted {} to draft"),
             pr_footer(pr, emoji="pull_draft"),
             color="gray",
         )
 
-    @register_pr_subhook("ready_for_review")
-    async def handle_undrafted_pr(
-        self, event: WebhookPullRequestReadyForReview
-    ) -> None:
+    @webhook.event.pull_request.ready_for_review
+    async def _(event: events.PullRequestReadyForReview) -> None:
         pr = event.pull_request
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "marked {} as ready for review"),
             pr_footer(pr, emoji="pull_open"),
             color="green",
         )
 
-    @register_pr_subhook("locked")
-    async def handle_locked_pr(self, event: WebhookPullRequestLocked) -> None:
+    @webhook.event.pull_request.locked
+    async def _(event: events.PullRequestLocked) -> None:
         pr = event.pull_request
         template = "locked {}"
         if reason := pr.active_lock_reason:
             template += f" as {reason}"
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, template),
             pr_footer(pr),
             color="orange",
         )
 
-    @register_pr_subhook("unlocked")
-    async def handle_unlocked_pr(self, event: WebhookPullRequestUnlocked) -> None:
+    @webhook.event.pull_request.unlocked
+    async def _(event: events.PullRequestUnlocked) -> None:
         pr = event.pull_request
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "unlocked {}"),
             pr_footer(pr),
             color="blue",
         )
 
-    @register_pr_subhook("review_requested")
-    async def handle_pr_review_request(
-        self, event: WebhookPullRequestReviewRequested
-    ) -> None:
+    @webhook.event.pull_request.review_requested
+    async def _(event: events.PullRequestReviewRequested) -> None:
         pr = event.pull_request
-        content = f"from {self._format_reviewer(event)}"
+        content = f"from {_format_reviewer(event)}"
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "requested review for {}", content),
             pr_footer(pr),
         )
 
-    @register_pr_subhook("review_request_removed")
-    async def handle_pr_removed_review_request(
-        self, event: WebhookPullRequestReviewRequestRemoved
-    ) -> None:
+    @webhook.event.pull_request.review_request_removed
+    async def _(event: events.PullRequestReviewRequestRemoved) -> None:
         pr = event.pull_request
-        content = f"from {self._format_reviewer(event)}"
+        content = f"from {_format_reviewer(event)}"
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(pr, "removed review request for {}", content),
             pr_footer(pr),
         )
 
-    # Abusing `Any`/`getattr`/`hasattr` here because the API models are insufferable
-    @staticmethod
-    def _format_reviewer(event: Any) -> str:
-        if hasattr(event, "requested_team"):
-            return f"the `{event.requested_team.name}` team"
-        if requested_reviewer := getattr(event, "requested_reviewer", None):
-            return GitHubUser(**requested_reviewer.model_dump()).hyperlink
-        return "`?`"
-
-    @register_pr_review_subhook("submitted")
-    async def handle_pr_review_submitted(
-        self, event: WebhookPullRequestReviewSubmitted
-    ) -> None:
+    @webhook.event.pull_request_review.submitted
+    async def _(event: events.PullRequestReviewSubmitted) -> None:
         pr, review = event.pull_request, event.review
 
         if review.state == "commented" and not review.body:
@@ -298,17 +218,15 @@ class PRHook(commands.Cog):
             "draft" if pr.draft else "merged" if pr.merged_at else pr.state
         )
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             EmbedContent(f"{title} PR #{pr.number}", review.html_url, review.body),
             pr_footer(pr, emoji=emoji),
             color=color,
         )
 
-    @register_pr_review_subhook("dismissed")
-    async def handle_pr_review_dismissed(
-        self, event: WebhookPullRequestReviewDismissed
-    ) -> None:
+    @webhook.event.pull_request_review.dismissed
+    async def _(event: events.PullRequestReviewDismissed) -> None:
         pr = event.pull_request
         emoji = "pull_" + (
             "draft" if pr.draft else "merged" if pr.merged_at else pr.state
@@ -319,7 +237,7 @@ class PRHook(commands.Cog):
             else GitHubUser.default()
         )
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             pr_embed_content(
                 pr, "dismissed a {} review", f"authored by {review_author.hyperlink}"
@@ -328,18 +246,17 @@ class PRHook(commands.Cog):
             color="orange",
         )
 
-    async def handle_pr_review_comment_created(
-        self, event: WebhookPullRequestReviewCommentCreated
-    ) -> None:
+    @webhook.event.pull_request_review_comment.created
+    async def _(event: events.PullRequestReviewCommentCreated) -> None:
         pr, content = event.pull_request, event.comment.body
 
-        hunk = self._reduce_diff_hunk(event.comment.diff_hunk)
+        hunk = _reduce_diff_hunk(event.comment.diff_hunk)
         if 500 - len(content) - len(hunk) - HUNK_CODEBLOCK_OVERHEAD >= 0:
             # We can fit a hunk!
             content = f"```diff\n{hunk}\n```\n{content}"
 
         await send_embed(
-            self.bot,
+            bot,
             event.sender,
             EmbedContent(
                 f"left a review comment on PR #{pr.number}",
@@ -349,10 +266,19 @@ class PRHook(commands.Cog):
             pr_footer(pr, from_review=True),
         )
 
-    @staticmethod
-    def _reduce_diff_hunk(hunk: str) -> str:
-        def missing_diff_marker(line: str) -> bool:
-            return not line.startswith(("-", "+"))
 
-        hunk_lines = [*dropwhile(missing_diff_marker, hunk.splitlines())]
-        return "\n".join([*dropwhile(missing_diff_marker, hunk_lines[::-1])][::-1])
+def _reduce_diff_hunk(hunk: str) -> str:
+    def missing_diff_marker(line: str) -> bool:
+        return not line.startswith(("-", "+"))
+
+    hunk_lines = [*dropwhile(missing_diff_marker, hunk.splitlines())]
+    return "\n".join([*dropwhile(missing_diff_marker, hunk_lines[::-1])][::-1])
+
+
+# Abusing `Any`/`getattr`/`hasattr` here because the API models are insufferable
+def _format_reviewer(event: Any) -> str:
+    if hasattr(event, "requested_team"):
+        return f"the `{event.requested_team.name}` team"
+    if requested_reviewer := getattr(event, "requested_reviewer", None):
+        return GitHubUser(**requested_reviewer.model_dump()).hyperlink
+    return "`?`"

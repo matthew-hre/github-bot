@@ -8,7 +8,7 @@ from .comments import Comments
 from .commits import Commits
 from .mentions import Mentions
 from .mentions import fmt as fmt
-from .webhooks import Discussions, Issues, PRHook, monalisten_client
+from .webhooks import Discussions, Issues, PRs, monalisten_client
 from app.errors import handle_task_error
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ async def setup(bot: GhosttyBot) -> None:
     await asyncio.gather(
         bot.add_cog(Discussions(bot, monalisten_client)),
         bot.add_cog(Issues(bot, monalisten_client)),
-        bot.add_cog(PRHook(bot, monalisten_client)),
+        bot.add_cog(PRs(bot, monalisten_client)),
         bot.add_cog(Commits(bot, monalisten_client)),
         bot.add_cog(CodeLinks(bot)),
         bot.add_cog(Mentions(bot)),
