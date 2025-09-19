@@ -90,6 +90,18 @@ class Close(commands.GroupCog, group_name="close"):
             title_prefix = additional_reply = None
         await self.close_post(interaction, "solved", title_prefix, additional_reply)
 
+    @solved.autocomplete("config_option")
+    async def option_autocomplete(
+        self, _: dc.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        if not (docs := cast("Docs | None", self.bot.cogs.get("Docs"))):
+            return []
+        return [
+            app_commands.Choice(name=name, value=name)
+            for name in docs.sitemap.get("option", [])
+            if current.casefold() in name.casefold()
+        ][:25]  # Discord only allows 25 options for autocomplete
+
     @app_commands.command(name="moved", description="Mark post as moved to GitHub.")
     @app_commands.describe(entity_id="New GitHub entity number")
     async def moved(self, interaction: dc.Interaction, entity_id: int) -> None:
