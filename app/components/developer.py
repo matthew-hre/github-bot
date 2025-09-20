@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, Any, final
 
 import discord as dc
 from discord.ext import commands
+from loguru import logger
 
-from app.utils import try_dm
+from app.utils import pretty_print_account, try_dm
 
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
@@ -19,8 +20,12 @@ class Developer(commands.Cog):
     @commands.command(name="sync", description="Sync command tree.")
     async def sync(self, ctx: commands.Context[Any]) -> None:
         if not self.bot.is_ghostty_mod(ctx.author):
+            logger.debug(
+                "!sync called by {} who is not a mod", pretty_print_account(ctx.author)
+            )
             return
 
+        logger.info("syncing command tree")
         await self.bot.tree.sync()
         await try_dm(ctx.author, "Command tree synced.")
 
