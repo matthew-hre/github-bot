@@ -162,3 +162,7 @@ async def async_process_check_output(program: str, *args: str, **kwargs: Any) ->
             stderr=proc.stderr and await proc.stderr.read(),
         )
     return (await proc.stdout.read()).decode()
+
+
+def pretty_print_account(user: Account) -> str:
+    return f"<{user.name} - {user.id}>"

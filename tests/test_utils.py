@@ -24,6 +24,7 @@ from app.utils import (
     is_mod,
     post_has_tag,
     post_is_solved,
+    pretty_print_account,
     suppress_embeds_after_delay,
     truncate,
 )
@@ -264,3 +265,11 @@ async def test_async_process_check_output_fails() -> None:
 async def test_async_process_check_output_invalid_argument() -> None:
     with pytest.raises(ValueError, match="stdout argument not allowed"):
         await async_process_check_output("", stdout=subprocess.DEVNULL)
+
+
+@given(st.text(), st.integers())
+def test_pretty_print_account(name: str, id_: int) -> None:
+    fake_account = cast("Account", SimpleNamespace(name=name, id=id_))
+    output = pretty_print_account(fake_account)
+    assert name in output
+    assert str(id_) in output
