@@ -73,10 +73,10 @@ class GhosttyBot(commands.Bot):
 
     async def on_ready(self) -> None:
         self.bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
-        await self._load_emojis()
+        await self.load_emojis()
         logger.info("logged in as {}", self.user)
 
-    async def _load_emojis(self) -> None:
+    async def load_emojis(self) -> None:
         valid_emoji_names = frozenset(get_args(EmojiName))
 
         for emoji in self.ghostty_guild.emojis:
