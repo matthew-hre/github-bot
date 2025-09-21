@@ -18,9 +18,7 @@ from app.common.linker import (
     ProcessedMessage,
     remove_view_after_delay,
 )
-from app.components.github_integration.mentions.resolution import (
-    resolve_repo_signature,
-)
+from app.components.github_integration.entities.resolution import resolve_repo_signature
 from app.components.github_integration.models import GitHubUser
 from app.components.github_integration.webhooks.core import (
     EmbedContent,

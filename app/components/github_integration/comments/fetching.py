@@ -9,11 +9,9 @@ from githubkit.exception import RequestFailed
 from githubkit.versions.latest.models import IssuePropPullRequest, ReactionRollup
 from zig_codeblocks import extract_codeblocks
 
+from .discussions import get_discussion_comment
 from app.common.cache import TTRCache
-from app.components.github_integration.comments.discussions import (
-    get_discussion_comment,
-)
-from app.components.github_integration.mentions.cache import entity_cache
+from app.components.github_integration.entities.cache import entity_cache
 from app.components.github_integration.models import (
     Comment,
     EntityGist,

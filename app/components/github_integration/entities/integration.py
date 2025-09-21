@@ -11,8 +11,8 @@ from discord.ext import commands, tasks
 
 from .cache import entity_cache
 from .fmt import entity_message, extract_entities
+from .resolution import ENTITY_REGEX
 from app.common.linker import ItemActions, MessageLinker, remove_view_after_delay
-from app.components.github_integration.mentions.resolution import ENTITY_REGEX
 from app.components.github_integration.models import Entity
 from app.utils import is_dm, safe_edit, suppress_embeds_after_delay
 
@@ -26,17 +26,17 @@ IGNORED_MESSAGE_TYPES = frozenset((
 
 
 @final
-class MentionActions(ItemActions):
+class EntityActions(ItemActions):
     action_singular = "mentioned this entity"
     action_plural = "mentioned these entities"
 
 
 @final
-class Mentions(commands.Cog):
+class GitHubEntities(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.linker = MessageLinker()
-        MentionActions.linker = self.linker
+        EntityActions.linker = self.linker
 
         self.update_recent_mentions.start()
 
@@ -105,7 +105,7 @@ class Mentions(commands.Cog):
             suppress_embeds=True,
             mention_author=False,
             allowed_mentions=dc.AllowedMentions.none(),
-            view=MentionActions(message, output.item_count),
+            view=EntityActions(message, output.item_count),
         )
         self.linker.link(message, sent_message)
 
@@ -130,5 +130,5 @@ class Mentions(commands.Cog):
             after,
             message_processor=partial(entity_message, self.bot),
             interactor=self.reply_with_entities,
-            view_type=MentionActions,
+            view_type=EntityActions,
         )
