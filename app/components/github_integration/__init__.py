@@ -4,10 +4,10 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from .code_links import CodeLinks
-from .comments import Comments
+from .comments import GitHubComments
 from .commits import Commits
-from .mentions import Mentions
-from .mentions import fmt as fmt
+from .entities import GitHubEntities
+from .entities import fmt as fmt
 from .webhooks import Discussions, Issues, PRs, monalisten_client
 from app.errors import handle_task_error
 
@@ -22,8 +22,8 @@ async def setup(bot: GhosttyBot) -> None:
         bot.add_cog(PRs(bot, monalisten_client)),
         bot.add_cog(Commits(bot, monalisten_client)),
         bot.add_cog(CodeLinks(bot)),
-        bot.add_cog(Mentions(bot)),
-        bot.add_cog(Comments(bot)),
+        bot.add_cog(GitHubEntities(bot)),
+        bot.add_cog(GitHubComments(bot)),
     )
 
     # Creating a strong reference

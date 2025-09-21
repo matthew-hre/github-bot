@@ -1,3 +1,3 @@
-from .integration import Comments
+from .integration import GitHubComments
 
-__all__ = ("Comments",)
+__all__ = ("GitHubComments",)

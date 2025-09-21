@@ -13,7 +13,7 @@ from app.common.linker import (
     ProcessedMessage,
     remove_view_after_delay,
 )
-from app.components.github_integration.mentions.fmt import get_entity_emoji
+from app.components.github_integration.entities.fmt import get_entity_emoji
 from app.utils import suppress_embeds_after_delay
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ class CommentActions(ItemActions):
 
 
 @final
-class Comments(commands.Cog):
+class GitHubComments(commands.Cog):
     def __init__(self, bot: GhosttyBot) -> None:
         self.bot = bot
         self.linker = MessageLinker()

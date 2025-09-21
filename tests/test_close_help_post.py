@@ -9,7 +9,7 @@ from tests.utils import kitposer as kp
 
 from app.bot import EmojiName
 from app.components.close_help_post import Close
-from app.components.github_integration.mentions.discussions import DISCUSSION_QUERY
+from app.components.github_integration.entities.discussions import DISCUSSION_QUERY
 from app.components.github_integration.models import GitHubUser
 
 
@@ -74,9 +74,9 @@ async def test_mention_entity(
     kind: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    mentions_subpkg_path = "app.components.github_integration.mentions"
-    monkeypatch.setattr(f"{mentions_subpkg_path}.cache.entity_cache.gh", gh_env)
-    monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
+    entities_subpkg_path = "app.components.github_integration.entities"
+    monkeypatch.setattr(f"{entities_subpkg_path}.cache.entity_cache.gh", gh_env)
+    monkeypatch.setattr(f"{entities_subpkg_path}.discussions.gh", gh_env)
 
     msg_content = await Close.mention_entity(emojis, entity_id)
 
@@ -89,9 +89,9 @@ async def test_mention_entity(
 async def test_mention_missing_entity(
     entity_id: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    mentions_subpkg_path = "app.components.github_integration.mentions"
-    monkeypatch.setattr(f"{mentions_subpkg_path}.cache.entity_cache.gh", gh_env)
-    monkeypatch.setattr(f"{mentions_subpkg_path}.discussions.gh", gh_env)
+    entities_subpkg_path = "app.components.github_integration.entities"
+    monkeypatch.setattr(f"{entities_subpkg_path}.cache.entity_cache.gh", gh_env)
+    monkeypatch.setattr(f"{entities_subpkg_path}.discussions.gh", gh_env)
 
     msg_content = await Close.mention_entity(emojis, entity_id)
 
