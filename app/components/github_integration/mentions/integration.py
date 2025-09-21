@@ -14,12 +14,7 @@ from .fmt import entity_message, extract_entities
 from app.common.linker import ItemActions, MessageLinker, remove_view_after_delay
 from app.components.github_integration.mentions.resolution import ENTITY_REGEX
 from app.components.github_integration.models import Entity
-from app.utils import (
-    is_dm,
-    safe_edit,
-    suppress_embeds_after_delay,
-    try_dm,
-)
+from app.utils import is_dm, safe_edit, suppress_embeds_after_delay
 
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
@@ -99,10 +94,6 @@ class Mentions(commands.Cog):
             return
 
         if is_dm(message.author):
-            await try_dm(
-                message.author,
-                "You can only mention entities in the Ghostty server.",
-            )
             return
 
         output = await entity_message(self.bot, message)
