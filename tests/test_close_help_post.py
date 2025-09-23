@@ -68,7 +68,6 @@ emojis = cast(
     ("entity_id", "kind"),
     [(189, "Issue"), (1234, "Pull Request"), (2354, "Discussion")],
 )
-@pytest.mark.asyncio
 async def test_mention_entity(
     entity_id: int,
     kind: str,
@@ -85,7 +84,6 @@ async def test_mention_entity(
 
 
 @pytest.mark.parametrize("entity_id", [-13, 1023, 8192])
-@pytest.mark.asyncio
 async def test_mention_missing_entity(
     entity_id: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:

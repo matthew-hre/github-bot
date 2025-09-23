@@ -27,8 +27,8 @@ dev = [
   "basedpyright==1.31.4",
   "taplo==0.9.3",
   "pytest==8.4.1",
-  "pytest-asyncio==1.1.0",
   "hypothesis==6.138.16",
+  "anyio==4.11.0",
 ]
 
 [tool.pyright]
@@ -41,8 +41,8 @@ reportUnknownLambdaType = false
 
 [tool.pytest.ini_options]
 pythonpath = "."
+anyio_mode = "auto"
 filterwarnings = ["ignore::Warning"]
-asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff.lint]
 select = ["ALL"]
