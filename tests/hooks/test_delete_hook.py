@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from app.common.linker import MessageLinker
 
 
-@pytest.mark.asyncio
 async def test_original_delete(linker: MessageLinker) -> None:
     msg = spawn_user_message()
     reply = cast("Mock", spawn_bot_message())
@@ -27,7 +26,6 @@ async def test_original_delete(linker: MessageLinker) -> None:
     assert not linker.refs
 
 
-@pytest.mark.asyncio
 async def test_original_delete_frozen(linker: MessageLinker) -> None:
     msg = spawn_user_message()
     reply = cast("Mock", spawn_bot_message())
@@ -42,7 +40,6 @@ async def test_original_delete_frozen(linker: MessageLinker) -> None:
 
 
 @pytest.mark.parametrize("freeze", [True, False])
-@pytest.mark.asyncio
 async def test_original_delete_not_linked(linker: MessageLinker, freeze: bool) -> None:
     msg = spawn_user_message()
     if freeze:
@@ -54,7 +51,6 @@ async def test_original_delete_not_linked(linker: MessageLinker, freeze: bool) -
     assert not linker.is_frozen(msg)
 
 
-@pytest.mark.asyncio
 async def test_original_delete_expired(linker: MessageLinker) -> None:
     msg = spawn_user_message(age=dt.timedelta(days=2))
     reply = cast("Mock", spawn_bot_message())
@@ -66,7 +62,6 @@ async def test_original_delete_expired(linker: MessageLinker) -> None:
     assert not linker.refs
 
 
-@pytest.mark.asyncio
 async def test_reply_delete(linker: MessageLinker) -> None:
     msg = spawn_user_message()
     reply = spawn_bot_message()
@@ -79,7 +74,6 @@ async def test_reply_delete(linker: MessageLinker) -> None:
     assert not linker.is_frozen(msg)
 
 
-@pytest.mark.asyncio
 async def test_bot_not_linked_delete(linker: MessageLinker) -> None:
     msg = spawn_bot_message()
     linker.freeze(msg)

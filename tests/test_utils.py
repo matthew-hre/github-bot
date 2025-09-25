@@ -125,7 +125,6 @@ def test_post_is_not_solved(names: list[str]) -> None:
 
 
 @given(st.lists(st.from_type(type)), st.integers())
-@pytest.mark.asyncio
 async def test_aenumerate[T](items: list[T], start: int) -> None:
     async def async_iterator() -> AsyncGenerator[T]:
         for item in items:
@@ -209,7 +208,6 @@ def test_dynamic_timestamp(dt: dt.datetime, fmt: str | None, result: str) -> Non
     assert dynamic_timestamp(dt, fmt) == result
 
 
-@pytest.mark.asyncio
 async def test_suppress_embeds_after_delay() -> None:
     suppressed = False
 
@@ -302,14 +300,12 @@ def test_format_or_file_long_template_transform() -> None:
         ("import sys; print('Hello, world!', file=sys.stderr)", ""),
     ],
 )
-@pytest.mark.asyncio
 async def test_async_process_check_output_succeeds(code: str, output: str) -> None:
     stdout = await async_process_check_output(sys.executable, "-c", code)
     assert stdout == output
 
 
 @pytest.mark.skipif(not sys.executable, reason="cannot find python interpreter path")
-@pytest.mark.asyncio
 async def test_async_process_check_output_fails() -> None:
     with pytest.raises(subprocess.CalledProcessError):
         await async_process_check_output(
@@ -317,7 +313,6 @@ async def test_async_process_check_output_fails() -> None:
         )
 
 
-@pytest.mark.asyncio
 async def test_async_process_check_output_invalid_argument() -> None:
     with pytest.raises(ValueError, match="stdout argument not allowed"):
         await async_process_check_output("", stdout=subprocess.DEVNULL)

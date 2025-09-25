@@ -3,20 +3,19 @@ from __future__ import annotations
 import datetime as dt
 from typing import TYPE_CHECKING, cast
 
-import pytest
-
 from tests.fixtures.hooks import TrackedCallable
 from tests.hooks.utils import spawn_message
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
 
+    import pytest
+
     from tests.fixtures.hooks import EditHook
 
     from app.common.linker import MessageLinker
 
 
-@pytest.mark.asyncio
 async def test_same_content(linker: MessageLinker, edit_hook: EditHook) -> None:
     msg = spawn_message(content="foo")
     msg2 = spawn_message(content="foo")
@@ -26,7 +25,6 @@ async def test_same_content(linker: MessageLinker, edit_hook: EditHook) -> None:
     assert not linker.is_expired.called
 
 
-@pytest.mark.asyncio
 async def test_message_expired(linker: MessageLinker, edit_hook: EditHook) -> None:
     msg = spawn_message(content="foo", age=dt.timedelta(days=2))
     msg2 = spawn_message(content="bar")
@@ -39,7 +37,6 @@ async def test_message_expired(linker: MessageLinker, edit_hook: EditHook) -> No
     assert not linker.refs
 
 
-@pytest.mark.asyncio
 async def test_different_content_same_items(
     linker: MessageLinker, edit_hook: EditHook
 ) -> None:
@@ -52,7 +49,6 @@ async def test_different_content_same_items(
     assert not linker.get.called
 
 
-@pytest.mark.asyncio
 async def test_different_items_unlinked_frozen(
     linker: MessageLinker, edit_hook: EditHook
 ) -> None:
@@ -67,7 +63,6 @@ async def test_different_items_unlinked_frozen(
     assert linker.is_expired.calls == 1
 
 
-@pytest.mark.asyncio
 async def test_different_items_unlinked_prior(
     linker: MessageLinker, edit_hook: EditHook
 ) -> None:
@@ -81,7 +76,6 @@ async def test_different_items_unlinked_prior(
     assert not edit_hook.interactor.called
 
 
-@pytest.mark.asyncio
 async def test_new_items_edited_in(
     linker: MessageLinker, edit_hook: EditHook, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -96,7 +90,6 @@ async def test_new_items_edited_in(
     assert edit_hook.interactor.called
 
 
-@pytest.mark.asyncio
 async def test_different_items_linked_frozen(
     linker: MessageLinker, edit_hook: EditHook
 ) -> None:
@@ -113,7 +106,6 @@ async def test_different_items_linked_frozen(
     assert linker.is_frozen.calls == 1
 
 
-@pytest.mark.asyncio
 async def test_items_edited_out(linker: MessageLinker, edit_hook: EditHook) -> None:
     msg = spawn_message(content="foo 1")
     msg2 = spawn_message(content="foo")
@@ -126,7 +118,6 @@ async def test_items_edited_out(linker: MessageLinker, edit_hook: EditHook) -> N
     assert reply.delete.called
 
 
-@pytest.mark.asyncio
 async def test_items_edited(linker: MessageLinker, edit_hook: EditHook) -> None:
     msg = spawn_message(content="foo 1")
     msg2 = spawn_message(content="foo 2")
