@@ -26,6 +26,8 @@ EmojiName = Literal[
     "commit",
     "discussion",
     "discussion_answered",
+    "discussion_duplicate",
+    "discussion_outdated",
     "issue_closed_completed",
     "issue_closed_unplanned",
     "issue_open",

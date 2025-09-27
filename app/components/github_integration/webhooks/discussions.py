@@ -25,16 +25,23 @@ class DiscussionLike(Protocol):
     category: DiscussionPropCategory
     answer_html_url: str | None
     state: Literal["open", "closed", "locked", "converting", "transferring"]
+    state_reason: Literal["resolved", "outdated", "duplicate", "reopened"] | None
+
+
+def get_discussion_emoji(discussion: DiscussionLike) -> EmojiName:
+    if discussion.state_reason == "outdated":
+        return "discussion_outdated"
+    if discussion.state_reason == "duplicate":
+        return "discussion_duplicate"
+    if discussion.answer_html_url or discussion.state == "closed":
+        return "discussion_answered"
+    return "discussion"
 
 
 def discussion_footer(
     discussion: DiscussionLike, *, emoji: EmojiName | None = None
 ) -> Footer:
-    emoji = emoji or (
-        "discussion_answered"
-        if discussion.answer_html_url or discussion.state == "closed"
-        else "discussion"
-    )
+    emoji = emoji or get_discussion_emoji(discussion)
     return Footer(emoji, f"Discussion #{discussion.number}: {discussion.title}")
 
 
@@ -87,12 +94,11 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
     @webhook.event.discussion.reopened
     async def _(event: events.DiscussionReopened) -> None:
         discussion = event.discussion
-        emoji = "discussion_answered" if discussion.answer_html_url else "discussion"
         await send_embed(
             bot,
             event.sender,
             discussion_embed_content(discussion, "reopened"),
-            discussion_footer(discussion, emoji=emoji),
+            discussion_footer(discussion),
             color="gray",
             feed_type="discussions",
         )
@@ -117,12 +123,11 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
     @webhook.event.discussion.unanswered
     async def _(event: events.DiscussionUnanswered) -> None:
         discussion = event.discussion
-        emoji = "discussion_answered" if discussion.state == "closed" else "discussion"
         await send_embed(
             bot,
             event.sender or cast("SimpleUser", GitHubUser.default()),
             discussion_embed_content(discussion, "unmarked an answer for"),
-            discussion_footer(discussion, emoji=emoji),
+            discussion_footer(discussion),
             color="red",
             feed_type="discussions",
         )
@@ -130,12 +135,11 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
     @webhook.event.discussion.locked
     async def _(event: events.DiscussionLocked) -> None:
         discussion = event.discussion
-        emoji = "discussion_answered" if discussion.answer_html_url else "discussion"
         await send_embed(
             bot,
             event.sender,
             discussion_embed_content(discussion, "locked"),
-            discussion_footer(discussion, emoji=emoji),
+            discussion_footer(discussion),
             color="orange",
             feed_type="discussions",
         )
