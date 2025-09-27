@@ -29,13 +29,12 @@ class DiscussionLike(Protocol):
 
 
 def get_discussion_emoji(discussion: DiscussionLike) -> EmojiName:
-    if discussion.state_reason == "outdated":
-        return "discussion_outdated"
-    if discussion.state_reason == "duplicate":
-        return "discussion_duplicate"
-    if discussion.answer_html_url or discussion.state == "closed":
-        return "discussion_answered"
-    return "discussion"
+    emoji = "discussion"
+    if discussion.state_reason in ("outdated", "duplicate"):
+        emoji += "_" + discussion.state_reason
+    elif discussion.answer_html_url or discussion.state == "closed":
+        emoji += "_answered"
+    return emoji
 
 
 def discussion_footer(

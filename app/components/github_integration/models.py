@@ -117,6 +117,8 @@ class PullRequest(Entity):
 
 class Discussion(Entity):
     answered_by: GitHubUser | None
+    closed: bool
+    state_reason: Literal["DUPLICATE", "RESOLVED", "OUTDATED", "REOPENED"] | None
 
 
 class EntityGist(NamedTuple):
