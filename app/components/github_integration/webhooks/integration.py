@@ -10,7 +10,7 @@ from monalisten import Monalisten
 
 from app.components.github_integration.webhooks import commits, discussions, issues, prs
 from app.config import config
-from app.errors import handle_error, handle_task_error
+from app.errors import handle_error
 
 if TYPE_CHECKING:
     from monalisten import AuthIssue, Error
@@ -57,8 +57,8 @@ class GitHubWebhooks(commands.Cog):
         prs.register_hooks(self.bot, self.monalisten_client)
         commits.register_hooks(self.bot, self.monalisten_client)
 
+        # Maintain strong reference to avoid task from being gc
         self._monalisten_task = asyncio.create_task(self.monalisten_client.listen())
-        self._monalisten_task.add_done_callback(handle_task_error)
 
     @override
     async def cog_unload(self) -> None:
