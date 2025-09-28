@@ -140,10 +140,9 @@ class CommitLinks(commands.Cog):
             view=CommitActions(message, output.item_count),
         )
         self.linker.link(message, reply)
-        await asyncio.gather(
-            suppress_embeds_after_delay(message),
-            remove_view_after_delay(reply),
-        )
+        async with asyncio.TaskGroup() as group:
+            group.create_task(suppress_embeds_after_delay(message))
+            group.create_task(remove_view_after_delay(reply))
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: dc.Message) -> None:
