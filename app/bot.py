@@ -74,10 +74,10 @@ class GhosttyBot(commands.Bot):
     async def setup_hook(self) -> None:
         with sentry_sdk.start_transaction(op="bot.setup", name="Initial load"):
             await self.bot_status.load_git_data()
-            await asyncio.gather(
-                *map(self.load_extension, self.get_component_extension_names())
-            )
-            logger.info("loaded {} extensions", len(self.extensions))
+            async with asyncio.TaskGroup() as group:
+                for extension in self.get_component_extension_names():
+                    group.create_task(self.load_extension(extension))
+        logger.info("loaded {} extensions", len(self.extensions))
 
     async def on_ready(self) -> None:
         self.bot_status.last_login_time = dt.datetime.now(tz=dt.UTC)
