@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import difflib
 from itertools import dropwhile
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
@@ -12,6 +13,7 @@ from app.components.github_integration.webhooks.utils import (
     Footer,
     send_embed,
 )
+from app.utils import truncate
 
 if TYPE_CHECKING:
     from monalisten import Monalisten, events
@@ -90,19 +92,27 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: C901,
         if pr.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
             return
 
-        update_notes: list[str] = []
-        if changes.title:
-            update_notes.append(f'Renamed from "{changes.title.from_}" to "{pr.title}"')
-        if changes.body:
-            update_notes.append("Updated description")
-
-        match update_notes:
-            case [note]:
-                content = note
-            case [note1, note2]:
-                content = f"* {note1}\n* {note2}"
-            case _:
-                return
+        if changes.body and changes.body.from_:
+            # Escape code block to avoid breaking diff
+            from_file = changes.body.from_.replace("`", r"\`").splitlines(keepends=True)
+            to_file = (
+                pr.body.replace("`", r"\`").splitlines(keepends=True) if pr.body else ""
+            )
+            diff = "".join(
+                difflib.unified_diff(
+                    from_file,
+                    to_file,
+                    fromfile=changes.title.from_ if changes.title else pr.title,
+                    tofile=pr.title,
+                    tofiledate=pr.created_at.isoformat(),
+                )
+            )
+            diff = truncate(diff, 500 - len("```diff\n\n```"))
+            content = f"```diff\n{diff}\n```"
+        elif changes.title:
+            content = f'Renamed from "{changes.title.from_}" to "{pr.title}"'
+        else:
+            return
 
         assert event.sender
         await send_embed(
