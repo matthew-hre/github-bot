@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from functools import partial
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from loguru import logger
@@ -14,27 +15,51 @@ from app.components.github_integration.webhooks.utils import (
 
 if TYPE_CHECKING:
     from githubkit.typing import Missing
+    from githubkit.versions.latest.models import RepositoryWebhooks
     from monalisten import Monalisten, events
 
     from app.bot import EmojiName, GhosttyBot
 
-CONVERTED_DISCUSSION_HEADER = re.compile(
-    r"\s*### Discussed in https://github.com/.*?/discussions/(?P<discussion_number>\d+)"
-    r"\s*<div type='discussions-op-text'>"
-    r"\s*<sup>(?P<subtext>.+?)</sup>",
-    re.MULTILINE,
+
+GITHUB_DISCUSSION_URL = re.compile(
+    # Ignore if already inside a link block
+    r"(?<!\()"
+        r"https://github\.com/"
+        r"(?P<owner>\b[a-zA-Z0-9\-]+/)"
+        r"(?P<repo>\b[a-zA-Z0-9\-\._]+)"
+        r"(?P<sep>/(?:issues|pull|discussions)/)"
+        r"(?P<number>\d+)"
+    r"(?!\))"
+)  # fmt: skip
+SUP_HTML = re.compile(r"\s*<sup>((?:.|\s)+?)</sup>\s*")
+DISUCSSION_DIV_TAG = re.compile(
+    r"\s*<div type='discussions-op-text'>((?:.|\s)*?)\s*</div>\s*", re.MULTILINE
 )
 
 
-def reformat_converted_discussion_header(body: str | None, repo_url: str) -> str | None:
-    if body is None or not (match := CONVERTED_DISCUSSION_HEADER.match(body)):
+def shorten_same_repo_links(
+    origin_repo: RepositoryWebhooks, matchobj: re.Match[str]
+) -> str:
+    if (
+        matchobj.group("owner") == origin_repo.owner.name
+        and matchobj.group("repo") == origin_repo.name
+    ):
+        # Only short hand if link comes from same repo
+        return f"[#{matchobj.group('number')}]({matchobj.group()})"
+    return matchobj.group()
+
+
+def reformat_converted_discussion_header(
+    body: str | None, repo: RepositoryWebhooks
+) -> str | None:
+    if not body:
         return body
-
-    d, subtext = match["discussion_number"], match["subtext"]
-    new_heading = f"### Discussed in [#{d}]({repo_url}/discussions/{d})\n-# {subtext}\n"
-
-    _, end = match.span()
-    return new_heading + "".join(body[end:].lstrip().rsplit("</div>", maxsplit=1))
+    body = SUP_HTML.sub(
+        lambda x: "".join(f"\n-# {line}\n" for line in x.group(1).splitlines()), body
+    )
+    body = DISUCSSION_DIV_TAG.sub(r"\g<1>", body)
+    body = GITHUB_DISCUSSION_URL.sub(partial(shorten_same_repo_links, repo), body)
+    return body  # noqa: RET504
 
 
 class IssueLike(Protocol):
@@ -69,9 +94,7 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
     @webhook.event.issues.opened
     async def _(event: events.IssuesOpened) -> None:
         issue = event.issue
-        body = reformat_converted_discussion_header(
-            issue.body, event.repository.html_url
-        )
+        body = reformat_converted_discussion_header(issue.body, event.repository)
         await send_embed(
             bot,
             event.sender,
