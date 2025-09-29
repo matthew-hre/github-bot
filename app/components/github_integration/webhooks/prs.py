@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import datetime as dt
-import difflib
 from itertools import dropwhile
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
@@ -11,9 +9,9 @@ from app.components.github_integration.models import GitHubUser
 from app.components.github_integration.webhooks.utils import (
     EmbedContent,
     Footer,
+    send_edit_difference,
     send_embed,
 )
-from app.utils import truncate
 
 if TYPE_CHECKING:
     from monalisten import Monalisten, events
@@ -33,7 +31,7 @@ class PRLike(Protocol):
 
 
 def pr_footer(
-    pr: PRLike, *, emoji: EmojiName | None = None, from_review: bool = False
+    pr: PRLike, /, *, emoji: EmojiName | None = None, from_review: bool = False
 ) -> Footer:
     if emoji is None:
         # pull_request_review(_comment) events have pull_request objects that don't have
@@ -45,12 +43,12 @@ def pr_footer(
 
 
 def pr_embed_content(
-    pr: PRLike, template: str, body: str | None = None
+    pr: PRLike, template: str, body: str | None = None, /
 ) -> EmbedContent:
     return EmbedContent(template.format(f"PR #{pr.number}"), pr.html_url, body)
 
 
-def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: C901, PLR0915
+def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: PLR0915
     @webhook.event.pull_request.opened
     async def _(event: events.PullRequestOpened) -> None:
         pr = event.pull_request
@@ -87,40 +85,7 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: C901,
 
     @webhook.event.pull_request.edited
     async def _(event: events.PullRequestEdited) -> None:
-        pr, changes = event.pull_request, event.changes
-
-        if pr.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
-            return
-
-        if changes.body and changes.body.from_:
-            # Escape code block to avoid breaking diff
-            from_file = changes.body.from_.replace("`", r"\`").splitlines(keepends=True)
-            to_file = (
-                pr.body.replace("`", r"\`").splitlines(keepends=True) if pr.body else ""
-            )
-            diff = "".join(
-                difflib.unified_diff(
-                    from_file,
-                    to_file,
-                    fromfile=changes.title.from_ if changes.title else pr.title,
-                    tofile=pr.title,
-                    tofiledate=pr.created_at.isoformat(),
-                )
-            )
-            diff = truncate(diff, 500 - len("```diff\n\n```"))
-            content = f"```diff\n{diff}\n```"
-        elif changes.title:
-            content = f'Renamed from "{changes.title.from_}" to "{pr.title}"'
-        else:
-            return
-
-        assert event.sender
-        await send_embed(
-            bot,
-            event.sender,
-            pr_embed_content(pr, "edited {}", content),
-            pr_footer(pr),
-        )
+        await send_edit_difference(bot, event, pr_embed_content, pr_footer)
 
     @webhook.event.pull_request.converted_to_draft
     async def _(event: events.PullRequestConvertedToDraft) -> None:

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import datetime as dt
-import difflib
 import re
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -10,9 +8,9 @@ from loguru import logger
 from app.components.github_integration.webhooks.utils import (
     EmbedContent,
     Footer,
+    send_edit_difference,
     send_embed,
 )
-from app.utils import truncate
 
 if TYPE_CHECKING:
     from githubkit.typing import Missing
@@ -55,19 +53,19 @@ def get_issue_emoji(issue: IssueLike) -> EmojiName:
     return "issue_closed_unplanned"
 
 
-def issue_footer(issue: IssueLike, *, emoji: EmojiName | None = None) -> Footer:
+def issue_footer(issue: IssueLike, /, *, emoji: EmojiName | None = None) -> Footer:
     return Footer(
         emoji or get_issue_emoji(issue), f"Issue #{issue.number}: {issue.title}"
     )
 
 
 def issue_embed_content(
-    issue: IssueLike, template: str, body: str | None = None
+    issue: IssueLike, template: str, body: str | None = None, /
 ) -> EmbedContent:
     return EmbedContent(template.format(f"issue #{issue.number}"), issue.html_url, body)
 
 
-def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: PLR0915
+def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
     @webhook.event.issues.opened
     async def _(event: events.IssuesOpened) -> None:
         issue = event.issue
@@ -116,41 +114,7 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: PLR09
 
     @webhook.event.issues.edited
     async def _(event: events.IssuesEdited) -> None:
-        issue, changes = event.issue, event.changes
-
-        if issue.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
-            return
-
-        if changes.body and changes.body.from_:
-            # Escape code block to avoid breaking diff
-            from_file = changes.body.from_.replace("`", r"\`").splitlines(keepends=True)
-            to_file = (
-                issue.body.replace("`", r"\`").splitlines(keepends=True)
-                if issue.body
-                else ""
-            )
-            diff = "".join(
-                difflib.unified_diff(
-                    from_file,
-                    to_file,
-                    fromfile=changes.title.from_ if changes.title else issue.title,
-                    tofile=issue.title,
-                    tofiledate=issue.created_at.isoformat(),
-                )
-            )
-            diff = truncate(diff, 500 - len("```diff\n\n```"))
-            content = f"```diff\n{diff}\n```"
-        elif changes.title:
-            content = f'Renamed from "{changes.title.from_}" to "{issue.title}"'
-        else:
-            return
-
-        await send_embed(
-            bot,
-            event.sender,
-            issue_embed_content(issue, "edited {}", content),
-            issue_footer(issue),
-        )
+        await send_edit_difference(bot, event, issue_embed_content, issue_footer)
 
     @webhook.event.issues.locked
     async def _(event: events.IssuesLocked) -> None:
