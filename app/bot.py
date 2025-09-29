@@ -46,7 +46,7 @@ class GhosttyBot(commands.Bot):
         intents.members = True
         intents.message_content = True
         super().__init__(
-            command_prefix=commands.when_mentioned_or("!"),
+            command_prefix=[],
             intents=intents,
             allowed_mentions=dc.AllowedMentions(everyone=False, roles=False),
         )
