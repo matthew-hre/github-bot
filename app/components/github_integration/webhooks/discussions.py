@@ -40,8 +40,10 @@ def get_discussion_emoji(discussion: DiscussionLike) -> EmojiName:
 def discussion_footer(
     discussion: DiscussionLike, *, emoji: EmojiName | None = None
 ) -> Footer:
-    emoji = emoji or get_discussion_emoji(discussion)
-    return Footer(emoji, f"Discussion #{discussion.number}: {discussion.title}")
+    return Footer(
+        emoji or get_discussion_emoji(discussion),
+        f"Discussion #{discussion.number}: {discussion.title}",
+    )
 
 
 def discussion_embed_content(

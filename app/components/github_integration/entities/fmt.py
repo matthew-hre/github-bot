@@ -36,12 +36,11 @@ def get_entity_emoji(bot: GhosttyBot, entity: Entity) -> dc.Emoji:
     elif isinstance(entity, Discussion):
         emoji_name = "discussion"
         if entity.closed or entity.answered_by:
-            if entity.state_reason == "DUPLICATE":
-                emoji_name += "_duplicate"
-            elif entity.state_reason == "OUTDATED":
-                emoji_name += "_outdated"
-            else:
-                emoji_name += "_answered"
+            emoji_name += (
+                "_duplicate" if entity.state_reason == "DUPLICATE"
+                else "_outdated" if entity.state_reason == "OUTDATED"
+                else "_answered"
+            )  # fmt: skip
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)
