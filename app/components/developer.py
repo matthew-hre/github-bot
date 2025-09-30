@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, final
 
 import discord as dc
@@ -25,7 +26,7 @@ class Developer(commands.Cog):
         return sorted(
             (
                 Choice(name=name, value=cog_module.__name__)
-                for name, cog in (c for c in self.bot.cogs.items())
+                for name, cog in self.bot.cogs.items()
                 if (
                     current.casefold() in name.casefold()
                     and (cog_module := inspect.getmodule(cog))
@@ -94,13 +95,10 @@ class Developer(commands.Cog):
         await interaction.response.defer(thinking=True, ephemeral=True)
         for ext in extensions:
             try:
-                try:
+                with suppress(commands.ExtensionNotLoaded):
+                    # If already not loaded, ignore error
                     await self.bot.unload_extension(ext)
-                except commands.ExtensionNotLoaded:
-                    # If already not loaded, load it
-                    await self.bot.load_extension(ext)
-                else:
-                    await self.bot.load_extension(ext)
+                await self.bot.load_extension(ext)
                 reloaded_extensions.append(ext)
             except commands.ExtensionFailed as error:
                 logger.opt(exception=error).exception(
@@ -128,7 +126,7 @@ class Developer(commands.Cog):
                 f"`{e}`" for e in failed_reloaded_extensions
             )
         # Remove the newline if all extensions failed to reload
-        reload_message.strip()
+        reload_message = reload_message.strip()
 
         await interaction.followup.send(reload_message, ephemeral=True)
 
