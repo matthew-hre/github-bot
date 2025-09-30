@@ -109,15 +109,15 @@ class GitHubEntities(commands.Cog):
         )
         self.linker.link(message, sent_message)
 
-        coros = [remove_view_after_delay(sent_message)]
-        # The suppress is done here (instead of in resolve_repo_signatures) to prevent
-        # blocking I/O for 5 seconds. The regex is run again here because (1) modifying
-        # the signature of resolve_repo_signatures to accommodate that would make it
-        # ugly (2) we can't modify entity_message's signature as the hook system
-        # requires it to return a ProcessedMessage.
-        if any(m["site"] for m in ENTITY_REGEX.finditer(message.content)):
-            coros.append(suppress_embeds_after_delay(message))
-        await asyncio.gather(*coros)
+        async with asyncio.TaskGroup() as group:
+            group.create_task(remove_view_after_delay(sent_message))
+            # The suppress is done here (instead of in resolve_repo_signatures) to
+            # prevent blocking I/O for 5 seconds. The regex is run again here because
+            # (1) modifying the signature of resolve_repo_signatures to accommodate that
+            # would make it ugly (2) we can't modify entity_message's signature as the
+            # hook system requires it to return a ProcessedMessage.
+            if any(m["site"] for m in ENTITY_REGEX.finditer(message.content)):
+                group.create_task(suppress_embeds_after_delay(message))
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: dc.Message) -> None:

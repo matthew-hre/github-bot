@@ -100,10 +100,9 @@ class GitHubComments(commands.Cog):
         )
         await message.edit(suppress=True)
         self.linker.link(message, sent_message)
-        await asyncio.gather(
-            suppress_embeds_after_delay(message),
-            remove_view_after_delay(sent_message),
-        )
+        async with asyncio.TaskGroup() as group:
+            group.create_task(suppress_embeds_after_delay(message))
+            group.create_task(remove_view_after_delay(sent_message))
 
     async def process(self, msg: dc.Message) -> ProcessedMessage:
         comments = [self.comment_to_embed(i) async for i in get_comments(msg.content)]
