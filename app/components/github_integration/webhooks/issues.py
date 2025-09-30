@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from functools import partial
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from loguru import logger
@@ -15,51 +14,18 @@ from app.components.github_integration.webhooks.utils import (
 
 if TYPE_CHECKING:
     from githubkit.typing import Missing
-    from githubkit.versions.latest.models import RepositoryWebhooks
     from monalisten import Monalisten, events
 
     from app.bot import EmojiName, GhosttyBot
 
 
-GITHUB_DISCUSSION_URL = re.compile(
-    # Ignore if already inside a link block
-    r"(?<!\()"
-        r"https://github\.com/"
-        r"(?P<owner>\b[a-zA-Z0-9\-]+/)"
-        r"(?P<repo>\b[a-zA-Z0-9\-\._]+)"
-        r"(?P<sep>/(?:issues|pull|discussions)/)"
-        r"(?P<number>\d+)"
-    r"(?!\))"
-)  # fmt: skip
-SUP_HTML = re.compile(r"\s*<sup>((?:.|\s)+?)</sup>\s*")
 DISUCSSION_DIV_TAG = re.compile(
     r"\s*<div type='discussions-op-text'>((?:.|\s)*?)\s*</div>\s*", re.MULTILINE
 )
 
 
-def shorten_same_repo_links(
-    origin_repo: RepositoryWebhooks, matchobj: re.Match[str]
-) -> str:
-    if (
-        matchobj.group("owner") == origin_repo.owner.name
-        and matchobj.group("repo") == origin_repo.name
-    ):
-        # Only short hand if link comes from same repo
-        return f"[#{matchobj.group('number')}]({matchobj.group()})"
-    return matchobj.group()
-
-
-def reformat_converted_discussion_header(
-    body: str | None, repo: RepositoryWebhooks
-) -> str | None:
-    if not body:
-        return body
-    body = SUP_HTML.sub(
-        lambda x: "".join(f"\n-# {line}\n" for line in x.group(1).splitlines()), body
-    )
-    body = DISUCSSION_DIV_TAG.sub(r"\g<1>", body)
-    body = GITHUB_DISCUSSION_URL.sub(partial(shorten_same_repo_links, repo), body)
-    return body  # noqa: RET504
+def remove_discussion_div(body: str | None) -> str | None:
+    return DISUCSSION_DIV_TAG.sub(r"\g<1>", body) if body else body
 
 
 class IssueLike(Protocol):
@@ -94,13 +60,14 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
     @webhook.event.issues.opened
     async def _(event: events.IssuesOpened) -> None:
         issue = event.issue
-        body = reformat_converted_discussion_header(issue.body, event.repository)
+        body = remove_discussion_div(issue.body)
         await send_embed(
             bot,
             event.sender,
             issue_embed_content(issue, "opened {}", body),
             issue_footer(issue, emoji="issue_open"),
             color="green",
+            origin_repo=event.repository,
         )
 
     @webhook.event.issues.closed
@@ -206,4 +173,5 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
             event.sender,
             EmbedContent(title, event.comment.html_url, event.comment.body),
             Footer(emoji, f"{entity}: {issue.title}"),
+            origin_repo=event.repository,
         )
