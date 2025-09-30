@@ -1,5 +1,3 @@
-import asyncio
-from contextlib import suppress
 from typing import Any, override
 
 import discord as dc
@@ -12,12 +10,6 @@ def handle_error(error: BaseException) -> None:
         logger.error(note)
     if isinstance(error, dc.app_commands.CommandInvokeError):
         handle_error(error.original)
-
-
-def handle_task_error(task: asyncio.Task[None]) -> None:
-    with suppress(asyncio.CancelledError):
-        if exc := task.exception():
-            handle_error(exc)
 
 
 async def interaction_error_handler(
