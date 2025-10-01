@@ -15,6 +15,8 @@ query getDiscussion($number: Int!, $org: String!, $repo: String!) {
       }
       created_at: createdAt
       html_url: url
+      state_reason: stateReason
+      closed
       answer {
         user: author {
           login

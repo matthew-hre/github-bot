@@ -25,6 +25,8 @@ query getDiscussionComment($id: ID!) {
         }
         created_at: createdAt
         html_url: url
+        state_reason: stateReason
+        closed
         answer {
           user: author {
             login

@@ -22,6 +22,7 @@ def fill_entity(**kwargs: Any) -> SimpleNamespace:
         "user": GitHubUser(login="", url="", icon_url=""),
         "created_at": dt.datetime(1, 1, 1, tzinfo=dt.UTC),
         "state": False,
+        "closed": False,
         "state_reason": None,
         "draft": False,
         "merged": False,
