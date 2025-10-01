@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, final
+from typing import TYPE_CHECKING, final
 
 import discord as dc
 from discord.app_commands import Choice
@@ -35,17 +35,23 @@ class Developer(commands.Cog):
             key=lambda x: x.name,
         )[:25]
 
-    @commands.command(name="sync", description="Sync command tree.")
-    async def sync(self, ctx: commands.Context[Any]) -> None:
-        if not self.bot.is_ghostty_mod(ctx.author):
+    @commands.Cog.listener()
+    async def on_message(self, message: dc.Message) -> None:
+        # Handle !sync command. This can't be a slash command because this command is
+        # the one that actually adds the slash commands in the first place.
+        if message.content.strip() != "!sync":
+            return
+
+        if not self.bot.is_ghostty_mod(message.author):
             logger.debug(
-                "!sync called by {} who is not a mod", pretty_print_account(ctx.author)
+                "!sync called by {} who is not a mod",
+                pretty_print_account(message.author),
             )
             return
 
         logger.info("syncing command tree")
         await self.bot.tree.sync()
-        await try_dm(ctx.author, "Command tree synced.")
+        await try_dm(message.author, "Command tree synced.")
 
     @dc.app_commands.command(name="status", description="View Ghostty Bot's status.")
     @dc.app_commands.guild_only()
