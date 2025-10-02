@@ -71,6 +71,10 @@ class FooterGenerator(Protocol):
     def __call__(self, event_like: Any, /, *args: Any, **kwargs: Any) -> Footer: ...
 
 
+def _convert_codeblock(match: re.Match[str]) -> str:
+    return "\u2035" * len(match.group())
+
+
 async def send_edit_difference(
     bot: GhosttyBot,
     event: events.IssuesEdited | events.PullRequestEdited,
@@ -88,12 +92,13 @@ async def send_edit_difference(
     if changes.body and changes.body.from_:
         # HACK: replace all 3+ backticks with reverse primes to avoid breaking the diff
         # block while maintaining the intent.
-        fake_codeblock = "\u2035\u2035\u2035"
-        from_file = CODEBLOCK.sub(fake_codeblock, changes.body.from_).splitlines(
+        from_file = CODEBLOCK.sub(_convert_codeblock, changes.body.from_).splitlines(
             keepends=True
         )
         to_file = (
-            CODEBLOCK.sub(fake_codeblock, event_object.body).splitlines(keepends=True)
+            CODEBLOCK.sub(_convert_codeblock, event_object.body).splitlines(
+                keepends=True
+            )
             if event_object.body
             else ""
         )
