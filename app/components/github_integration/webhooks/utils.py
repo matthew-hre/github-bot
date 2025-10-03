@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, NamedTuple, TypedDict
+import datetime as dt
+import difflib
+import re
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Protocol, TypedDict
 
 import discord as dc
+from monalisten import events
 
 from app.components.github_integration.models import GitHubUser
 from app.utils import truncate
@@ -12,6 +16,8 @@ if TYPE_CHECKING:
 
     from app.bot import EmojiName, GhosttyBot
     from app.config import WebhookFeedType
+
+CODEBLOCK = re.compile(r"`{3,}")
 
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]
 
@@ -53,6 +59,72 @@ class Footer(NamedTuple):
             "text": self.text,
             "icon_url": getattr(bot.ghostty_emojis[self.icon], "url", None),
         }
+
+
+class ContentGenerator(Protocol):
+    def __call__(
+        self, event_like: Any, template: str, body: str | None = None, /
+    ) -> EmbedContent: ...
+
+
+class FooterGenerator(Protocol):
+    def __call__(self, event_like: Any, /, *args: Any, **kwargs: Any) -> Footer: ...
+
+
+def _convert_codeblock(match: re.Match[str]) -> str:
+    return "\u2035" * len(match.group())
+
+
+async def send_edit_difference(
+    bot: GhosttyBot,
+    event: events.IssuesEdited | events.PullRequestEdited,
+    content_generator: ContentGenerator,
+    footer_generator: FooterGenerator,
+) -> None:
+    event_object = (
+        event.issue if isinstance(event, events.IssuesEdited) else event.pull_request
+    )
+
+    if event_object.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
+        return
+
+    changes = event.changes
+    if changes.body and changes.body.from_:
+        # HACK: replace all 3+ backticks with reverse primes to avoid breaking the diff
+        # block while maintaining the intent.
+        from_file = CODEBLOCK.sub(_convert_codeblock, changes.body.from_).splitlines(
+            keepends=True
+        )
+        to_file = (
+            CODEBLOCK.sub(_convert_codeblock, event_object.body).splitlines(
+                keepends=True
+            )
+            if event_object.body
+            else ""
+        )
+        diff = "".join(
+            difflib.unified_diff(
+                from_file,
+                to_file,
+                fromfile=changes.title.from_ if changes.title else event_object.title,
+                tofile=event_object.title,
+                tofiledate=event_object.updated_at.isoformat(),
+            )
+        )
+        diff = truncate(diff, 500 - len("```diff\n\n```"))
+        content = f"```diff\n{diff}\n```"
+    elif changes.title:
+        content = f'Renamed from "{changes.title.from_}" to "{event_object.title}"'
+    else:
+        return
+
+    assert event.sender
+    await send_embed(
+        bot,
+        event.sender,
+        content_generator(event_object, "edited {}", content),
+        footer_generator(event_object),
+    )
 
 
 async def send_embed(  # noqa: PLR0913

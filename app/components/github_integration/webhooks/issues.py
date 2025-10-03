@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime as dt
 import re
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -9,6 +8,7 @@ from loguru import logger
 from app.components.github_integration.webhooks.utils import (
     EmbedContent,
     Footer,
+    send_edit_difference,
     send_embed,
 )
 
@@ -53,19 +53,19 @@ def get_issue_emoji(issue: IssueLike) -> EmojiName:
     return "issue_closed_unplanned"
 
 
-def issue_footer(issue: IssueLike, *, emoji: EmojiName | None = None) -> Footer:
+def issue_footer(issue: IssueLike, /, *, emoji: EmojiName | None = None) -> Footer:
     return Footer(
         emoji or get_issue_emoji(issue), f"Issue #{issue.number}: {issue.title}"
     )
 
 
 def issue_embed_content(
-    issue: IssueLike, template: str, body: str | None = None
+    issue: IssueLike, template: str, body: str | None = None, /
 ) -> EmbedContent:
     return EmbedContent(template.format(f"issue #{issue.number}"), issue.html_url, body)
 
 
-def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: PLR0915
+def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:
     @webhook.event.issues.opened
     async def _(event: events.IssuesOpened) -> None:
         issue = event.issue
@@ -114,33 +114,7 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: PLR09
 
     @webhook.event.issues.edited
     async def _(event: events.IssuesEdited) -> None:
-        issue, changes = event.issue, event.changes
-
-        if issue.created_at > dt.datetime.now(tz=dt.UTC) - dt.timedelta(minutes=15):
-            return
-
-        update_notes: list[str] = []
-        if changes.title:
-            update_notes.append(
-                f'Renamed from "{changes.title.from_}" to "{issue.title}"'
-            )
-        if changes.body:
-            update_notes.append("Updated description")
-
-        match update_notes:
-            case [note]:
-                content = note
-            case [note1, note2]:
-                content = f"* {note1}\n* {note2}"
-            case _:
-                return
-
-        await send_embed(
-            bot,
-            event.sender,
-            issue_embed_content(issue, "edited {}", content),
-            issue_footer(issue),
-        )
+        await send_edit_difference(bot, event, issue_embed_content, issue_footer)
 
     @webhook.event.issues.locked
     async def _(event: events.IssuesLocked) -> None:
