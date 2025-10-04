@@ -130,7 +130,7 @@ class CommitLinks(commands.Cog):
         if message.author.bot or self.bot.fails_message_filters(message):
             return
         output = await self.process(message)
-        if output.item_count == 0:
+        if not output.item_count:
             return
         reply = await message.reply(
             output.content,
