@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import difflib
 import re
@@ -19,12 +20,12 @@ if TYPE_CHECKING:
     from app.config import WebhookFeedType
 
 CODEBLOCK = re.compile(r"`{3,}")
-SUP_HTML = re.compile(r"\s*<su[pb]>(.+?)</su[pb]>\s*")
+SUBTEXT_HTML = re.compile(r"\s*<(su[pb])>(.+?)</\1>\s*?\n?")
 GITHUB_DISCUSSION_URL = re.compile(
-    # Ignore if already inside a link block
+    # Ignore if already inside a hyperlink
     r"(?<!\()"
         r"https://github\.com/"
-        r"(?P<owner>\b[a-zA-Z0-9\-]+/)"
+        r"(?P<owner>\b[a-zA-Z0-9\-]+)/"
         r"(?P<repo>\b[a-zA-Z0-9\-\._]+)"
         r"(?P<sep>/(?:issues|pull|discussions)/)"
         r"(?P<number>\d+)"
@@ -161,17 +162,16 @@ async def send_embed(  # noqa: PLR0913
     feed_type: WebhookFeedType = "main",
     origin_repo: RepositoryWebhooks | None = None,
 ) -> None:
-    content_dict = content.dict
-    if origin_repo and (body := content_dict.get("description")):
-        body = SUP_HTML.sub(r"\n-# \g<1>", body)
+    if origin_repo and content.body:
+        body = SUBTEXT_HTML.sub(r"\n-# \g<2>\n", content.body)
         body = GITHUB_DISCUSSION_URL.sub(
             partial(_shorten_same_repo_links, origin_repo), body
         )
-        content_dict["description"] = body
+        content = copy.replace(content, body=body)
 
     author = GitHubUser(**actor.model_dump())
     embed = (
-        dc.Embed(color=color and EMBED_COLORS.get(color), **content_dict)
+        dc.Embed(color=color and EMBED_COLORS.get(color), **content.dict)
         .set_footer(**footer.dict(bot))
         .set_author(**author.model_dump())
     )

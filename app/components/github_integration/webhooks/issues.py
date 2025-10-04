@@ -25,7 +25,7 @@ DISUCSSION_DIV_TAG = re.compile(
 
 
 def remove_discussion_div(body: str | None) -> str | None:
-    return DISUCSSION_DIV_TAG.sub(r"\g<1>", body) if body else body
+    return body and DISUCSSION_DIV_TAG.sub(r"\g<1>", body)
 
 
 class IssueLike(Protocol):
