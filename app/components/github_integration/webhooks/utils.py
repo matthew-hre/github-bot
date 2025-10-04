@@ -72,7 +72,7 @@ class FooterGenerator(Protocol):
 
 
 def _convert_codeblock(match: re.Match[str]) -> str:
-    return "\u2035" * len(match.group())
+    return "\u2035" * len(match[0])
 
 
 async def send_edit_difference(
