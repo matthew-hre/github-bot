@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import TYPE_CHECKING, override
 
-from githubkit.exception import RequestFailed
+from githubkit.exception import GraphQLFailed, RequestFailed
 
 from .discussions import get_discussion
 from app.common.cache import TTRCache
@@ -30,7 +31,8 @@ class EntityCache(TTRCache[EntitySignature, Entity]):
                 model = PullRequest
             self[key] = model.model_validate(entity, from_attributes=True)
         except RequestFailed:
-            self[key] = await get_discussion(*key)
+            with suppress(GraphQLFailed):
+                self[key] = await get_discussion(*key)
 
 
 entity_cache = EntityCache(gh, minutes=30)

@@ -95,7 +95,11 @@ async def extract_entities(message: dc.Message) -> list[Entity]:
     cache_hits = await asyncio.gather(
         *(entity_cache.get(m) for m in matches), return_exceptions=True
     )
-    return [entity for entity in cache_hits if not isinstance(entity, BaseException)]
+    return [
+        entity
+        for entity in cache_hits
+        if entity and not isinstance(entity, BaseException)
+    ]
 
 
 async def entity_message(bot: GhosttyBot, message: dc.Message) -> ProcessedMessage:

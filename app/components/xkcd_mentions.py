@@ -80,13 +80,19 @@ class XKCDMentions(commands.Cog):
             dict.fromkeys(m[1] for m in XKCD_REGEX.finditer(message.content))
         )
         omitted = None
-        if len(matches) > 10:
+        embeds = [
+            embed
+            for embed in await asyncio.gather(
+                *(self.cache.get(int(m)) for m in matches)
+            )
+            if embed
+        ]
+        if len(embeds) > 10:
             omitted = dc.Embed(color=dc.Color.orange()).set_footer(
-                text=f"{len(matches) - 9} xkcd comics were omitted."
+                text=f"{len(embeds) - 9} xkcd comics were omitted."
             )
             # Nine instead of ten to account for the `omitted` embed.
-            matches = matches[:9]
-        embeds = await asyncio.gather(*(self.cache.get(int(m)) for m in matches))
+            embeds = embeds[:9]
         if omitted:
             embeds.append(omitted)
         return ProcessedMessage(embeds=embeds, item_count=len(embeds))
