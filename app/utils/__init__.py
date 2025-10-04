@@ -117,10 +117,10 @@ def escape_special(content: str) -> str:
     # escape_mentions() doesn't deal with anything other than username mentions.
     escaped = escaped.replace("<", r"\<").replace(">", r"\>")
     # Invite links are not embeds and are hence not suppressed by that flag.
-    escaped = _INVITE_LINK_REGEX.sub(r"<https://\1>", escaped)
+    escaped = _INVITE_LINK_REGEX.sub(r"<https://\g<1>>", escaped)
     # escape_markdown() doesn't deal with ordered lists.
     return "\n".join(
-        _ORDERED_LIST_REGEX.sub(r"\1\. \2", line) for line in escaped.splitlines()
+        _ORDERED_LIST_REGEX.sub(r"\g<1>\. \g<2>", line) for line in escaped.splitlines()
     )
 
 
