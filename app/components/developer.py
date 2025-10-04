@@ -9,7 +9,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from loguru import logger
 
-from app.utils import pretty_print_account, try_dm
+from app.utils import pretty_print_account
 
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
@@ -51,7 +51,7 @@ class Developer(commands.Cog):
 
         logger.info("syncing command tree")
         await self.bot.tree.sync()
-        await try_dm(message.author, "Command tree synced.")
+        await message.reply("Command tree synced.")
 
     @dc.app_commands.command(name="status", description="View Ghostty Bot's status.")
     @dc.app_commands.guild_only()
