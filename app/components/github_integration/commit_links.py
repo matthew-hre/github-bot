@@ -132,6 +132,7 @@ class CommitLinks(commands.Cog):
         output = await self.process(message)
         if not output.item_count:
             return
+        await message.edit(suppress=True)
         reply = await message.reply(
             output.content,
             mention_author=False,
