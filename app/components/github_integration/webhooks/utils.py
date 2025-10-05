@@ -85,7 +85,7 @@ class FooterGenerator(Protocol):
 
 
 def _convert_codeblock(match: re.Match[str]) -> str:
-    return "\u2035" * len(match.group())
+    return "\u2035" * len(match[0])
 
 
 async def send_edit_difference(
@@ -146,8 +146,8 @@ def _shorten_same_repo_links(
     owner, _, repo = origin_repo.full_name.partition("/")
     if matchobj["owner"] == owner and matchobj["repo"] == repo:
         # Only short hand if link comes from same repo
-        return f"[#{matchobj.group('number')}]({matchobj.group()})"
-    return matchobj.group()
+        return f"[#{matchobj['number']}]({matchobj[0]})"
+    return matchobj[0]
 
 
 async def send_embed(  # noqa: PLR0913
