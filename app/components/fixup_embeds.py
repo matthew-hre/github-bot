@@ -76,13 +76,12 @@ class FixupEmbeds(commands.Cog):
         FixUpActions.linker = self.linker
 
     async def process(self, message: dc.Message) -> ProcessedMessage:
-        matches: set[str] = set()
-
+        matches: list[str] = []
         message_content = IGNORED_LINK.sub("", message.content)
         for site in EMBED_SITES:
-            matches.update(map(site[1], site[0].finditer(message_content)))
+            matches.extend(map(site[1], site[0].finditer(message_content)))
 
-        links = list(matches)
+        links = list(dict.fromkeys(matches))
         omitted = False
         if len(links) > 5:
             omitted = True
@@ -90,8 +89,9 @@ class FixupEmbeds(commands.Cog):
         while len(content := " ".join(links)) > 2000:
             links.pop()
             omitted = True
+
         return ProcessedMessage(
-            content=content + ("\n-# Some embeds were omitted" if omitted else ""),
+            content=content + "\n-# Some posts were omitted" * omitted,
             item_count=len(links),
         )
 
