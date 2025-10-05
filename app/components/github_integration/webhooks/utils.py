@@ -143,10 +143,8 @@ async def send_edit_difference(
 def _shorten_same_repo_links(
     origin_repo: RepositoryWebhooks, matchobj: re.Match[str]
 ) -> str:
-    if (
-        matchobj.group("owner") == origin_repo.owner.name
-        and matchobj.group("repo") == origin_repo.name
-    ):
+    owner, _, repo = origin_repo.full_name.partition("/")
+    if matchobj["owner"] == owner and matchobj["repo"] == repo:
         # Only short hand if link comes from same repo
         return f"[#{matchobj.group('number')}]({matchobj.group()})"
     return matchobj.group()
