@@ -24,17 +24,12 @@ VALID_URI_CHARS = r"[A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]"
 EMBED_SITES: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], str]], ...] = (
     (
         re.compile(
-            r"https://(?:www\.)?x\.com/"
-            rf"({VALID_URI_CHARS}+/status/{VALID_URI_CHARS}+)"
+            r"https://(?:www\.)?(?P<site>x|twitter)\.com/"
+            rf"(?P<post>{VALID_URI_CHARS}+/status/{VALID_URI_CHARS}+)"
         ),
-        lambda match: f"https://fixupx.com/{match[1]}",
-    ),
-    (
-        re.compile(
-            r"https://(?:www\.)?twitter\.com/"
-            rf"({VALID_URI_CHARS}+/status/{VALID_URI_CHARS}+)"
-        ),
-        lambda match: f"https://fxtwitter.com/{match[1]}",
+        lambda match: "https://"
+        f"{'fixupx' if match['site'] == 'x' else 'fxtwitter'}.com/"
+        f"{match['post']}",
     ),
     (
         re.compile(
