@@ -20,34 +20,46 @@ if TYPE_CHECKING:
 
     from app.bot import GhosttyBot
 
-
-# Ignore `)` if at the end of the link
+VALID_URI_CHARS = r"[A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]"
 EMBED_SITES: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], str]], ...] = (
     (
         re.compile(
-            r"https://(?:www\.)?(?:x|twitter)\.com/"
-            r"([A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]+)\)?"
+            r"https://(?:www\.)?x\.com/"
+            rf"({VALID_URI_CHARS}+/status/{VALID_URI_CHARS}+)"
         ),
         lambda match: f"https://fixupx.com/{match[1]}",
     ),
     (
         re.compile(
-            r"https://(?:www\.)?bsky\.app/([A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]+)\)?"
+            r"https://(?:www\.)?twitter\.com/"
+            rf"({VALID_URI_CHARS}+/status/{VALID_URI_CHARS}+)"
+        ),
+        lambda match: f"https://fxtwitter.com/{match[1]}",
+    ),
+    (
+        re.compile(
+            r"https://(?:www\.)?bsky\.app/"
+            rf"(profile/{VALID_URI_CHARS}+/post/{VALID_URI_CHARS}+)"
         ),
         lambda match: f"https://fxbsky.app/{match[1]}",
     ),
     (
         re.compile(
-            r"https://(?:(?:www|(?P<subreddit>\w+))?\.)?reddit\.com/"
-            r"(?P<extra>[A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]+)\)?"
+            rf"https://(?:www\.)?pixiv\.net/({VALID_URI_CHARS}+/{VALID_URI_CHARS}+)"
+        ),
+        lambda match: f"https://phixiv.net/{match[1]}",
+    ),
+    (
+        re.compile(
+            r"https://(?:(?:www|(?P<subreddit>\w+))\.)?reddit\.com/"
+            rf"(?P<post>{VALID_URI_CHARS}+)"
         ),
         lambda match: "https://rxddit.com/"
         + (f"r/{subreddit}/" if (subreddit := match["subreddit"]) else "")
-        + match["extra"],
+        + match["post"],
     ),
 )
-
-IGNORED_LINK = re.compile(r"\<https://[A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]+\>")
+IGNORED_LINK = re.compile(rf"\<https://{VALID_URI_CHARS}+\>")
 
 
 @final
