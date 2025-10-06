@@ -20,8 +20,10 @@ if TYPE_CHECKING:
 
     from app.bot import GhosttyBot
 
+type SiteTransformation = tuple[re.Pattern[str], Callable[[re.Match[str]], str]]
+
 VALID_URI_CHARS = r"[A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]"
-EMBED_SITES: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], str]], ...] = (
+EMBED_SITES: tuple[SiteTransformation, ...] = (
     (
         re.compile(
             r"https://(?:www\.)?(?P<site>x|twitter)\.com/"
@@ -49,6 +51,8 @@ EMBED_SITES: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], str]], ...] 
             r"https://(?:(?:www|(?P<subreddit>\w+))\.)?reddit\.com/"
             rf"(?P<post>{VALID_URI_CHARS}+)"
         ),
+        # Reddit supports `foo.reddit.com` as an alias for `reddit.com/r/foo`, but
+        # Rxddit does not.
         lambda match: "https://rxddit.com/"
         + (f"r/{subreddit}/" if (subreddit := match["subreddit"]) else "")
         + match["post"],
