@@ -4,6 +4,7 @@ import asyncio
 import re
 import string
 import urllib.parse
+from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 from textwrap import dedent
@@ -11,6 +12,7 @@ from typing import TYPE_CHECKING, NamedTuple, final, override
 
 import discord as dc
 from discord.ext import commands
+from githubkit.exception import RequestFailed
 from zig_codeblocks import highlight_zig_code
 
 from app.common.cache import TTRCache
@@ -65,14 +67,15 @@ class ContentCache(TTRCache[SnippetPath, str]):
 
     @override
     async def fetch(self, key: SnippetPath) -> None:
-        resp = await self.gh.rest.repos.async_get_content(
-            key.owner,
-            key.repo,
-            key.path,
-            ref=key.rev,
-            headers={"Accept": "application/vnd.github.raw+json"},
-        )
-        self[key] = resp.text
+        with suppress(RequestFailed):
+            resp = await self.gh.rest.repos.async_get_content(
+                key.owner,
+                key.repo,
+                key.path,
+                ref=key.rev,
+                headers={"Accept": "application/vnd.github.raw+json"},
+            )
+            self[key] = resp.text
 
 
 @final
@@ -102,7 +105,8 @@ class CodeLinks(commands.Cog):
                 int(range_end) if range_end else range_start,
             )
 
-            snippet = await self.cache.get(snippet_path)
+            if not (snippet := await self.cache.get(snippet_path)):
+                continue
             selected_lines = "\n".join(snippet.splitlines()[content_range])
             lang = snippet_path.path.rpartition(".")[2]
             if lang == "zig":

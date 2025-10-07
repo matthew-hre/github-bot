@@ -35,7 +35,10 @@ class TTRCache[KT, VT](ABC):
             logger.debug("refreshing outdated key {}", key)
             await self.fetch(key)
 
-    async def get(self, key: KT) -> VT:
+    async def get(self, key: KT) -> VT | None:
         await self._refresh(key)
-        _, value = self[key]
+        try:
+            _, value = self[key]
+        except KeyError:
+            return None
         return value

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from contextlib import suppress
 from functools import reduce
 from typing import TYPE_CHECKING, override
 
@@ -30,7 +31,8 @@ ENTITY_REGEX = re.compile(
 class OwnerCache(TTRCache[str, str]):
     @override
     async def fetch(self, key: str) -> None:
-        self[key] = await find_repo_owner(key)
+        with suppress(RequestFailed, RuntimeError):
+            self[key] = await find_repo_owner(key)
 
 
 owner_cache = OwnerCache(hours=1)
@@ -65,10 +67,9 @@ async def resolve_repo_signature(
             return config.github_org, REPO_ALIASES[repo]
         case None, repo:
             # Only a name provided
-            try:
-                return await owner_cache.get(repo), repo
-            except (RequestFailed, RuntimeError):
-                return None
+            if repo_owner := await owner_cache.get(repo):
+                return repo_owner, repo
+            return None
         case owner, None:
             # Invalid case
             return None

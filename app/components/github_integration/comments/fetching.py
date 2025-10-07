@@ -162,7 +162,8 @@ class CommentCache(TTRCache[tuple[EntityGist, str, int], Comment]):
         if coro is None:
             return
         with suppress(RequestFailed):
-            self[key] = await coro(entity_gist, event_no)
+            if result := await coro(entity_gist, event_no):
+                self[key] = result
 
 
 comment_cache = CommentCache(minutes=30)
@@ -184,14 +185,16 @@ def _make_reactions(rollup: ReactionRollup | Missing[ReactionRollup]) -> Reactio
     return Reactions(**rollup.model_dump())
 
 
-async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
+async def _get_issue_comment(
+    entity_gist: EntityGist, comment_id: int
+) -> Comment | None:
     owner, repo, _ = entity_gist
     comment_resp, entity = await asyncio.gather(
         gh.rest.issues.async_get_comment(owner, repo, comment_id),
         entity_cache.get(entity_gist),
     )
     comment = comment_resp.parsed_data
-    return Comment(
+    return entity and Comment(
         author=_make_author(comment.user),
         body=cast("str", comment.body),
         reactions=_make_reactions(comment.reactions),
@@ -202,17 +205,18 @@ async def _get_issue_comment(entity_gist: EntityGist, comment_id: int) -> Commen
     )
 
 
-async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
+async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment | None:
     comment = (
         await gh.rest.pulls.async_get_review(*entity_gist, comment_id)
     ).parsed_data
-    return Comment(
+    entity = await entity_cache.get(entity_gist)
+    return entity and Comment(
         author=_make_author(comment.user),
         body=comment.body,
         # For some reason, GitHub's API doesn't include them for PR reviews, despite
         # there being reactions visible in the UI.
         reactions=None,
-        entity=await entity_cache.get(entity_gist),
+        entity=entity,
         entity_gist=entity_gist,
         created_at=cast("dt.datetime", comment.submitted_at),
         html_url=comment.html_url,
@@ -221,16 +225,19 @@ async def _get_pr_review(entity_gist: EntityGist, comment_id: int) -> Comment:
     )
 
 
-async def _get_pr_review_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
+async def _get_pr_review_comment(
+    entity_gist: EntityGist, comment_id: int
+) -> Comment | None:
     owner, repo, _ = entity_gist
     comment = (
         await gh.rest.pulls.async_get_review_comment(owner, repo, comment_id)
     ).parsed_data
-    return Comment(
+    entity = await entity_cache.get(entity_gist)
+    return entity and Comment(
         author=_make_author(comment.user),
         body=_prettify_suggestions(comment),
         reactions=_make_reactions(comment.reactions),
-        entity=await entity_cache.get(entity_gist),
+        entity=entity,
         entity_gist=entity_gist,
         created_at=comment.created_at,
         html_url=comment.html_url,
@@ -271,9 +278,12 @@ def _make_crlf_codeblock(lang: str, body: str) -> str:
     return f"```{lang}\n{body}\n```".replace("\n", "\r\n")
 
 
-async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
+async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment | None:
     owner, repo, entity_no = entity_gist
     event = (await gh.rest.issues.async_get_event(owner, repo, comment_id)).parsed_data
+    entity = await entity_cache.get(entity_gist)
+    if not entity:
+        return None
     if event.event in ("review_requested", "review_request_removed"):
         # Special-cased to handle requests for both users and teams
         if event.requested_reviewer:
@@ -289,7 +299,6 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
             raise TypeError(msg)
         body = formatter.format(reviewer=reviewer)
     elif event.event in ENTITY_UPDATE_EVENTS:
-        entity = await entity_cache.get(entity_gist)
         body = f"{event.event.capitalize()} the {entity.kind.lower()}"
         if event.lock_reason:
             body += f"\nReason: `{event.lock_reason}`"
@@ -322,7 +331,7 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
     return Comment(
         author=_make_author(event.actor),
         body=f"**{body}**",
-        entity=await entity_cache.get(entity_gist),
+        entity=entity,
         entity_gist=entity_gist,
         created_at=event.created_at,
         html_url=url,
@@ -331,9 +340,9 @@ async def _get_event(entity_gist: EntityGist, comment_id: int) -> Comment:
     )
 
 
-async def _get_entity_starter(entity_gist: EntityGist, _: int) -> Comment:
+async def _get_entity_starter(entity_gist: EntityGist, _: int) -> Comment | None:
     entity = await entity_cache.get(entity_gist)
-    return Comment(
+    return entity and Comment(
         author=entity.user,
         body=entity.body or "",
         reactions=entity.reactions,
@@ -349,8 +358,7 @@ async def get_comments(content: str) -> AsyncGenerator[Comment]:
     for match in COMMENT_PATTERN.finditer(content):
         owner, repo, _, number, event, event_no = map(str, match.groups())
         entity_gist = EntityGist(owner, repo, int(number))
-        with suppress(KeyError):
-            comment = await comment_cache.get((entity_gist, event, int(event_no)))
-            if comment not in found_comments:
-                found_comments.add(comment)
-                yield comment
+        comment = await comment_cache.get((entity_gist, event, int(event_no)))
+        if comment and comment not in found_comments:
+            found_comments.add(comment)
+            yield comment
