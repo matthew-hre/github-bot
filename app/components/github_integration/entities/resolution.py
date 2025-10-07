@@ -31,7 +31,7 @@ ENTITY_REGEX = re.compile(
 class OwnerCache(TTRCache[str, str]):
     @override
     async def fetch(self, key: str) -> None:
-        with suppress(RequestFailed):
+        with suppress(RequestFailed, RuntimeError):
             self[key] = await find_repo_owner(key)
 
 
@@ -67,13 +67,9 @@ async def resolve_repo_signature(
             return config.github_org, REPO_ALIASES[repo]
         case None, repo:
             # Only a name provided
-            try:
-                if repo_owner := await owner_cache.get(repo):
-                    return repo_owner, repo
-            except (RequestFailed, RuntimeError):
-                return None
-            else:
-                return None
+            if repo_owner := await owner_cache.get(repo):
+                return repo_owner, repo
+            return None
         case owner, None:
             # Invalid case
             return None

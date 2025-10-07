@@ -76,25 +76,14 @@ class XKCDMentions(commands.Cog):
 
     async def process(self, message: dc.Message) -> ProcessedMessage:
         embeds = []
-        matches = list(
-            dict.fromkeys(m[1] for m in XKCD_REGEX.finditer(message.content))
-        )
-        omitted = None
-        embeds = [
-            embed
-            for embed in await asyncio.gather(
-                *(self.cache.get(int(m)) for m in matches)
-            )
-            if embed
-        ]
+        matches = dict.fromkeys(m[1] for m in XKCD_REGEX.finditer(message.content))
+        coros = (self.cache.get(int(m)) for m in matches)
+        embeds = list(filter(None, await asyncio.gather(*coros)))
         if len(embeds) > 10:
             omitted = dc.Embed(color=dc.Color.orange()).set_footer(
                 text=f"{len(embeds) - 9} xkcd comics were omitted."
             )
-            # Nine instead of ten to account for the `omitted` embed.
-            embeds = embeds[:9]
-        if omitted:
-            embeds.append(omitted)
+            embeds = [*embeds[:9], omitted]
         return ProcessedMessage(embeds=embeds, item_count=len(embeds))
 
     @commands.Cog.listener("on_message")
