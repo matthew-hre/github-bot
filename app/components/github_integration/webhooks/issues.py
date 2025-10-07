@@ -18,14 +18,13 @@ if TYPE_CHECKING:
 
     from app.bot import EmojiName, GhosttyBot
 
-
-DISUCSSION_DIV_TAG = re.compile(
+DISCUSSION_DIV_TAG = re.compile(
     r"\s*<div type='discussions-op-text'>((?:.|\s)*?)\s*</div>\s*", re.MULTILINE
 )
 
 
 def remove_discussion_div(body: str | None) -> str | None:
-    return body and DISUCSSION_DIV_TAG.sub(r"\g<1>", body)
+    return body and DISCUSSION_DIV_TAG.sub(r"\g<1>", body)
 
 
 class IssueLike(Protocol):
