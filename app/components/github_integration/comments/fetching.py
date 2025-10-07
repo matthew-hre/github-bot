@@ -5,7 +5,7 @@ import re
 from contextlib import suppress
 from typing import TYPE_CHECKING, cast, override
 
-from githubkit.exception import GraphQLFailed, RequestFailed
+from githubkit.exception import RequestFailed
 from githubkit.versions.latest.models import IssuePropPullRequest, ReactionRollup
 from zig_codeblocks import extract_codeblocks
 
@@ -161,7 +161,7 @@ class CommentCache(TTRCache[tuple[EntityGist, str, int], Comment]):
         }.get(event_type)
         if coro is None:
             return
-        with suppress(RequestFailed, GraphQLFailed):
+        with suppress(RequestFailed):
             if result := await coro(entity_gist, event_no):
                 self[key] = result
 

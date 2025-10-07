@@ -3,6 +3,8 @@ from __future__ import annotations
 from base64 import urlsafe_b64encode
 from typing import TYPE_CHECKING
 
+from githubkit.exception import GraphQLFailed
+
 from app.components.github_integration.models import Comment, Discussion
 from app.config import gh
 
@@ -64,11 +66,16 @@ def _encode_discussion_comment_id(comment_id: int) -> str:
     return "DC_" + urlsafe_b64encode(packed).decode()
 
 
-async def get_discussion_comment(entity_gist: EntityGist, comment_id: int) -> Comment:
+async def get_discussion_comment(
+    entity_gist: EntityGist, comment_id: int
+) -> Comment | None:
     node_id = _encode_discussion_comment_id(comment_id)
-    resp = await gh.graphql.arequest(
-        DISCUSSION_COMMENT_QUERY, variables={"id": node_id}
-    )
+    try:
+        resp = await gh.graphql.arequest(
+            DISCUSSION_COMMENT_QUERY, variables={"id": node_id}
+        )
+    except GraphQLFailed:
+        return None
     discussion = resp["node"].pop("discussion")
     discussion["answered_by"] = (answer := discussion.pop("answer")) and answer["user"]
     return Comment(
