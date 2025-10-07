@@ -3,12 +3,12 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import re
-from typing import TYPE_CHECKING, final, override
+from typing import TYPE_CHECKING, NamedTuple, final, override
 
 import discord as dc
 import httpx
 from discord.ext import commands
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.common.cache import TTRCache
 from app.common.linker import (
@@ -21,11 +21,13 @@ from app.common.linker import (
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
 
+type XKCDResult = XKCD | UnknownXKCD | XKCDFetchFailed
+
 XKCD_REGEX = re.compile(r"\bxkcd#(\d+)", re.IGNORECASE)
-XKCD_URL = "https://xkcd.com/{}"
 
 
 class XKCD(BaseModel):
+    comic_id: int = Field(alias="num")
     day: int
     month: int
     year: int
@@ -33,31 +35,37 @@ class XKCD(BaseModel):
     title: str
     alt: str
 
+    @property
+    def url(self) -> str:
+        return f"https://xkcd.com/{self.comic_id}"
 
-class XKCDMentionCache(TTRCache[int, dc.Embed]):
+
+class UnknownXKCD(NamedTuple):
+    comic_id: int
+
+
+class XKCDFetchFailed(NamedTuple):
+    comic_id: int
+
+
+class XKCDMentionCache(TTRCache[int, XKCDResult]):
     @override
     async def fetch(self, key: int) -> None:
-        url = XKCD_URL.format(key)
         async with httpx.AsyncClient() as client:
-            resp = await client.get(f"{url}/info.0.json")
-        if not resp.is_success:
-            error = (
-                f"xkcd #{key} does not exist."
-                if resp.status_code == 404
-                else f"Unable to fetch xkcd #{key}."
+            resp = await client.get(f"https://xkcd.com/{key}/info.0.json")
+        if resp.is_success:
+            self[key] = XKCD(**resp.json())
+        else:
+            self[key] = (
+                UnknownXKCD(key) if resp.status_code == 404 else XKCDFetchFailed(key)
             )
-            self[key] = dc.Embed(color=dc.Color.red()).set_footer(text=error)
-            return
 
-        xkcd = XKCD(**resp.json())
-        date = dt.datetime(
-            day=xkcd.day, month=xkcd.month, year=xkcd.year, tzinfo=dt.UTC
-        )
-        self[key] = (
-            dc.Embed(title=xkcd.title, url=url)
-            .set_image(url=xkcd.img)
-            .set_footer(text=f"{xkcd.alt} • {date:%B %-d, %Y}")
-        )
+    @override
+    async def get(self, key: int) -> XKCDResult:
+        if xkcd_result := await super().get(key):
+            return xkcd_result
+        msg = "fetch always sets the key so this should not be reachable"
+        raise AssertionError(msg)
 
 
 @final
@@ -74,14 +82,34 @@ class XKCDMentions(commands.Cog):
         XKCDActions.linker = self.linker
         self.cache = XKCDMentionCache(hours=12)
 
+    @staticmethod
+    def get_embed(xkcd: XKCDResult) -> dc.Embed:
+        match xkcd:
+            case XKCD():
+                date = dt.datetime(
+                    day=xkcd.day, month=xkcd.month, year=xkcd.year, tzinfo=dt.UTC
+                )
+                return (
+                    dc.Embed(title=xkcd.title, url=xkcd.url)
+                    .set_image(url=xkcd.img)
+                    .set_footer(text=f"{xkcd.alt} • {date:%B %-d, %Y}")
+                )
+            case UnknownXKCD(comic_id):
+                return dc.Embed(color=dc.Color.red()).set_footer(
+                    text=f"xkcd #{comic_id} does not exist"
+                )
+            case XKCDFetchFailed(comic_id):
+                return dc.Embed(color=dc.Color.red()).set_footer(
+                    text=f"Unable to fetch xkcd #{comic_id}"
+                )
+
     async def process(self, message: dc.Message) -> ProcessedMessage:
-        embeds = []
         matches = dict.fromkeys(m[1] for m in XKCD_REGEX.finditer(message.content))
-        coros = (self.cache.get(int(m)) for m in matches)
-        embeds = list(filter(None, await asyncio.gather(*coros)))
+        xkcds = await asyncio.gather(*(self.cache.get(int(m)) for m in matches))
+        embeds = list(map(self.get_embed, xkcds))
         if len(embeds) > 10:
             omitted = dc.Embed(color=dc.Color.orange()).set_footer(
-                text=f"{len(embeds) - 9} xkcd comics were omitted."
+                text=f"{len(embeds) - 9} xkcd comics were omitted"
             )
             embeds = [*embeds[:9], omitted]
         return ProcessedMessage(embeds=embeds, item_count=len(embeds))
