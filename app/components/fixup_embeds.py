@@ -77,8 +77,8 @@ class FixupEmbeds(commands.Cog):
     async def process(self, message: dc.Message) -> ProcessedMessage:
         matches: list[str] = []
         message_content = IGNORED_LINK.sub("", message.content)
-        for site in EMBED_SITES:
-            matches.extend(map(site[1], site[0].finditer(message_content)))
+        for pattern, transformer in EMBED_SITES:
+            matches.extend(map(transformer, pattern.finditer(message_content)))
 
         links = list(dict.fromkeys(matches))
         omitted = False
