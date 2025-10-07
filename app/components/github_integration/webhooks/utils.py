@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import difflib
 import re
+from functools import partial
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Protocol, TypedDict
 
 import discord as dc
@@ -12,12 +14,23 @@ from app.components.github_integration.models import GitHubUser
 from app.utils import truncate
 
 if TYPE_CHECKING:
-    from githubkit.versions.latest.models import SimpleUser
+    from githubkit.versions.latest.models import RepositoryWebhooks, SimpleUser
 
     from app.bot import EmojiName, GhosttyBot
     from app.config import WebhookFeedType
 
 CODEBLOCK = re.compile(r"`{3,}")
+SUBTEXT_HTML = re.compile(r"\s*<(su[pb])>(.+?)</\1>\s*?\n?")
+GITHUB_DISCUSSION_URL = re.compile(
+    # Ignore if already inside a hyperlink
+    r"(?<!\()"
+        r"https://github\.com/"
+        r"(?P<owner>\b[a-zA-Z0-9\-]+)/"
+        r"(?P<repo>\b[a-zA-Z0-9\-\._]+)"
+        r"(?P<sep>/(?:issues|pull|discussions)/)"
+        r"(?P<number>\d+)"
+    r"(?!\))"
+)  # fmt: skip
 
 type EmbedColor = Literal["green", "red", "purple", "gray", "orange", "blue"]
 
@@ -127,6 +140,16 @@ async def send_edit_difference(
     )
 
 
+def _shorten_same_repo_links(
+    origin_repo: RepositoryWebhooks, matchobj: re.Match[str]
+) -> str:
+    owner, _, repo = origin_repo.full_name.partition("/")
+    if matchobj["owner"] == owner and matchobj["repo"] == repo:
+        # Only short hand if link comes from same repo
+        return f"[#{matchobj['number']}]({matchobj[0]})"
+    return matchobj[0]
+
+
 async def send_embed(  # noqa: PLR0913
     bot: GhosttyBot,
     actor: SimpleUser,
@@ -135,7 +158,15 @@ async def send_embed(  # noqa: PLR0913
     *,
     color: EmbedColor | None = None,
     feed_type: WebhookFeedType = "main",
+    origin_repo: RepositoryWebhooks | None = None,
 ) -> None:
+    if origin_repo and content.body:
+        body = SUBTEXT_HTML.sub(r"\n-# \g<2>\n", content.body)
+        body = GITHUB_DISCUSSION_URL.sub(
+            partial(_shorten_same_repo_links, origin_repo), body
+        )
+        content = copy.replace(content, body=body)
+
     author = GitHubUser(**actor.model_dump())
     embed = (
         dc.Embed(color=color and EMBED_COLORS.get(color), **content.dict)
