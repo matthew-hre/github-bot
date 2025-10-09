@@ -5,15 +5,17 @@ import json
 from typing import TYPE_CHECKING, NotRequired, Self, TypedDict, cast, final, override
 
 import discord as dc
-from discord.app_commands import Choice
 from discord.ext import commands
 from githubkit.exception import RequestFailed
 from loguru import logger
 
 from app.common.message_moving import get_or_create_webhook
+from app.utils import generate_autocomplete
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from discord.app_commands import Choice
 
     from app.bot import GhosttyBot
 
@@ -156,11 +158,7 @@ class Docs(commands.Cog):
     async def section_autocomplete(
         self, _: dc.Interaction, current: str
     ) -> list[Choice[str]]:
-        return [
-            Choice(name=name, value=name)
-            for name in SECTIONS
-            if current.casefold() in name.casefold()
-        ]
+        return generate_autocomplete(current, SECTIONS)
 
     @docs.autocomplete("page")
     async def page_autocomplete(
@@ -179,11 +177,7 @@ class Docs(commands.Cog):
         )
         if section is None:
             return []
-        return [
-            Choice(name=name, value=name)
-            for name in self.sitemap.get(section, [])
-            if current.casefold() in name.casefold()
-        ][:25]  # Discord only allows 25 options for autocomplete
+        return generate_autocomplete(current, self.sitemap.get(section, []))
 
     def get_docs_link(self, section: str, page: str) -> str:
         if section not in SECTIONS:

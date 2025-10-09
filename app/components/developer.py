@@ -5,13 +5,14 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, final
 
 import discord as dc
-from discord.app_commands import Choice
 from discord.ext import commands
 from loguru import logger
 
-from app.utils import pretty_print_account
+from app.utils import generate_autocomplete, pretty_print_account
 
 if TYPE_CHECKING:
+    from discord.app_commands import Choice
+
     from app.bot import GhosttyBot
 
 
@@ -23,17 +24,14 @@ class Developer(commands.Cog):
     async def existing_extension_autocomplete(
         self, _: dc.Interaction, current: str
     ) -> list[Choice[str]]:
-        return sorted(
+        return generate_autocomplete(
+            current,
             (
-                Choice(name=name, value=cog_module.__name__)
+                (name, cog_module.__name__)
                 for name, cog in self.bot.cogs.items()
-                if (
-                    current.casefold() in name.casefold()
-                    and (cog_module := inspect.getmodule(cog))
-                )
+                if (cog_module := inspect.getmodule(cog))
             ),
-            key=lambda x: x.name,
-        )[:25]
+        )
 
     @commands.Cog.listener()
     async def on_message(self, message: dc.Message) -> None:
@@ -230,14 +228,7 @@ class Developer(commands.Cog):
         unloaded_extension_paths = (
             self.bot.get_component_extension_names() - loaded_extensions
         )
-        return sorted(
-            (
-                Choice(name=name, value=name)
-                for name in unloaded_extension_paths
-                if current.casefold() in name.casefold()
-            ),
-            key=lambda x: x.name,
-        )[:25]
+        return generate_autocomplete(current, unloaded_extension_paths)
 
 
 async def setup(bot: GhosttyBot) -> None:
