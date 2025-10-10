@@ -9,6 +9,7 @@ from textwrap import shorten
 from typing import TYPE_CHECKING, Any, TypeIs
 
 import discord as dc
+from discord.app_commands import Choice
 from loguru import logger
 
 from .message_data import MAX_ATTACHMENT_SIZE, ExtensibleMessage, MessageData, get_files
@@ -37,7 +38,7 @@ __all__ = (
 
 if TYPE_CHECKING:
     import datetime as dt
-    from collections.abc import AsyncGenerator, AsyncIterable, Callable
+    from collections.abc import AsyncGenerator, AsyncIterable, Callable, Iterable
 
 _INVITE_LINK_REGEX = re.compile(r"\b(?:https?://)?(discord\.gg/[^\s]+)\b")
 _ORDERED_LIST_REGEX = re.compile(r"^(\d+)\. (.*)")
@@ -192,3 +193,18 @@ async def async_process_check_output(program: str, *args: str, **kwargs: Any) ->
 
 def pretty_print_account(user: Account) -> str:
     return f"<{user.name} - {user.id}>"
+
+
+def generate_autocomplete(
+    current: str, choices: Iterable[str | tuple[str, str]]
+) -> list[Choice[str]]:
+    padded = (c if isinstance(c, tuple) else (c, c) for c in choices)
+    current = current.casefold()
+    return sorted(
+        (
+            Choice(name=name, value=value)
+            for name, value in padded
+            if current in name.casefold()
+        ),
+        key=lambda c: c.name,
+    )[:25]  # Discord only allows 25 options for autocomplete

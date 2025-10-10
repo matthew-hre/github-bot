@@ -9,7 +9,7 @@ from discord.ext import commands
 
 import app.components.github_integration.entities.fmt as github_entities_fmt
 from app.common.message_moving import MovedMessage
-from app.utils import is_dm, is_helper, is_mod
+from app.utils import generate_autocomplete, is_dm, is_helper, is_mod
 
 if TYPE_CHECKING:
     from app.bot import GhosttyBot
@@ -112,11 +112,7 @@ class Close(commands.GroupCog, group_name="close"):
     ) -> list[app_commands.Choice[str]]:
         if not (docs := cast("Docs | None", self.bot.cogs.get("Docs"))):
             return []
-        return [
-            app_commands.Choice(name=name, value=name)
-            for name in docs.sitemap.get("option", [])
-            if current.casefold() in name.casefold()
-        ][:25]  # Discord only allows 25 options for autocomplete
+        return generate_autocomplete(current, docs.sitemap.get("option", []))
 
     @app_commands.command(name="moved", description="Mark post as moved to GitHub.")
     @app_commands.describe(entity_id="New GitHub entity number")
