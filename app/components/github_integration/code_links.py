@@ -154,11 +154,14 @@ class CodeLinks(commands.Cog):
         if len(blobs) == 1 and len(blobs[0]) > 2000:
             # When there is only a single blob which goes over the limit, upload it as
             # a file instead.
-            fp = BytesIO(snippets[0].body.encode())
-            file = dc.File(fp, filename=Path(snippets[0].path).name)
+            snippet = snippets[0]
+            # Correct the filename to use the snippet's language in case it
+            # differs from the filename's extension, which is done for multiple
+            # file types by get_snippets().
+            filename = Path(snippet.path).with_suffix(f".{snippet.lang}").name
             return ProcessedMessage(
-                content=self._format_snippet(snippets[0], include_body=False),
-                files=[file],
+                content=self._format_snippet(snippet, include_body=False),
+                files=[dc.File(BytesIO(snippet.body.encode()), filename=filename)],
                 item_count=1,
             )
 
