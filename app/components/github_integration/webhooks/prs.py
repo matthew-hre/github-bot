@@ -218,8 +218,8 @@ def register_hooks(bot: GhosttyBot, webhook: Monalisten) -> None:  # noqa: PLR09
         pr, content = event.pull_request, event.comment.body
 
         hunk = _reduce_diff_hunk(event.comment.diff_hunk)
-        if 500 - len(content) - len(hunk) - HUNK_CODEBLOCK_OVERHEAD >= 0:
-            # We can fit a hunk!
+        hunk_can_fit = 500 - len(content) - len(hunk) - HUNK_CODEBLOCK_OVERHEAD >= 0
+        if hunk.strip() and hunk_can_fit:
             content = f"```diff\n{hunk}\n```\n{content}"
 
         await send_embed(
