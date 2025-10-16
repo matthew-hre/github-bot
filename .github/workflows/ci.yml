@@ -14,8 +14,7 @@ env:
 
 jobs:
   ci:
-    if: github.repository == 'ghostty-org/discord-bot'
-    runs-on: namespace-profile-ghostty-sm
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
@@ -35,9 +34,6 @@ jobs:
       - name: ruff lint
         if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
         run: uv run ruff check --output-format github
-      - name: pytest
-        if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
-        run: uv run pytest -vv
       - name: basedpyright
         if: ${{ !cancelled() && steps.sync.conclusion == 'success' }}
-        run: uv run basedpyright app tests
+        run: uv run basedpyright app

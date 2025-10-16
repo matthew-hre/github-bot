@@ -116,7 +116,7 @@ class XKCDMentions(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def handle_mentions(self, message: dc.Message) -> None:
-        if message.author.bot or self.bot.fails_message_filters(message):
+        if message.author.bot:
             return
         output = await self.process(message)
         if output.item_count < 1:

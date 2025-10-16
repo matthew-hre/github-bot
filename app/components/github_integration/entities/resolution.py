@@ -22,7 +22,7 @@ ENTITY_REGEX = re.compile(
     r"(?P<site>\bhttps?://(?:www\.)?github\.com/)?"
     r"(?P<owner>\b[a-z0-9\-]+/)?"
     r"(?P<repo>\b[a-z0-9\-\._]+)?"
-    r"(?P<sep>/(?:issues|pull|discussions)/|#)"
+    r"(?P<sep>/(?:issues|pull)/|#)"
     r"(?P<number>\d{1,6})(?!\.\d|/?#)\b",
     re.IGNORECASE,
 )
@@ -60,10 +60,10 @@ async def resolve_repo_signature(
 ) -> tuple[str, str] | None:
     match owner, repo:
         case None, None:
-            # The Ghostty repo
-            return config.github_org, "ghostty"
+            # The default repo from config
+            return config.github_org, config.github_default_repo
         case None, repo if repo in REPO_ALIASES:
-            # Special ghostty-org prefixes
+            # Special org prefixes
             return config.github_org, REPO_ALIASES[repo]
         case None, repo:
             # Only a name provided
@@ -94,9 +94,6 @@ async def resolve_entity_signatures(
             await message.edit(suppress=True)
 
         if owner is None:
-            if repo is None and number < 10:
-                # Ignore single-digit mentions like #1, (likely a false positive)
-                continue
             if repo == "xkcd":
                 # Ignore the xkcd prefix, as it is handled by xkcd_mentions.py
                 continue

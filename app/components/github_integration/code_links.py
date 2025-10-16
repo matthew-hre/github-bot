@@ -22,7 +22,6 @@ from app.common.linker import (
     ProcessedMessage,
     remove_view_after_delay,
 )
-from app.components.zig_codeblocks import THEME
 from app.utils import suppress_embeds_after_delay
 
 if TYPE_CHECKING:
@@ -111,7 +110,7 @@ class CodeLinks(commands.Cog):
             lang = snippet_path.path.rpartition(".")[2]
             if lang == "zig":
                 lang = "ansi"
-                selected_lines = highlight_zig_code(selected_lines, THEME)
+                selected_lines = highlight_zig_code(selected_lines)
             lang = LANG_SUBSTITUTIONS.get(lang, lang)
             yield Snippet(
                 f"{snippet_path.owner}/{snippet_path.repo}",
@@ -176,7 +175,7 @@ class CodeLinks(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def reply_with_code(self, message: dc.Message) -> None:
-        if message.author.bot or self.bot.fails_message_filters(message):
+        if message.author.bot:
             return
         output = await self.process(message)
         if output.item_count != 0:

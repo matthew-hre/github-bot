@@ -8,29 +8,24 @@ import pkgutil
 import sys
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Literal, cast, final, get_args, override
+from typing import TYPE_CHECKING, Any, Literal, Union, cast, final, get_args, override
 
 import discord as dc
-import sentry_sdk
 from discord.ext import commands
 from loguru import logger
 
 from app.errors import handle_error, interaction_error_handler
 from app.status import BotStatus
-from app.utils import is_mod, pretty_print_account, try_dm
+from app.utils import pretty_print_account, try_dm
 
 if TYPE_CHECKING:
     from githubkit import GitHub, TokenAuthStrategy
 
-    from app.config import Config, WebhookFeedType
+    from app.config import Config
     from app.utils import Account
 
 EmojiName = Literal[
     "commit",
-    "discussion",
-    "discussion_answered",
-    "discussion_duplicate",
-    "discussion_outdated",
     "issue_closed_completed",
     "issue_closed_unplanned",
     "issue_open",
@@ -39,6 +34,9 @@ EmojiName = Literal[
     "pull_merged",
     "pull_open",
 ]
+
+# Emoji can be either a Discord Emoji object or a fallback string
+EmojiType = Union[dc.Emoji, str]
 
 
 @final
@@ -58,7 +56,7 @@ class GhosttyBot(commands.Bot):
         self.gh = gh
         self.bot_status = BotStatus()
 
-        self._ghostty_emojis: dict[EmojiName, dc.Emoji] = {}
+        self._ghostty_emojis: dict[EmojiName, EmojiType] = {}
         self.ghostty_emojis = MappingProxyType(self._ghostty_emojis)
 
     @override
@@ -69,8 +67,7 @@ class GhosttyBot(commands.Bot):
     async def load_extension(self, name: str, *, package: str | None = None) -> None:
         short_name = name.removeprefix("app.components.")
         logger.debug("loading extension {}", short_name)
-        with sentry_sdk.start_span(op="bot.load_extension", name=short_name):
-            await super().load_extension(name, package=package)
+        await super().load_extension(name, package=package)
 
     async def _try_extension(
         self,
@@ -111,11 +108,10 @@ class GhosttyBot(commands.Bot):
 
     @override
     async def setup_hook(self) -> None:
-        with sentry_sdk.start_transaction(op="bot.setup", name="Initial load"):
-            await self.bot_status.load_git_data()
-            async with asyncio.TaskGroup() as group:
-                for extension in self.get_component_extension_names():
-                    group.create_task(self.load_extension(extension))
+        # Load all component extensions
+        extension_names = self.get_component_extension_names()
+        for extension in extension_names:
+            await self.try_load_extension(extension)
         logger.info("loaded {} extensions", len(self.extensions))
 
     async def on_ready(self) -> None:
@@ -144,39 +140,6 @@ class GhosttyBot(commands.Bot):
         assert isinstance(channel, dc.TextChannel)
         return channel
 
-    @dc.utils.cached_property
-    def help_channel(self) -> dc.ForumChannel:
-        logger.debug("fetching help channel")
-        channel = self.get_channel(self.config.help_channel_id)
-        assert isinstance(channel, dc.ForumChannel)
-        return channel
-
-    @dc.utils.cached_property
-    def webhook_channels(self) -> dict[WebhookFeedType, dc.TextChannel]:
-        channels: dict[WebhookFeedType, dc.TextChannel] = {}
-        for feed_type, id_ in self.config.webhook_channel_ids.items():
-            logger.debug("fetching {feed_type} webhook channel", feed_type)
-            channel = self.ghostty_guild.get_channel(id_)
-            if not isinstance(channel, dc.TextChannel):
-                msg = (
-                    "expected {} webhook channel to be a text channel"
-                    if channel
-                    else "failed to find {} webhook channel"
-                )
-                raise TypeError(msg.format(feed_type))
-            channels[feed_type] = channel
-        return channels
-
-    def is_ghostty_mod(self, user: Account) -> bool:
-        member = self.ghostty_guild.get_member(user.id)
-        return member is not None and is_mod(member)
-
-    def fails_message_filters(self, message: dc.Message) -> bool:
-        # This can't be the MessageFilter cog type because that would cause an import
-        # cycle.
-        message_filter: Any = self.get_cog("MessageFilter")
-        return message_filter and message_filter.check(message)
-
     @override
     async def on_message(self, message: dc.Message, /) -> None:
         # Ignore our own messages
@@ -187,10 +150,6 @@ class GhosttyBot(commands.Bot):
         if message.guild is None and message.content == "ping":
             logger.debug("ping sent by {}", pretty_print_account(message.author))
             await try_dm(message.author, "pong")
-            return
-
-        # Don't continue if the message would be deleted by a message filter.
-        if self.fails_message_filters(message):
             return
 
         await self.process_commands(message)

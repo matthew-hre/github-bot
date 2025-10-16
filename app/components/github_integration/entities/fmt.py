@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from .cache import entity_cache
 from .resolution import resolve_entity_signatures
 from app.common.linker import ProcessedMessage
-from app.components.github_integration.models import Discussion, Issue, PullRequest
+from app.components.github_integration.models import Issue, PullRequest
 from app.utils import dynamic_timestamp, escape_special, format_diff_note
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 ENTITY_TEMPLATE = "**{entity.kind} [#{entity.number}](<{entity.html_url}>):** {title}"
 
 
-def get_entity_emoji(bot: GhosttyBot, entity: Entity) -> dc.Emoji:
+def get_entity_emoji(bot: GhosttyBot, entity: Entity) -> Union[dc.Emoji, str]:
     if isinstance(entity, Issue):
         state = "open"
         if entity.closed:
@@ -33,14 +33,6 @@ def get_entity_emoji(bot: GhosttyBot, entity: Entity) -> dc.Emoji:
             else "closed" if entity.closed
             else "open"
         )  # fmt: skip
-    elif isinstance(entity, Discussion):
-        emoji_name = "discussion"
-        if entity.closed or entity.answered_by:
-            emoji_name += (
-                "_duplicate" if entity.state_reason == "DUPLICATE"
-                else "_outdated" if entity.state_reason == "OUTDATED"
-                else "_answered"
-            )  # fmt: skip
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)
@@ -64,10 +56,6 @@ def _format_entity_detail(entity: Entity) -> str:
         )
         if body is None:
             return ""  # Diff size unavailable
-    elif isinstance(entity, Discussion):
-        if not entity.answered_by:
-            return ""
-        body = f"answered by {entity.answered_by.hyperlink}"
     else:
         msg = f"Unknown entity type: {type(entity)}"
         raise TypeError(msg)

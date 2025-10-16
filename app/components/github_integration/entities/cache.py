@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, override
 
 from githubkit.exception import RequestFailed
 
-from .discussions import get_discussion
 from app.common.cache import TTRCache
 from app.components.github_integration.models import Entity, Issue, PullRequest
 from app.config import gh
@@ -30,8 +29,7 @@ class EntityCache(TTRCache[EntitySignature, Entity]):
                 model = PullRequest
             self[key] = model.model_validate(entity, from_attributes=True)
         except RequestFailed:
-            if discussion := await get_discussion(*key):
-                self[key] = discussion
+            pass
 
 
 entity_cache = EntityCache(gh, minutes=30)

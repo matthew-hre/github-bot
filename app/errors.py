@@ -26,12 +26,6 @@ async def interaction_error_handler(
     handle_error(error)
 
 
-class SafeModal(dc.ui.Modal):
-    @override
-    async def on_error(self, interaction: dc.Interaction, error: Exception, /) -> None:
-        return await interaction_error_handler(interaction, error)
-
-
 class SafeView(dc.ui.View):
     @override
     async def on_error(

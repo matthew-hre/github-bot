@@ -9,7 +9,6 @@ from githubkit.exception import RequestFailed
 from githubkit.versions.latest.models import IssuePropPullRequest, ReactionRollup
 from zig_codeblocks import extract_codeblocks
 
-from .discussions import get_discussion_comment
 from app.common.cache import TTRCache
 from app.components.github_integration.entities.cache import entity_cache
 from app.components.github_integration.models import (
@@ -37,7 +36,7 @@ if TYPE_CHECKING:
 
 COMMENT_PATTERN = re.compile(
     r"https?://(?:www\.)?github\.com/([a-zA-Z0-9\-]+)/([a-zA-Z0-9\-\._]+)/"
-    r"(issues|discussions|pull)/(\d+)/?#(\w+?-?)(\d+)"
+    r"(issues|pull)/(\d+)/?#(\w+?-?)(\d+)"
 )
 STATE_TO_COLOR = {
     "APPROVED": 0x2ECC71,  # green
@@ -81,7 +80,6 @@ SUPPORTED_EVENTS: dict[str, str | Callable[[IssueEvent], str]] = {
     "base_ref_changed": "Changed the base branch",
     "automatic_base_change_failed": "Automatic base change failed",
     "automatic_base_change_succeeded": "Base automatically changed",
-    "converted_to_discussion": "Converted this issue to a discussion",
     "parent_issue_added": "Added a parent issue",
     "sub_issue_added": "Added a sub-issue",
     "marked_as_duplicate": "Marked an issue as a duplicate of this one",
@@ -151,12 +149,10 @@ class CommentCache(TTRCache[tuple[EntityGist, str, int], Comment]):
     async def fetch(self, key: tuple[EntityGist, str, int]) -> None:
         entity_gist, event_type, event_no = key
         coro = {
-            "discussioncomment-": get_discussion_comment,
             "issuecomment-": _get_issue_comment,
             "pullrequestreview-": _get_pr_review,
             "discussion_r": _get_pr_review_comment,
             "event-": _get_event,
-            "discussion-": _get_entity_starter,
             "issue-": _get_entity_starter,
         }.get(event_type)
         if coro is None:

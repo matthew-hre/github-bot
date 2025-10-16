@@ -4,7 +4,7 @@ import datetime as dt
 import subprocess
 from contextlib import suppress
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast, final
+from typing import TYPE_CHECKING, cast, final
 
 from githubkit import TokenAuthStrategy
 from githubkit.exception import RequestFailed
@@ -13,7 +13,7 @@ from app.config import config, gh
 from app.utils import async_process_check_output, dynamic_timestamp
 
 if TYPE_CHECKING:
-    from discord.ext import tasks
+    pass
 
 STATUS_MESSAGE_TEMPLATE = """
 ### Commit
@@ -21,9 +21,6 @@ STATUS_MESSAGE_TEMPLATE = """
 ### Uptime
 * Launch time: {launch_time}
 * Last login time: {last_login_time}
-### {help_channel} post scan status
-* Last scan: {scan.scanned} scanned, {scan.closed} closed ({scan.time_since})
-* Next scan: {scan.time_until_next}
 ### GitHub status
 * Auth: {gh.auth}
 * API: {gh.api}
@@ -35,9 +32,7 @@ STATUS_MESSAGE_TEMPLATE = """
 @final
 class BotStatus:
     launch_time: dt.datetime
-    help_scan_loop: tasks.Loop[Any] | None = None
     last_login_time: dt.datetime | None = None
-    last_scan_results: tuple[dt.datetime, int, int] | None = None
     last_sitemap_refresh: dt.datetime | None = None
     commit_url: str | None = None
     # app.components.github_integration.commits.Commits will set this when the bot is
@@ -83,27 +78,7 @@ class BotStatus:
         return all((
             self.last_login_time,
             self.last_sitemap_refresh,
-            self.last_scan_results,
         ))
-
-    def _get_scan_data(self) -> SimpleNamespace:
-        if not self.help_scan_loop:
-            return SimpleNamespace(
-                time_since="**disabled**",
-                time_until_next="**disabled**",
-                scanned=0,
-                closed=0,
-            )
-
-        next_scan = cast("dt.datetime", self.help_scan_loop.next_iteration)
-        assert self.last_scan_results is not None
-        last_scan, scanned, closed = self.last_scan_results
-        return SimpleNamespace(
-            time_since=dynamic_timestamp(last_scan, "R"),
-            time_until_next=dynamic_timestamp(next_scan, "R"),
-            scanned=scanned,
-            closed=closed,
-        )
 
     @staticmethod
     async def _get_github_data() -> SimpleNamespace:
@@ -134,8 +109,6 @@ class BotStatus:
             "launch_time": dynamic_timestamp(self.launch_time, "R"),
             "last_login_time": dynamic_timestamp(self.last_login_time, "R"),
             "last_sitemap_refresh": dynamic_timestamp(self.last_sitemap_refresh, "R"),
-            "help_channel": f"<#{config.help_channel_id}>",
-            "scan": self._get_scan_data(),
             "gh": await self._get_github_data(),
         }
 

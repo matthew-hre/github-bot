@@ -1,4 +1,3 @@
-# pyright: reportUnannotatedClassAttribute=false
 from __future__ import annotations
 
 import datetime as dt
@@ -113,12 +112,6 @@ class PullRequest(Entity):
     additions: int
     deletions: int
     changed_files: int
-
-
-class Discussion(Entity):
-    answered_by: GitHubUser | None
-    closed: bool
-    state_reason: Literal["DUPLICATE", "RESOLVED", "OUTDATED", "REOPENED"] | None
 
 
 class EntityGist(NamedTuple):
